@@ -22,9 +22,6 @@
 </template>
 
 <script setup>
-//   definePageMeta({
-//     layout: "auth-user",
-//   });
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();
 const router = useRouter();

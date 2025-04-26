@@ -5,6 +5,7 @@ export default defineNuxtConfig({
   compatibilityDate: "2024-11-01",
   devtools: { enabled: true },
   css: ["~/assets/css/tailwind.css"],
+  pages: true,
 
   vite: {
     plugins: [tailwindcss()],
@@ -21,6 +22,14 @@ export default defineNuxtConfig({
      * @default "./components/ui"
      */
     componentDir: "./components/ui",
+  },
+
+  supabase: {
+    redirectOptions: {
+      login: '/login',
+      callback: '/confirm',
+      exclude: ['/reset-password', '/update-password', '/register']
+    }
   },
 
   nitro: {
