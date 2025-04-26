@@ -73,3 +73,13 @@ bun run preview
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+
+# Git commnd
+
+Créer une branche : git checkout -b nom-de-ta-branche
+
+Pousser la nouvelle branche : git push -u origin nom-de-ta-branche
+
+Changer de branch : git checkout nom-de-la-branche
+
+Pour merge : aller sur la branche qui recoit le code puis git merge nom-de-la-branche (qui a les changement)
