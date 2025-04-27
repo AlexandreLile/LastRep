@@ -31,9 +31,9 @@
             </div>
 
             <Button type="submit" class="w-full">Créer un compte</Button>
-            <Button variant="outline" class="w-full"
-              >Continuer avec Google</Button
-            >
+            <Button variant="outline" class="w-full" @click="handleGoogleLogin">
+              Continuer avec Google
+            </Button>
 
             <div
               v-if="errorMessage"
@@ -64,7 +64,7 @@ definePageMeta({
 });
 import { useAuth } from "@/composables/useAuth";
 
-const { email, password, handleRegister, errorMessage } = useAuth();
+const { email, password, handleRegister, handleGoogleLogin, errorMessage } = useAuth();
 
 const onSubmit = () => {
   handleRegister();

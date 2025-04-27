@@ -38,9 +38,9 @@
             </div>
 
             <Button type="submit" class="w-full">Se connecter</Button>
-            <Button variant="outline" class="w-full"
-              >Connexion avec Google</Button
-            >
+            <Button variant="outline" class="w-full" @click="handleGoogleLogin">
+              Connexion avec Google
+            </Button>
 
             <div
               v-if="errorMessage"
@@ -71,7 +71,7 @@ definePageMeta({
 });
 import { useAuth } from "@/composables/useAuth";
 
-const { email, password, handleLogin, errorMessage } = useAuth();
+const { email, password, handleLogin, handleGoogleLogin, errorMessage } = useAuth();
 
 const onSubmit = () => {
   handleLogin();
