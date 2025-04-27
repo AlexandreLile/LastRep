@@ -26,10 +26,15 @@ export default defineNuxtConfig({
 
   supabase: {
     redirectOptions: {
-      login: '/login',
-      callback: '/confirm',
-      exclude: ['/reset-password', '/update-password', '/register']
-    }
+      login: "/login",
+      callback: "/confirm",
+      exclude: [
+        "/reset-password",
+        "/update-password",
+        "/register",
+        "/check-email",
+      ],
+    },
   },
 
   nitro: {

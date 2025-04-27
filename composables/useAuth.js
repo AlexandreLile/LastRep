@@ -37,10 +37,31 @@ export const useAuth = () => {
     }
   };
 
+  const handleRegister = async () => {
+    errorMessage.value = "";
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: email.value,
+        password: password.value,
+      });
+
+      if (error) {
+        errorMessage.value = translateError(error.message);
+        return;
+      }
+
+      router.push("/check-email");
+    } catch (error) {
+      errorMessage.value = "Une erreur inattendue est survenue.";
+      console.error("Erreur d'inscription:", error);
+    }
+  };
+
   return {
     email,
     password,
-    handleLogin,
     errorMessage,
+    handleLogin,
+    handleRegister,
   };
 };
