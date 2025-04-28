@@ -1,12 +1,12 @@
 -- Table Exercise (stockage des exercices)
-create table Exercise (
+create table exercise (
   id uuid default gen_random_uuid() primary key,
   name text not null,
   primary_muscle text not null
 );
 
 -- Table WorkoutSession
-create table WorkoutSession (
+create table workoutsession (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users(id) on delete cascade,
   title text,
@@ -31,7 +31,7 @@ create trigger update_workout_session_updated_at_trigger
   for each row execute function update_workout_session_updated_at();
 
 -- Table WorkoutExercise (référence à Exercise par exercise_id)
-create table WorkoutExercise (
+create table workoutexercise (
   id uuid default gen_random_uuid() primary key,
   session_id uuid references WorkoutSession(id) on delete cascade,
   exercise_id uuid references Exercise(id) on delete cascade,
@@ -55,7 +55,7 @@ create trigger update_workout_exercise_updated_at_trigger
   for each row execute function update_workout_exercise_updated_at();
 
 -- Table ExerciseSet (sets réalisés par l'utilisateur sur un exercice)
-create table ExerciseSet (
+create table exerciseset (
   id uuid default gen_random_uuid() primary key,
   exercise_id uuid references Exercise(id) on delete cascade,
   user_id uuid references auth.users(id) on delete cascade,

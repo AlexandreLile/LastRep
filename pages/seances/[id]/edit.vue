@@ -35,6 +35,58 @@
             </div>
           </div>
 
+          <!-- Section des exercices -->
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium">Exercices</h3>
+              <Button
+                type="button"
+                variant="outline"
+                @click="showAddExercise = true"
+              >
+                Ajouter des exercices
+              </Button>
+            </div>
+
+            <!-- Liste des exercices avec drag and drop -->
+            <div v-if="currentExercises.length > 0" class="space-y-2">
+              <draggable
+                v-model="currentExercises"
+                item-key="id"
+                @end="handleDragEnd"
+                class="space-y-2"
+                :animation="150"
+                ghost-class="ghost"
+              >
+                <template #item="{ element }">
+                  <div
+                    class="flex items-center justify-between p-3 border rounded-lg cursor-move bg-white dark:bg-gray-800"
+                  >
+                    <div class="flex items-center space-x-3">
+                      <GripVertical class="h-5 w-5 text-gray-400" />
+                      <div>
+                        <h4 class="font-medium">{{ element.Exercise?.name }}</h4>
+                        <p class="text-sm text-muted-foreground">
+                          Muscle principal : {{ element.Exercise?.primary_muscle }}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      @click.prevent.stop="removeExercise(element.id)"
+                    >
+                      <Trash2 class="h-4 w-4" />
+                    </Button>
+                  </div>
+                </template>
+              </draggable>
+            </div>
+            <div v-else class="text-center text-muted-foreground py-4">
+              Aucun exercice ajouté
+            </div>
+          </div>
+
           <div class="flex justify-end gap-4">
             <button
               type="button"
@@ -55,60 +107,128 @@
         </form>
       </div>
     </div>
+
+    <!-- Modal d'ajout d'exercices -->
+    <Dialog :open="showAddExercise" @update:open="showAddExercise = false">
+      <DialogContent class="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Ajouter des exercices</DialogTitle>
+        </DialogHeader>
+        <AddExerciseToSession
+          :session-id="route.params.id"
+          @close="showAddExercise = false"
+          @update-exercises="handleExercisesUpdate"
+        />
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useWorkoutSessions } from '~/composables/useWorkoutSession'
+import { ref, onMounted } from 'vue';
+import { useWorkoutSessions } from '~/composables/useWorkoutSession';
+import { useWorkoutExercise } from '~/composables/useWorkoutExercise';
+import { Trash2, GripVertical } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import AddExerciseToSession from '@/components/exercises/AddExerciseToSession.vue';
+import draggable from 'vuedraggable';
 
-const route = useRoute()
-const router = useRouter()
-const { getWorkoutSession, editWorkoutSession } = useWorkoutSessions(useSupabaseUser())
+const route = useRoute();
+const router = useRouter();
+const { getWorkoutSession, editWorkoutSession } = useWorkoutSessions(useSupabaseUser());
+const { 
+  workoutExercises: currentExercises,
+  getWorkoutExercises,
+  removeWorkoutExercise,
+  updateExerciseOrder
+} = useWorkoutExercise();
 
-const session = ref(null)
-const loading = ref(true)
-const saving = ref(false)
-const error = ref(null)
+const session = ref(null);
+const loading = ref(true);
+const saving = ref(false);
+const error = ref(null);
+const showAddExercise = ref(false);
 
 const formData = ref({
   title: '',
   notes: ''
-})
+});
 
 const loadSession = async () => {
   try {
-    loading.value = true
-    const { data, error: sessionError } = await getWorkoutSession(route.params.id)
-    if (sessionError) throw sessionError
-    session.value = data
+    loading.value = true;
+    const { data, error: sessionError } = await getWorkoutSession(route.params.id);
+    if (sessionError) throw sessionError;
+    session.value = data;
     formData.value = {
       title: data.title,
       notes: data.notes || ''
-    }
+    };
+    // Charger les exercices de la séance
+    await getWorkoutExercises(route.params.id);
   } catch (e) {
-    error.value = e.message
+    error.value = e.message;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const handleSubmit = async () => {
   try {
-    saving.value = true
-    const result = await editWorkoutSession(route.params.id, formData.value)
+    saving.value = true;
+    const result = await editWorkoutSession(route.params.id, formData.value);
     if (!result.success) {
-      throw new Error(result.error || 'Une erreur est survenue lors de l\'édition de la séance')
+      throw new Error(result.error || 'Une erreur est survenue lors de l\'édition de la séance');
     }
-    router.push(`/seances/${route.params.id}/train`)
+    // Rediriger vers la page d'entraînement après l'enregistrement
+    router.push(`/seances/${route.params.id}/train`);
   } catch (e) {
-    console.error('Erreur lors de l\'édition:', e)
-    error.value = e.message
+    console.error('Erreur lors de l\'édition:', e);
+    error.value = e.message;
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
-onMounted(loadSession)
+// Gérer la suppression d'un exercice
+const removeExercise = async (workoutExerciseId) => {
+  try {
+    const result = await removeWorkoutExercise(workoutExerciseId);
+    if (!result.success) {
+      console.error('Erreur lors de la suppression de l\'exercice:', result.error);
+      return;
+    }
+    // Mettre à jour la liste des exercices localement
+    currentExercises.value = currentExercises.value.filter(
+      exercise => exercise.id !== workoutExerciseId
+    );
+  } catch (e) {
+    console.error('Erreur lors de la suppression de l\'exercice:', e);
+  }
+};
+
+// Gérer le drag and drop
+const handleDragEnd = async () => {
+  try {
+    // Mettre à jour l'ordre de chaque exercice
+    for (let i = 0; i < currentExercises.value.length; i++) {
+      const exercise = currentExercises.value[i];
+      const result = await updateExerciseOrder(exercise.id, i + 1);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+    }
+  } catch (e) {
+    console.error('Erreur lors de la mise à jour de l\'ordre:', e);
+    error.value = e.message;
+  }
+};
+
+// Gérer la mise à jour des exercices
+const handleExercisesUpdate = async (newExercises) => {
+  currentExercises.value = newExercises;
+};
+
+onMounted(loadSession);
 </script> 
