@@ -29,9 +29,9 @@
 <script setup>
 
 import { useWorkoutSessions } from '~/composables/useWorkoutSession';
+import { useRouter } from 'vue-router';
 
-
-
+const router = useRouter();
 const user = useSupabaseUser();
 const { createWorkoutSession, loading, error } = useWorkoutSessions(user);
 
@@ -53,6 +53,8 @@ const handleSubmit = async () => {
       };
       // Émettre un événement pour informer le parent
       emit('session-created', result.data);
+      // Rediriger vers la page de détails de la séance
+      router.push(`/seances/${result.data.id}`);
     } else {
       console.error('Erreur lors de la création de la séance:', result.error);
     }

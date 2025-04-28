@@ -15,25 +15,27 @@
 
     <div v-else class="grid gap-4">
       <Card v-for="session in workoutSessions" :key="session.id" class="hover:bg-muted/50 transition-colors">
-        <CardHeader>
-          <div class="flex items-center justify-between">
-            <CardTitle>{{ session.title }}</CardTitle>
-            <div class="flex gap-2">
-              <Button variant="ghost" size="icon" @click="editSession(session)">
-                <Pencil class="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" @click="deleteSession(session.id)">
-                <Trash2 class="h-4 w-4" />
-              </Button>
+        <div class="cursor-pointer" @click="navigateToSession(session.id)">
+          <CardHeader>
+            <div class="flex items-center justify-between">
+              <CardTitle>{{ session.title }}</CardTitle>
+              <div class="flex gap-2">
+                <Button variant="ghost" size="icon" @click.stop="editSession(session)">
+                  <Pencil class="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" @click.stop="deleteSession(session.id)">
+                  <Trash2 class="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          </div>
-          <CardDescription>
-            {{ new Date(session.date).toLocaleDateString('fr-FR') }}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p class="text-sm text-muted-foreground">{{ session.notes }}</p>
-        </CardContent>
+            <CardDescription>
+              {{ new Date(session.date).toLocaleDateString('fr-FR') }}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p class="text-sm text-muted-foreground">{{ session.notes }}</p>
+          </CardContent>
+        </div>
       </Card>
     </div>
   </div>
@@ -41,21 +43,28 @@
 
 <script setup>
 import { Pencil, Trash2 } from 'lucide-vue-next';
+import { useRouter } from 'vue-router';
 
-
+const router = useRouter();
 const user = useSupabaseUser();
 const { 
   workoutSessions, 
   loading, 
   error, 
-  getWorkoutSession, 
+  getWorkoutSessions, 
   deleteWorkoutSession 
 } = useWorkoutSessions(user);
 
 // Rafraîchir la liste au montage
 onMounted(() => {
-  getWorkoutSession();
+  getWorkoutSessions();
+  console.log('Workout sessions:', workoutSessions.value);
 });
+
+const navigateToSession = (sessionId) => {
+  console.log('Navigating to session:', sessionId);
+  router.push(`/seances/${sessionId}`);
+};
 
 // Gérer la suppression d'une séance
 const deleteSession = async (sessionId) => {

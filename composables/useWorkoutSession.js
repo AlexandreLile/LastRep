@@ -13,7 +13,35 @@ export function useWorkoutSessions(user) {
         return requiredFields.every(field => sessionData[field]);
     };
 
-    const getWorkoutSession = async () => {
+    const getWorkoutSession = async (sessionId) => {
+        if (!user?.value?.id) {
+            error.value = 'Utilisateur non connecté';
+            return { data: null, error: error.value };
+        }
+
+        loading.value = true;
+        error.value = null;
+
+        try {
+            const supabase = useSupabaseClient();
+            const { data, error: supabaseError } = await supabase
+                .from('workoutsession')
+                .select('*')
+                .eq('id', sessionId)
+                .single();
+
+            if (supabaseError) throw supabaseError;
+
+            return { data, error: null };
+        } catch (err) {
+            console.error('Erreur lors de la récupération de la séance:', err);
+            return { data: null, error: err.message };
+        } finally {
+            loading.value = false;
+        }
+    };
+
+    const getWorkoutSessions = async () => {
         if (!user?.value?.id) {
             error.value = 'Utilisateur non connecté';
             return;
@@ -153,7 +181,7 @@ export function useWorkoutSessions(user) {
     };
 
     onMounted(() => {
-        if (user?.value?.id) getWorkoutSession();
+        if (user?.value?.id) getWorkoutSessions();
     });
 
     return {
@@ -161,6 +189,7 @@ export function useWorkoutSessions(user) {
         loading,
         error,
         getWorkoutSession,
+        getWorkoutSessions,
         createWorkoutSession,
         editWorkoutSession,
         deleteWorkoutSession,

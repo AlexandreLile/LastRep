@@ -2,23 +2,20 @@
   <div>
     <h1>Seances</h1>
     <Dialog>
-        <DialogTrigger as-child>
-        <Button 
-            >Ajouter une séance</Button
-        >
-        </DialogTrigger>
-        <DialogContent>
+      <DialogTrigger as-child>
+        <Button>Ajouter une séance</Button>
+      </DialogTrigger>
+      <DialogContent>
         <DialogHeader>
-            <DialogDescription>
+          <DialogDescription>
             <SessionsAddWorkoutSession></SessionsAddWorkoutSession>
-            </DialogDescription>
+          </DialogDescription>
         </DialogHeader>
-        </DialogContent> 
+      </DialogContent> 
     </Dialog>
     <SessionsWorkoutSessionList />
   </div>
 </template>
 
 <script setup>
-</script>
-  
+</script> 

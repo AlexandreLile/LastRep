@@ -1,0 +1,160 @@
+<template>
+  <div class="container mx-auto px-4 py-8">
+    <div v-if="loading" class="flex justify-center items-center h-64">
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    </div>
+
+    <div v-else-if="error" class="text-red-500 text-center py-8">
+      {{ error }}
+    </div>
+
+    <div v-else-if="session" class="space-y-6">
+      <!-- En-tête de la séance -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div class="flex justify-between items-start">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ session.title }}</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-2">
+              {{ formatDate(session.date) }}
+            </p>
+          </div>
+          <div class="flex gap-4">
+            <button 
+              @click="editSession" 
+              class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Modifier
+            </button>
+            <button 
+              @click="deleteSession" 
+              class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+            >
+              Supprimer
+            </button>
+          </div>
+        </div>
+        
+        <div v-if="session.notes" class="mt-6">
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Notes</h2>
+          <p class="text-gray-600 dark:text-gray-300 whitespace-pre-line">{{ session.notes }}</p>
+        </div>
+      </div>
+
+      <!-- Liste des exercices -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Exercices</h2>
+          <button 
+            @click="addExercise" 
+            class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Ajouter un exercice
+          </button>
+        </div>
+
+        <div v-if="session.exercises && session.exercises.length > 0" class="space-y-4">
+          <div 
+            v-for="exercise in session.exercises" 
+            :key="exercise.id" 
+            class="border dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ exercise.name }}</h3>
+                <p class="text-gray-500 dark:text-gray-400 mt-1">{{ exercise.description }}</p>
+              </div>
+              <div class="flex gap-2">
+                <button 
+                  @click="editExercise(exercise)" 
+                  class="text-primary hover:text-primary/80"
+                >
+                  Modifier
+                </button>
+                <button 
+                  @click="deleteExercise(exercise)" 
+                  class="text-red-500 hover:text-red-600"
+                >
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
+          Aucun exercice pour cette séance
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useWorkoutSessions } from '~/composables/useWorkoutSession'
+
+const route = useRoute()
+const router = useRouter()
+const { getWorkoutSession, deleteWorkoutSession } = useWorkoutSessions(useSupabaseUser())
+
+const session = ref(null)
+const loading = ref(true)
+const error = ref(null)
+
+const formatDate = (date) => {
+  return new Date(date).toLocaleDateString('fr-FR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const loadSession = async () => {
+  try {
+    loading.value = true
+    const { data, error: sessionError } = await getWorkoutSession(route.params.id)
+    if (sessionError) throw sessionError
+    session.value = data
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+}
+
+const editSession = () => {
+  router.push(`/seances/${route.params.id}/edit`)
+}
+
+const deleteSession = async () => {
+  if (confirm('Êtes-vous sûr de vouloir supprimer cette séance ?')) {
+    try {
+      const { error: deleteError } = await deleteWorkoutSession(route.params.id)
+      if (deleteError) throw deleteError
+      router.push('/seances')
+    } catch (e) {
+      error.value = e.message
+    }
+  }
+}
+
+const addExercise = () => {
+  router.push(`/seances/${route.params.id}/exercices/new`)
+}
+
+const editExercise = (exercise) => {
+  router.push(`/seances/${route.params.id}/exercices/${exercise.id}/edit`)
+}
+
+const deleteExercise = async (exercise) => {
+  if (confirm('Êtes-vous sûr de vouloir supprimer cet exercice ?')) {
+    // TODO: Implémenter la suppression d'exercice
+    console.log('Supprimer exercice:', exercise.id)
+  }
+}
+
+onMounted(loadSession)
+</script>
