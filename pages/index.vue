@@ -11,31 +11,32 @@
         rapidement.
       </p>
       <Button @click="logout">Déconnexion</Button>
-    </div>
-
-    <!-- Section des statistiques -->
-    <div class="w-full flex justify-center items-center mt-8">
+      <div class="w-full flex justify-center items-center mt-8">
       <div class="flex items-center justify-start w-full gap-8 flex-wrap">
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-4 bg-gray-100 p-4 rounded-lg">
           <div class="text-center">
             <p class="text-3xl font-bold text-primary">42</p>
-            <p class="text-sm text-muted-foreground">Total des séances effectuées</p>
+            <p class="text-sm text-muted-foreground">Séances effectuées</p>
           </div>
         </div>
 
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-4 bg-gray-100 p-4 rounded-lg">
           <div class="text-center">
             <p class="text-3xl font-bold text-primary">12.5T</p>
             <p class="text-sm text-muted-foreground">Poids total soulevé</p>
           </div>
         </div>
 
-        <div class="text-center">
+        <div class="text-center bg-gray-100 p-4 rounded-lg">
           <p class="text-3xl font-bold text-primary">36h</p>
           <p class="text-sm text-muted-foreground">Temps d'entraînement</p>
         </div>
       </div>
     </div>
+    </div>
+
+    <!-- Section des statistiques -->
+   
   </div>
 
 <StatsSessionRepartition></StatsSessionRepartition>

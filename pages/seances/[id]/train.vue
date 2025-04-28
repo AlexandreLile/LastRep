@@ -44,39 +44,19 @@
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Exercices</h2>
-          <button 
-            @click="addExercise" 
-            class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            Ajouter un exercice
-          </button>
         </div>
 
-        <div v-if="session.exercises && session.exercises.length > 0" class="space-y-4">
+        <div v-if="exercises.length > 0" class="space-y-4">
           <div 
-            v-for="exercise in session.exercises" 
+            v-for="exercise in exercises" 
             :key="exercise.id" 
             class="border dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
           >
-            <div class="flex justify-between items-start">
-              <div>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ exercise.name }}</h3>
-                <p class="text-gray-500 dark:text-gray-400 mt-1">{{ exercise.description }}</p>
-              </div>
-              <div class="flex gap-2">
-                <button 
-                  @click="editExercise(exercise)" 
-                  class="text-primary hover:text-primary/80"
-                >
-                  Modifier
-                </button>
-                <button 
-                  @click="deleteExercise(exercise)" 
-                  class="text-red-500 hover:text-red-600"
-                >
-                  Supprimer
-                </button>
-              </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ exercise.Exercise?.name }}</h3>
+              <p class="text-gray-500 dark:text-gray-400 mt-1">
+                Muscle principal : {{ exercise.Exercise?.primary_muscle }}
+              </p>
             </div>
           </div>
         </div>
@@ -93,10 +73,12 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useWorkoutSessions } from '~/composables/useWorkoutSession'
+import { useWorkoutExercise } from '~/composables/useWorkoutExercise'
 
 const route = useRoute()
 const router = useRouter()
 const { getWorkoutSession, deleteWorkoutSession } = useWorkoutSessions(useSupabaseUser())
+const { workoutExercises: exercises, getWorkoutExercises } = useWorkoutExercise()
 
 const session = ref(null)
 const loading = ref(true)
@@ -118,6 +100,8 @@ const loadSession = async () => {
     const { data, error: sessionError } = await getWorkoutSession(route.params.id)
     if (sessionError) throw sessionError
     session.value = data
+    // Charger les exercices de la séance
+    await getWorkoutExercises(route.params.id)
   } catch (e) {
     error.value = e.message
   } finally {
@@ -138,21 +122,6 @@ const deleteSession = async () => {
     } catch (e) {
       error.value = e.message
     }
-  }
-}
-
-const addExercise = () => {
-  router.push(`/seances/${route.params.id}/exercices/new`)
-}
-
-const editExercise = (exercise) => {
-  router.push(`/seances/${route.params.id}/exercices/${exercise.id}/edit`)
-}
-
-const deleteExercise = async (exercise) => {
-  if (confirm('Êtes-vous sûr de vouloir supprimer cet exercice ?')) {
-    // TODO: Implémenter la suppression d'exercice
-    console.log('Supprimer exercice:', exercise.id)
   }
 }
 
