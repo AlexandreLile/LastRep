@@ -14,8 +14,8 @@
         <form @submit.prevent="handleSubmit" class="space-y-6">
           <div class="space-y-4">
             <div>
-              <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Titre</label>
-              <input
+              <Label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Titre</label>
+              <Input
                 id="title"
                 v-model="formData.title"
                 type="text"
@@ -25,8 +25,8 @@
             </div>
 
             <div>
-              <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
-              <textarea
+              <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Note</label>
+              <Textarea
                 id="notes"
                 v-model="formData.notes"
                 rows="4"
