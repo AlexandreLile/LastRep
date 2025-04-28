@@ -14,7 +14,7 @@
     </div>
 
     <div v-else class="grid gap-4">
-      <Card v-for="session in workoutSessions" :key="session.id" class="hover:bg-muted/50 transition-colors">
+      <Card v-for="session in sortedSessions" :key="session.id" class="hover:bg-muted/50 transition-colors">
         <div class="cursor-pointer" @click="navigateToSession(session.id)">
           <CardHeader>
             <div class="flex items-center justify-between">
@@ -22,9 +22,6 @@
               <div class="flex gap-2">
                 <Button variant="ghost" size="icon" @click.stop="editSession(session)">
                   <Pencil class="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" @click.stop="deleteSession(session.id)">
-                  <Trash2 class="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -42,8 +39,9 @@
 </template>
 
 <script setup>
-import { Pencil, Trash2 } from 'lucide-vue-next';
+import { Pencil } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
+import { computed, onMounted } from 'vue';
 
 const router = useRouter();
 const user = useSupabaseUser();
@@ -51,9 +49,15 @@ const {
   workoutSessions, 
   loading, 
   error, 
-  getWorkoutSessions, 
-  deleteWorkoutSession 
+  getWorkoutSessions
 } = useWorkoutSessions(user);
+
+// Séances triées par date de modification (plus récentes en premier)
+const sortedSessions = computed(() => {
+  return [...workoutSessions.value].sort((a, b) => {
+    return new Date(b.updated_at) - new Date(a.updated_at);
+  });
+});
 
 // Rafraîchir la liste au montage
 onMounted(() => {
@@ -63,24 +67,11 @@ onMounted(() => {
 
 const navigateToSession = (sessionId) => {
   console.log('Navigating to session:', sessionId);
-  router.push(`/seances/${sessionId}`);
+  router.push(`/seances/${sessionId}/train`);
 };
 
-// Gérer la suppression d'une séance
-const deleteSession = async (sessionId) => {
-  if (confirm('Êtes-vous sûr de vouloir supprimer cette séance ?')) {
-    const result = await deleteWorkoutSession(sessionId);
-    if (result.success) {
-      // La liste se met à jour automatiquement grâce à la réactivité
-    } else {
-      console.error('Erreur lors de la suppression:', result.error);
-    }
-  }
-};
-
-// Gérer l'édition d'une séance (à implémenter)
+// Gérer l'édition d'une séance
 const editSession = (session) => {
-  // TODO: Implémenter l'édition
-  console.log('Édition de la séance:', session);
+  router.push(`/seances/${session.id}/edit`);
 };
 </script>

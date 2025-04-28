@@ -54,7 +54,7 @@ const handleSubmit = async () => {
       // Émettre un événement pour informer le parent
       emit('session-created', result.data);
       // Rediriger vers la page de détails de la séance
-      router.push(`/seances/${result.data.id}`);
+      router.push(`/seances/${result.data.id}/train`);
     } else {
       console.error('Erreur lors de la création de la séance:', result.error);
     }

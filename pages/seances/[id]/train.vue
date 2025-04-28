@@ -157,4 +157,4 @@ const deleteExercise = async (exercise) => {
 }
 
 onMounted(loadSession)
-</script>
+</script> 
