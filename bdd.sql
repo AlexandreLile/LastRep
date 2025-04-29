@@ -73,7 +73,7 @@ create index idx_exercise_set_user_exercise on ExerciseSet(exercise_id, user_id)
 -- Table PerformedSession (sessions réellement effectuées par les utilisateurs)
 create table PerformedSession (
   id uuid default gen_random_uuid() primary key,
-  workout_session_id uuid references WorkoutSession(id) on delete cascade,
+  workout_session_id uuid references WorkoutSession(id) on delete set null,
   user_id uuid references auth.users(id) on delete cascade,
   started_at timestamp not null default now(),
   ended_at timestamp,

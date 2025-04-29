@@ -21,9 +21,15 @@
           <div class="flex gap-4">
             <button 
               @click="startSession" 
-              class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+              :disabled="exercises.length === 0"
+              :class="[
+                exercises.length === 0 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-green-500 hover:bg-green-600',
+                'text-white px-4 py-2 rounded-lg transition-colors'
+              ]"
             >
-              Démarrer la séance
+              {{ exercises.length === 0 ? 'Ajoutez des exercices pour démarrer' : 'Démarrer la séance' }}
             </button>
             <button 
               @click="editSession" 
@@ -127,8 +133,18 @@ const editSession = () => {
 const deleteSession = async () => {
   if (confirm('Êtes-vous sûr de vouloir supprimer cette séance ?')) {
     try {
+      // D'abord, mettre à jour toutes les performedsession associées pour retirer la référence
+      const { error: updateError } = await supabase
+        .from('performedsession')
+        .update({ workout_session_id: null })
+        .eq('workout_session_id', route.params.id)
+
+      if (updateError) throw updateError
+
+      // Ensuite, supprimer la workout session
       const { error: deleteError } = await deleteWorkoutSession(route.params.id)
       if (deleteError) throw deleteError
+
       router.push('/seances')
     } catch (e) {
       error.value = e.message

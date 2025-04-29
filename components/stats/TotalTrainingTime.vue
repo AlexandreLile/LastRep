@@ -45,9 +45,10 @@ const loadTotalDuration = async () => {
       throw new Error('Utilisateur non authentifié')
     }
 
+    // Récupérer toutes les séances effectuées, même si la workout_session a été supprimée
     const { data, error: fetchError } = await supabase
       .from('performedsession')
-      .select('id, started_at, ended_at')
+      .select('id, started_at, ended_at, workout_session_id')
       .eq('user_id', user.id)
       .order('started_at', { ascending: true })
 
@@ -60,12 +61,18 @@ const loadTotalDuration = async () => {
 
     // Calculer la durée totale en minutes
     totalDuration.value = data.reduce((total, session) => {
+      // Vérifier si la session a des dates valides
       if (!session.started_at || !session.ended_at) return total
       
       const start = new Date(session.started_at)
       const end = new Date(session.ended_at)
+      
+      // Vérifier que les dates sont valides
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) return total
+      
       const duration = Math.round((end - start) / (1000 * 60)) // Convertir en minutes
       
+      // Ne prendre en compte que les durées positives
       return total + (duration > 0 ? duration : 0)
     }, 0)
 
