@@ -40,6 +40,7 @@
 definePageMeta({
   auth: false,
   middleware: false,
+  layout: false,
 });
 
 const supabase = useSupabaseClient();

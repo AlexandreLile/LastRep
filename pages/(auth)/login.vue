@@ -38,7 +38,7 @@
             </div>
 
             <Button type="submit" class="w-full">Se connecter</Button>
-            <Button variant="outline" class="w-full" @click="handleGoogleLogin">
+            <Button variant="outline" type="button" class="w-full" @click="handleGoogleLogin">
               Connexion avec Google
             </Button>
 

@@ -11,6 +11,8 @@
         rapidement.
       </p>
       <Button @click="logout">Déconnexion</Button>
+      
+      <!-- Statistiques -->
       <div class="w-full flex justify-center items-center mt-8">
         <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-4 w-full max-w-4xl">
           <SessionCount />
@@ -18,17 +20,20 @@
           <TotalTrainingTime />
         </div>
       </div>
+
+      <!-- Calendrier -->
+      <div class="w-full mt-8">
+        <TrainingCalendar />
+      </div>
     </div>
   </div>
-
-<StatsSessionRepartition></StatsSessionRepartition>
 </template>
 
 <script setup>
-
 import SessionCount from '~/components/stats/SessionCount.vue'
 import TotalWeightLifted from '~/components/stats/TotalWeightLifted.vue'
 import TotalTrainingTime from '~/components/stats/TotalTrainingTime.vue'
+import TrainingCalendar from '~/components/calendar/TrainingCalendar.vue'
 
 const supabase = useSupabaseClient();
 const router = useRouter();
