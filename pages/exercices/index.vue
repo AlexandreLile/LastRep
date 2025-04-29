@@ -23,7 +23,8 @@
           <div 
             v-for="stat in exerciseStats" 
             :key="stat.exercise_id" 
-            class="border dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+            class="border dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+            @click="navigateTo(`/exercices/${stat.exercise_id}`)"
           >
             <div class="flex justify-between items-start">
               <div>
@@ -47,7 +48,6 @@
 </template>
 
 <script setup>
-
 import { useExerciseStats } from '~/composables/useExerciseStats'
 
 const { exerciseStats, error, loading, getExerciseStats } = useExerciseStats()
@@ -61,5 +61,4 @@ const loadStats = async () => {
 }
 
 onMounted(loadStats)
-</script>
-
+</script> 
