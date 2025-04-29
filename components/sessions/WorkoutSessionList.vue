@@ -13,7 +13,7 @@
       Aucune séance trouvée
     </div>
 
-    <div v-else class="grid gap-4">
+    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 ">
       <Card v-for="session in sortedSessions" :key="session.id" class="hover:bg-muted/50 transition-colors">
         <div class="cursor-pointer" @click="navigateToSession(session.id)">
           <CardHeader>
@@ -25,12 +25,17 @@
                 </Button>
               </div>
             </div>
-            <CardDescription>
-              {{ new Date(session.date).toLocaleDateString('fr-FR') }}
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            <p class="text-sm text-muted-foreground">{{ session.notes }}</p>
+            <p class="text-md mb-4">{{ session.notes }}</p>
+            <div class="space-y-2">
+              
+              <ul class="list-disc list-inside text-md">
+                <li v-for="exercise in session.exercises" :key="exercise.id" class="text-muted-foreground">
+                  {{ exercise.exercise.name }}
+                </li>
+              </ul>
+            </div>
           </CardContent>
         </div>
       </Card>
@@ -60,8 +65,8 @@ const sortedSessions = computed(() => {
 });
 
 // Rafraîchir la liste au montage
-onMounted(() => {
-  getWorkoutSessions();
+onMounted(async () => {
+  await getWorkoutSessions();
   console.log('Workout sessions:', workoutSessions.value);
 });
 

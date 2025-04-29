@@ -90,7 +90,7 @@
           <div class="flex justify-end gap-4">
             <button
               type="button"
-              @click="router.push(`/seances/${route.params.id}`)"
+              @click="router.push('/seances')"
               class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             >
               Annuler

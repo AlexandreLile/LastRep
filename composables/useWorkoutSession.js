@@ -54,7 +54,17 @@ export function useWorkoutSessions(user) {
             const supabase = useSupabaseClient();
             const { data, error: supabaseError } = await supabase
                 .from('workoutsession')
-                .select('*')
+                .select(`
+                    *,
+                    exercises:workoutexercise (
+                        id,
+                        exercise:exercise_id (
+                            id,
+                            name,
+                            primary_muscle
+                        )
+                    )
+                `)
                 .eq('user_id', user.value.id)
                 .order('date', { ascending: false });
 
