@@ -21,6 +21,11 @@
         </div>
       </div>
 
+      <!-- Objectifs du mois -->
+      <div class="w-full mt-8">
+        <MonthlyGoals />
+      </div>
+
       <!-- Calendrier -->
       <div class="w-full mt-8">
         <TrainingCalendar />
@@ -30,20 +35,25 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
+import { useSupabaseClient } from '#imports'
+import { useRouter } from 'vue-router'
 import SessionCount from '~/components/stats/SessionCount.vue'
 import TotalWeightLifted from '~/components/stats/TotalWeightLifted.vue'
 import TotalTrainingTime from '~/components/stats/TotalTrainingTime.vue'
 import TrainingCalendar from '~/components/calendar/TrainingCalendar.vue'
+import MonthlyGoals from '~/components/goals/MonthlyGoals.vue'
+import { Button } from '@/components/ui/button'
 
-const supabase = useSupabaseClient();
-const router = useRouter();
+const supabase = useSupabaseClient()
+const router = useRouter()
 
 const logout = async () => {
   try {
-    await supabase.auth.signOut();
-    router.push("/login");
+    await supabase.auth.signOut()
+    router.push('/login')
   } catch (error) {
-    console.error("Erreur lors de la déconnexion:", error);
+    console.error('Erreur lors de la déconnexion:', error)
   }
-};
+}
 </script>

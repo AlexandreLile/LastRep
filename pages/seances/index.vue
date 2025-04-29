@@ -21,30 +21,6 @@
             </DialogHeader>
           </DialogContent> 
         </Dialog>
-        <div class="w-full flex justify-center items-center mt-8">
-          <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-4 w-full">
-            <div class="flex items-center justify-center bg-gray-100 p-4 rounded-lg">
-              <div class="text-center">
-                <p class="text-2xl font-bold text-primary">42</p>
-                <p class="text-sm text-muted-foreground">Séances effectuées</p>
-              </div>
-            </div>
-
-            <div class="flex items-center justify-center bg-gray-100 p-4 rounded-lg">
-              <div class="text-center">
-                <p class="text-2xl font-bold text-primary">12.5T</p>
-                <p class="text-sm text-muted-foreground">Poids total soulevé</p>
-              </div>
-            </div>
-
-            <div class="flex items-center justify-center bg-gray-100 p-4 rounded-lg">
-              <div class="text-center">
-                <p class="text-2xl font-bold text-primary">36h</p>
-                <p class="text-sm text-muted-foreground">Temps d'entraînement</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
     <div class="relative w-full rounded-2xl p-6">
