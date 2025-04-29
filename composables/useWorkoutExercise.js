@@ -1,9 +1,9 @@
 import { ref } from 'vue';
 
-export function useWorkoutExercise() {
+export const useWorkoutExercise = () => {
   const workoutExercises = ref([]);
-  const loading = ref(false);
   const error = ref(null);
+  const loading = ref(false);
 
   // Récupérer tous les exercices d'une séance
   const getWorkoutExercises = async (sessionId) => {
@@ -14,11 +14,8 @@ export function useWorkoutExercise() {
       const { data, error: fetchError } = await useSupabaseClient()
         .from('workoutexercise')
         .select(`
-          id,
-          session_id,
-          exercise_id,
-          "order",
-          Exercise:exercise_id (
+          *,
+          exercise:exercise_id (
             id,
             name,
             primary_muscle
@@ -30,10 +27,10 @@ export function useWorkoutExercise() {
       if (fetchError) throw fetchError;
 
       workoutExercises.value = data;
-      return { success: true, data };
-    } catch (err) {
-      error.value = err.message;
-      return { success: false, error: err.message };
+      return { data, error: null };
+    } catch (e) {
+      error.value = e.message;
+      return { data: null, error: e };
     } finally {
       loading.value = false;
     }
@@ -119,35 +116,39 @@ export function useWorkoutExercise() {
 
   const getWorkoutExercise = async (exerciseId) => {
     try {
+      loading.value = true;
       const { data, error: fetchError } = await useSupabaseClient()
         .from('workoutexercise')
         .select(`
           *,
-          Exercise (
+          exercise:exercise_id (
+            id,
             name,
-            primary_muscle,
-            description
+            primary_muscle
           )
         `)
         .eq('id', exerciseId)
-        .single()
+        .single();
 
-      if (fetchError) throw fetchError
-      return { data, error: null }
+      if (fetchError) throw fetchError;
+      return { data, error: null };
     } catch (e) {
-      console.error('Error fetching exercise:', e)
-      return { data: null, error: e }
+      console.error('Error fetching exercise:', e);
+      error.value = e.message;
+      return { data: null, error: e };
+    } finally {
+      loading.value = false;
     }
-  }
+  };
 
   return {
     workoutExercises,
-    loading,
     error,
+    loading,
     getWorkoutExercises,
     addExerciseToSession,
     removeWorkoutExercise,
     updateExerciseOrder,
     getWorkoutExercise
   };
-} 
+}; 

@@ -65,9 +65,9 @@
                     <div class="flex items-center space-x-3">
                       <GripVertical class="h-5 w-5 text-gray-400" />
                       <div>
-                        <h4 class="font-medium">{{ element.Exercise?.name }}</h4>
+                        <h4 class="font-medium">{{ element.exercise?.name }}</h4>
                         <p class="text-sm text-muted-foreground">
-                          Muscle principal : {{ element.Exercise?.primary_muscle }}
+                          Muscle principal : {{ element.exercise?.primary_muscle }}
                         </p>
                       </div>
                     </div>

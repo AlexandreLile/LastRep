@@ -43,9 +43,9 @@
             @click="goToExercise(exercise.id)"
           >
             <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ exercise.Exercise?.name }}</h3>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ exercise.exercise?.name }}</h3>
               <p class="text-gray-500 dark:text-gray-400 mt-1">
-                Muscle principal : {{ exercise.Exercise?.primary_muscle }}
+                Muscle principal : {{ exercise.exercise?.primary_muscle }}
               </p>
             </div>
           </div>
