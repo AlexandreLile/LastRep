@@ -74,25 +74,114 @@
             :key="set.id"
             class="border dark:border-gray-700 rounded-lg p-4"
           >
-            <div class="grid grid-cols-3 gap-4">
-              <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Poids</p>
-                <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ set.weight_kg }} kg</p>
+            <div class="flex justify-between items-start">
+              <div class="grid grid-cols-3 gap-4 flex-1">
+                <div>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Poids</p>
+                  <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ set.weight_kg }} kg</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Répétitions</p>
+                  <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ set.reps }}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Date</p>
+                  <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ formatDate(set.created_at) }}</p>
+                </div>
               </div>
-              <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Répétitions</p>
-                <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ set.reps }}</p>
-              </div>
-              <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Date</p>
-                <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ formatDate(set.created_at) }}</p>
-              </div>
+              <button 
+                @click="openEditModal(set)"
+                class="p-2 text-gray-500 hover:text-primary transition-colors"
+              >
+                <Pencil class="h-5 w-5" />
+              </button>
+            </div>
+            <div v-if="set.note" class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+              {{ set.note }}
             </div>
           </div>
         </div>
         <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
           Aucune série enregistrée pour cet exercice
         </div>
+      </div>
+    </div>
+
+    <!-- Modal d'édition -->
+    <div v-if="editingSet" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Modifier la série</h3>
+          <button @click="closeEditModal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+            <X class="h-5 w-5" />
+          </button>
+        </div>
+        
+        <form @submit.prevent="handleEditSet" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Poids (kg)</label>
+              <input 
+                v-model="editForm.weight_kg" 
+                type="number" 
+                step="0.5" 
+                class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                required
+              >
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Répétitions</label>
+              <input 
+                v-model="editForm.reps" 
+                type="number" 
+                class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                required
+              >
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Temps de repos (s)</label>
+              <input 
+                v-model="editForm.rest_seconds" 
+                type="number" 
+                class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                required
+              >
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">RPE (1-10)</label>
+              <input 
+                v-model="editForm.rpe" 
+                type="number" 
+                min="1" 
+                max="10" 
+                class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+              >
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Note</label>
+            <textarea 
+              v-model="editForm.note" 
+              class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+              rows="2"
+            ></textarea>
+          </div>
+          <div class="flex justify-end space-x-2">
+            <button 
+              type="button" 
+              @click="closeEditModal"
+              class="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
+              Annuler
+            </button>
+            <button 
+              type="submit" 
+              class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Enregistrer
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -104,6 +193,7 @@ import { useSupabaseClient } from '#imports'
 import WeightRepsChart from '~/components/charts/WeightRepsChart.vue'
 import WeightProgressionChart from '~/components/charts/WeightProgressionChart.vue'
 import RMCalculator from '~/components/charts/RMCalculator.vue'
+import { Pencil, X } from 'lucide-vue-next'
 
 const route = useRoute()
 const supabase = useSupabaseClient()
@@ -118,6 +208,14 @@ const stats = ref({
 })
 const loading = ref(true)
 const error = ref(null)
+const editingSet = ref(null)
+const editForm = ref({
+  weight_kg: '',
+  reps: '',
+  rest_seconds: '',
+  rpe: '',
+  note: ''
+})
 
 const loadExerciseData = async () => {
   try {
@@ -145,6 +243,9 @@ const loadExerciseData = async () => {
         id,
         weight_kg,
         reps,
+        rest_seconds,
+        rpe,
+        note,
         created_at
       `)
       .eq('exercise_id', route.params.id)
@@ -176,6 +277,51 @@ const formatDate = (dateString) => {
     month: 'long',
     year: 'numeric'
   })
+}
+
+const openEditModal = (set) => {
+  editingSet.value = set
+  editForm.value = {
+    weight_kg: set.weight_kg,
+    reps: set.reps,
+    rest_seconds: set.rest_seconds,
+    rpe: set.rpe,
+    note: set.note
+  }
+}
+
+const closeEditModal = () => {
+  editingSet.value = null
+  editForm.value = {
+    weight_kg: '',
+    reps: '',
+    rest_seconds: '',
+    rpe: '',
+    note: ''
+  }
+}
+
+const handleEditSet = async () => {
+  try {
+    const { error: updateError } = await supabase
+      .from('exerciseset')
+      .update({
+        weight_kg: editForm.value.weight_kg,
+        reps: editForm.value.reps,
+        rest_seconds: editForm.value.rest_seconds,
+        rpe: editForm.value.rpe,
+        note: editForm.value.note
+      })
+      .eq('id', editingSet.value.id)
+
+    if (updateError) throw updateError
+
+    // Recharger les données
+    await loadExerciseData()
+    closeEditModal()
+  } catch (e) {
+    error.value = e.message
+  }
 }
 
 onMounted(loadExerciseData)
