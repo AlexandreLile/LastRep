@@ -54,6 +54,16 @@
         </div>
       </div>
 
+      <!-- Graphiques -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <WeightRepsChart :exercise-id="route.params.id" />
+        <WeightProgressionChart :exercise-id="route.params.id" />
+      </div>
+
+      <div class="mt-6">
+        <RMCalculator :exercise-id="route.params.id" />
+      </div>
+
       <!-- Historique des séries -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
         <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Historique des séries</h2>
@@ -91,6 +101,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useSupabaseClient } from '#imports'
+import WeightRepsChart from '~/components/charts/WeightRepsChart.vue'
+import WeightProgressionChart from '~/components/charts/WeightProgressionChart.vue'
+import RMCalculator from '~/components/charts/RMCalculator.vue'
 
 const route = useRoute()
 const supabase = useSupabaseClient()
