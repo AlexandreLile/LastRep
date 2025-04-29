@@ -96,6 +96,13 @@
               Annuler
             </button>
             <button
+              type="button"
+              @click="deleteSession"
+              class="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-md shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              Supprimer
+            </button>
+            <button
               type="submit"
               :disabled="saving"
               class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
@@ -125,18 +132,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
 import { useWorkoutSessions } from '~/composables/useWorkoutSession';
 import { useWorkoutExercise } from '~/composables/useWorkoutExercise';
 import { Trash2, GripVertical } from 'lucide-vue-next';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AddExerciseToSession from '@/components/exercises/AddExerciseToSession.vue';
 import draggable from 'vuedraggable';
+import { useSupabaseClient } from '#imports';
+import { useSupabaseUser } from '#imports';
+import { useRoute, useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue';
 
 const route = useRoute();
 const router = useRouter();
-const { getWorkoutSession, editWorkoutSession } = useWorkoutSessions(useSupabaseUser());
+const supabase = useSupabaseClient();
+const { getWorkoutSession, editWorkoutSession, deleteWorkoutSession } = useWorkoutSessions(useSupabaseUser());
 const { 
   workoutExercises: currentExercises,
   getWorkoutExercises,
@@ -228,6 +237,29 @@ const handleDragEnd = async () => {
 // Gérer la mise à jour des exercices
 const handleExercisesUpdate = async (newExercises) => {
   currentExercises.value = newExercises;
+};
+
+const deleteSession = async () => {
+  if (confirm('Êtes-vous sûr de vouloir supprimer cette séance ?')) {
+    try {
+      // D'abord, mettre à jour toutes les performedsession associées pour retirer la référence
+      const { error: updateError } = await supabase
+        .from('performedsession')
+        .update({ workout_session_id: null })
+        .eq('workout_session_id', route.params.id)
+
+      if (updateError) throw updateError
+
+      // Ensuite, supprimer la workout session
+      const { error: deleteError } = await deleteWorkoutSession(route.params.id)
+      if (deleteError) throw deleteError
+
+      router.push('/seances')
+    } catch (e) {
+      console.error('Erreur lors de la suppression de la séance:', e);
+      error.value = e.message;
+    }
+  }
 };
 
 onMounted(loadSession);
