@@ -19,12 +19,12 @@
             </p>
           </div>
           <div class="flex gap-4">
-            <button 
+            <Button 
               @click="handleEndSession" 
               class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
             >
               Terminer la séance
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -96,7 +96,7 @@ const handleEndSession = async () => {
 }
 
 const goToExercise = (exerciseId) => {
-  router.push(`/seances/${route.params.id}/start/${exerciseId}`)
+  navigateTo(`/seances/${route.params.id}/exercises/${exerciseId}`)
 }
 
 const loadSession = async () => {

@@ -117,6 +117,29 @@ export function useWorkoutExercise() {
     }
   };
 
+  const getWorkoutExercise = async (exerciseId) => {
+    try {
+      const { data, error: fetchError } = await useSupabaseClient()
+        .from('workoutexercise')
+        .select(`
+          *,
+          Exercise (
+            name,
+            primary_muscle,
+            description
+          )
+        `)
+        .eq('id', exerciseId)
+        .single()
+
+      if (fetchError) throw fetchError
+      return { data, error: null }
+    } catch (e) {
+      console.error('Error fetching exercise:', e)
+      return { data: null, error: e }
+    }
+  }
+
   return {
     workoutExercises,
     loading,
@@ -124,6 +147,7 @@ export function useWorkoutExercise() {
     getWorkoutExercises,
     addExerciseToSession,
     removeWorkoutExercise,
-    updateExerciseOrder
+    updateExerciseOrder,
+    getWorkoutExercise
   };
 } 
