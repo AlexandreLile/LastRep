@@ -96,9 +96,9 @@
           <div 
             v-for="set in exerciseSets" 
             :key="set.id" 
-            class="border dark:border-gray-700 rounded-lg p-4"
+            class="border dark:border-gray-700 rounded-lg p-4 flex justify-between items-start"
           >
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
               <div>
                 <span class="text-sm text-gray-500 dark:text-gray-400">Poids</span>
                 <p class="font-medium">{{ set.weight_kg }} kg</p>
@@ -116,7 +116,15 @@
                 <p class="font-medium">{{ set.rpe || '-' }}</p>
               </div>
             </div>
-            <p v-if="set.note" class="mt-2 text-sm text-gray-600 dark:text-gray-300">{{ set.note }}</p>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              @click="deleteSet(set.id)"
+              class="text-red-500 hover:text-red-600"
+            >
+              <Trash2 class="h-4 w-4" />
+            </Button>
+            <p v-if="set.note" class="mt-2 text-sm text-gray-600 dark:text-gray-300 col-span-full">{{ set.note }}</p>
           </div>
         </div>
         <p v-else class="text-center text-gray-500 dark:text-gray-400 py-4">
@@ -135,6 +143,7 @@ import { usePerformedSession } from '~/composables/usePerformedSession'
 import { useExerciseSet } from '~/composables/useExerciseSet'
 import { useSupabaseClient } from '#imports'
 import { useSupabaseUser } from '#imports'
+import { Trash2 } from 'lucide-vue-next'
 
 const route = useRoute()
 const supabase = useSupabaseClient()
@@ -203,6 +212,22 @@ const loadExercise = async () => {
     error.value = e.message
   } finally {
     loading.value = false
+  }
+}
+
+const deleteSet = async (setId) => {
+  try {
+    const { error: deleteError } = await supabase
+      .from('exerciseset')
+      .delete()
+      .eq('id', setId)
+
+    if (deleteError) throw deleteError
+
+    // Recharger les séries après la suppression
+    await loadExerciseSets()
+  } catch (e) {
+    error.value = e.message
   }
 }
 

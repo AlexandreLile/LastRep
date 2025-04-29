@@ -23,15 +23,15 @@ const loading = ref(true)
 const error = ref(null)
 
 const formatDuration = (minutes) => {
-  if (!minutes) return '0min'
+  if (!minutes) return '0 min'
   
   const hours = Math.floor(minutes / 60)
   const remainingMinutes = minutes % 60
   
   if (hours > 0) {
-    return `${hours}h${remainingMinutes > 0 ? ` ${remainingMinutes}min` : ''}`
+    return `${hours}h${remainingMinutes > 0 ? ` ${remainingMinutes} min` : ''}`
   }
-  return `${minutes}min`
+  return `${minutes} min`
 }
 
 const loadTotalDuration = async () => {

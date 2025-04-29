@@ -95,13 +95,12 @@
             >
               Annuler
             </button>
-            <button
-              type="button"
-              @click="deleteSession"
-              class="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-md shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            >
-              Supprimer
-            </button>
+
+
+
+   
+
+            
             <button
               type="submit"
               :disabled="saving"
@@ -110,6 +109,30 @@
               <span v-if="saving">Enregistrement...</span>
               <span v-else>Enregistrer</span>
             </button>
+
+            <AlertDialog>
+    <AlertDialogTrigger as-child>
+      <Button variant="destructive">
+        Supprimer
+      </Button>
+    </AlertDialogTrigger>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Etes vous sûr de vouloir supprimer cette séance ?</AlertDialogTitle>
+        <AlertDialogDescription>
+          Cette action est irréversible.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Annuler</AlertDialogCancel>
+        <AlertDialogAction class="bg-red-500 text-white hover:bg-red-600" @click="deleteSession"  variant="destructive">supprimer</AlertDialogAction>
+             
+   
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+
+
           </div>
         </form>
       </div>
@@ -129,6 +152,7 @@
       </DialogContent>
     </Dialog>
   </div>
+
 </template>
 
 <script setup>
@@ -240,7 +264,7 @@ const handleExercisesUpdate = async (newExercises) => {
 };
 
 const deleteSession = async () => {
-  if (confirm('Êtes-vous sûr de vouloir supprimer cette séance ?')) {
+  
     try {
       // D'abord, mettre à jour toutes les performedsession associées pour retirer la référence
       const { error: updateError } = await supabase
@@ -259,7 +283,7 @@ const deleteSession = async () => {
       console.error('Erreur lors de la suppression de la séance:', e);
       error.value = e.message;
     }
-  }
+  
 };
 
 onMounted(loadSession);
