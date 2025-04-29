@@ -20,6 +20,12 @@
           </div>
           <div class="flex gap-4">
             <button 
+              @click="startSession" 
+              class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+            >
+              Démarrer la séance
+            </button>
+            <button 
               @click="editSession" 
               class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
             >
@@ -74,11 +80,16 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useWorkoutSessions } from '~/composables/useWorkoutSession'
 import { useWorkoutExercise } from '~/composables/useWorkoutExercise'
+import { usePerformedSession } from '~/composables/usePerformedSession'
+import { useSupabaseClient } from '#imports'
+import { useSupabaseUser } from '#imports'
 
 const route = useRoute()
 const router = useRouter()
+const supabase = useSupabaseClient()
 const { getWorkoutSession, deleteWorkoutSession } = useWorkoutSessions(useSupabaseUser())
 const { workoutExercises: exercises, getWorkoutExercises } = useWorkoutExercise()
+const { prepareSession, error: performedSessionError } = usePerformedSession(supabase)
 
 const session = ref(null)
 const loading = ref(true)
@@ -122,6 +133,16 @@ const deleteSession = async () => {
     } catch (e) {
       error.value = e.message
     }
+  }
+}
+
+const startSession = async () => {
+  try {
+    const userId = (await supabase.auth.getUser()).data.user.id
+    prepareSession(route.params.id, userId)
+    router.push(`/seances/${route.params.id}/start`)
+  } catch (e) {
+    error.value = e.message || performedSessionError.value
   }
 }
 

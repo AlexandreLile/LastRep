@@ -14,13 +14,13 @@
         <div class="flex justify-between items-start">
           <div>
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ session.title }}</h1>
-            <p v-if="performedSession" class="text-gray-500 dark:text-gray-400 mt-2">
-              Début : {{ formatDate(performedSession.started_at) }}
+            <p v-if="currentSession" class="text-gray-500 dark:text-gray-400 mt-2">
+              Début : {{ formatDate(currentSession.started_at) }}
             </p>
           </div>
           <div class="flex gap-4">
             <button 
-              @click="endSession" 
+              @click="handleEndSession" 
               class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
             >
               Terminer la séance
@@ -60,20 +60,19 @@
 </template>
 
 <script setup>
-
-
 import { useWorkoutSessions } from '~/composables/useWorkoutSession'
 import { useWorkoutExercise } from '~/composables/useWorkoutExercise'
-
+import { usePerformedSession } from '~/composables/usePerformedSession'
 
 const route = useRoute()
 const router = useRouter()
 const supabase = useSupabaseClient()
 const { getWorkoutSession } = useWorkoutSessions(useSupabaseUser())
 const { workoutExercises: exercises, getWorkoutExercises } = useWorkoutExercise()
+const { performedSession, error: performedSessionError, saveSession, getCurrentSession } = usePerformedSession(supabase)
 
 const session = ref(null)
-const performedSession = ref(null)
+const currentSession = ref(null)
 const loading = ref(true)
 const error = ref(null)
 
@@ -87,38 +86,12 @@ const formatDate = (date) => {
   })
 }
 
-const startPerformedSession = async () => {
+const handleEndSession = async () => {
   try {
-    const { data, error: startError } = await supabase
-      .from('performedsession')
-      .insert([
-        {
-          workout_session_id: route.params.id,
-          user_id: (await supabase.auth.getUser()).data.user.id,
-          started_at: new Date()
-        }
-      ])
-      .select()
-      .single()
-
-    if (startError) throw startError
-    performedSession.value = data
-  } catch (e) {
-    error.value = e.message
-  }
-}
-
-const endSession = async () => {
-  try {
-    const { error: updateError } = await supabase
-      .from('performedsession')
-      .update({ ended_at: new Date() })
-      .eq('id', performedSession.value.id)
-
-    if (updateError) throw updateError
+    await saveSession()
     router.push(`/seances/${route.params.id}/train`)
   } catch (e) {
-    error.value = e.message
+    error.value = e.message || performedSessionError.value
   }
 }
 
@@ -133,9 +106,15 @@ const loadSession = async () => {
     if (sessionError) throw sessionError
     session.value = data
     await getWorkoutExercises(route.params.id)
-    await startPerformedSession()
+    
+    // Vérifier si une session est en cours
+    currentSession.value = getCurrentSession()
+    if (!currentSession.value) {
+      router.push(`/seances/${route.params.id}/train`)
+      return
+    }
   } catch (e) {
-    error.value = e.message
+    error.value = e.message || performedSessionError.value
   } finally {
     loading.value = false
   }
