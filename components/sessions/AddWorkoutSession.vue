@@ -1,30 +1,44 @@
 <template>
-    <div class="flex items-center justify-center">
-      <Card class="w-full max-w-sm mx-2">
-        <CardHeader>
-          <CardTitle>Ajouter une séance</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form
-            class="space-y-4 flex flex-col gap-1 max-w-lg"
-            @submit.prevent="handleSubmit"
-          >
-            <FormField name="title">
-              <Label for="title">Titre de la séance</Label>
-              <Input id="title" v-model="formData.title" type="text" />
-            </FormField>
-  
-            <FormField name="notes">
-              <Label for="notes">Description</Label>
-              <Textarea id="notes" v-model="formData.notes" type="text" />
-            </FormField>
-  
-            <Button type="submit" :disabled="loading">Créer la séance</Button>
-          </form>
-        </CardContent>
-      </Card>
+  <div class="space-y-6">
+    <div class="space-y-2">
+      <h3 class="text-lg font-medium">Créer une nouvelle séance</h3>
+      <p class="text-sm text-muted-foreground">Définissez les détails de votre séance d'entraînement.</p>
     </div>
-  </template>
+
+    <form
+      class="space-y-4"
+      @submit.prevent="handleSubmit"
+    >
+      <div class="space-y-2">
+        <Label for="title">Titre de la séance</Label>
+        <Input 
+          id="title" 
+          v-model="formData.title" 
+          type="text" 
+          placeholder="Ex: Séance haut du corps"
+          class="w-full"
+        />
+      </div>
+
+      <div class="space-y-2">
+        <Label for="notes">Description</Label>
+        <Textarea 
+          id="notes" 
+          v-model="formData.notes" 
+          placeholder="Ajoutez des notes ou des instructions pour votre séance"
+          class="w-full"
+        />
+      </div>
+
+      <div class="flex justify-end">
+        <Button type="submit" :disabled="loading">
+          <span v-if="loading" class="animate-spin mr-2">⌛</span>
+          Créer la séance
+        </Button>
+      </div>
+    </form>
+  </div>
+</template>
 
 <script setup>
 

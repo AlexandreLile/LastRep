@@ -1,14 +1,16 @@
 <template>
-    <div class="relative w-full rounded-2xl p-6">
-        <div class="max-w-full py-10 sm:max-w-2xl lg:max-w-4xl md:items-start mx-auto flex flex-col justify-center items-center md:items-start">
-            <h2 class="text-2xl font-semibold text-left mb-4">Répartition des séances</h2>
-            <div class="w-full h-full flex flex-col md:flex-row items-center md:items-start justify-center md:justify-start gap-8">
-                <div class="w-[300px] h-[300px] md:w-[400px] md:h-[400px]">
-                    <Doughnut
-                        :data="chartData"
-                        :options="chartOptions"
-                    />
-                </div>
+    <div class="space-y-6 p-4 sm:p-6">
+        <div class="space-y-2">
+            <h3 class="text-lg font-medium">Répartition des séances</h3>
+            <p class="text-sm text-muted-foreground">Distribution de vos séances par groupe musculaire</p>
+        </div>
+
+        <div class="flex flex-col items-center justify-center space-y-4">
+            <div class="w-full max-w-[300px] h-[250px] sm:h-[300px] md:max-w-[400px] md:h-[400px]">
+                <Doughnut
+                    :data="chartData"
+                    :options="chartOptions"
+                />
             </div>
         </div>
     </div>
@@ -35,7 +37,7 @@ const chartData = ref({
             'oklch(51.1% 0.262 276.966)',
         ],
         borderWidth: 0,
-        cutout: '75%',
+        cutout: '80%',
     }]
 })
 
@@ -87,7 +89,7 @@ const loadMuscleData = async () => {
                     'oklch(51.1% 0.262 276.966)',
                 ],
                 borderWidth: 0,
-                cutout: '75%',
+                cutout: '80%',
             }]
         }
     } catch (error) {
@@ -104,15 +106,15 @@ const chartOptions = {
     maintainAspectRatio: false,
     plugins: {
         legend: {
-            position: 'right',
+            position: 'bottom',
             align: 'center',
             labels: {
                 color: 'hsl(var(--foreground))',
                 font: {
-                    size: 14,
-                    weight: 'bold',
+                    size: 20,
+                    weight: 'medium',
                 },
-                padding: 20,
+                padding: 16,
                 usePointStyle: true,
                 pointStyle: 'circle',
                 boxWidth: 10,
@@ -129,16 +131,16 @@ const chartOptions = {
                     return `${label}: ${value} séances (${percentage}%)`
                 }
             },
-            backgroundColor: 'rgba(255, 255, 255, 1)',
+            backgroundColor: 'hsl(var(--background))',
             titleColor: 'hsl(var(--foreground))',
             bodyColor: 'hsl(var(--foreground))',
             borderColor: 'hsl(var(--border))',
             borderWidth: 1,
             titleFont: {
-                weight: 'bold',
+                weight: 'medium',
             },
             bodyFont: {
-                weight: 'bold',
+                weight: 'medium',
             },
         }
     }

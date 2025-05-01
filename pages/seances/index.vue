@@ -1,35 +1,55 @@
 <template>
-    <div class="relative w-full rounded-2xl p-6">
-      <div
-        class="max-w-full py-10 sm:max-w-3xl lg:max-w-5xl xl:max-w-7xl md:items-start mx-auto flex flex-col justify-center items-start"
-      >
-        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-left">
-          Créer votre séance selon vos besoins 
-        </h1>
-        <p class="text-sm sm:text-base md:text-lg mb-4 opacity-90 text-left">
-          Établissez un programme et suivez vos progrès.
-        </p>
-        <Dialog>
-          <DialogTrigger as-child>
-            <Button>Ajouter une séance</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogDescription>
-                <SessionsAddWorkoutSession></SessionsAddWorkoutSession>
-              </DialogDescription>
-            </DialogHeader>
-          </DialogContent> 
-        </Dialog>
+  <div>
+    <!-- Header -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-semibold text-gray-900">Séances d'entraînement</h2>
+    </div>
+
+    <!-- Main Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Left Column - Add Session and List -->
+      <div class="lg:col-span-2 space-y-8">
+        <!-- Add Session Card -->
+        <div class="bg-white rounded-xl p-6">
+          <div class="flex flex-col space-y-4">
+            <div>
+              <h3 class="text-lg font-medium">Créer votre séance</h3>
+              <p class="text-sm text-gray-500">Établissez un programme et suivez vos progrès.</p>
+            </div>
+            <div>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button class="w-full sm:w-auto">Ajouter une séance</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogDescription>
+                      <SessionsAddWorkoutSession></SessionsAddWorkoutSession>
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sessions List -->
+        <div class="bg-white rounded-xl p-8">
+          <SessionsWorkoutSessionList />
+        </div>
+      </div>
+
+      <!-- Right Column - Stats -->
+      <div class="space-y-8">
+        <div class="bg-white rounded-xl">
+          <StatsSessionRepartition />
+        </div>
       </div>
     </div>
-    <div class="relative w-full rounded-2xl p-6">
-    <div class="max-w-full sm:max-w-3xl lg:max-w-5xl xl:max-w-7xl mx-auto ">
-      <SessionsWorkoutSessionList />
-    </div>
-    <StatsSessionRepartition></StatsSessionRepartition>
-    </div>
+  </div>
 </template>
 
 <script setup>
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTrigger } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 </script> 
