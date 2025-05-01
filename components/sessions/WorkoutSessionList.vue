@@ -27,8 +27,8 @@
         <div class="absolute inset-[1px] rounded-xl bg-white"></div>
 
         <div class="relative flex flex-col h-full">
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center space-x-3">
+          <div class="flex flex-wrap gap-4 items-start mb-4">
+            <div class="flex items-center space-x-3 flex-1 max-w-[300px]">
               <div class="p-2 rounded-full bg-primary/20 transition-all duration-300 group-hover:bg-primary/30 group-hover:scale-110">
                 <Dumbbell class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
               </div>
@@ -37,10 +37,7 @@
                 <p class="text-xs text-muted-foreground">Dernière modification: {{ formatDate(session.updated_at) }}</p>
               </div>
             </div>
-            <div class="flex items-center space-x-2">
-              <span class="text-sm font-medium text-primary transition-all duration-300 group-hover:scale-105">
-                {{ session.exercises.length }} exercices
-              </span>
+            <div class="flex items-center">
               <Button variant="ghost" size="icon" class="opacity-0 group-hover:opacity-100 transition-all duration-300" @click.stop="editSession(session)">
                 <Pencil class="h-4 w-4" />
               </Button>

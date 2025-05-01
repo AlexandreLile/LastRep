@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
+  <div>
     <div v-if="loading" class="flex justify-center items-center h-64">
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
     </div>
@@ -8,48 +8,53 @@
       {{ error }}
     </div>
 
-    <div v-else class="space-y-6">
+    <div v-else class="space-y-8">
       <!-- En-tête -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ exercise.name }}</h1>
-            <p class="text-gray-500 dark:text-gray-400 mt-2">
-              Muscle principal : {{ exercise.primary_muscle }}
-            </p>
+      <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-2xl font-semibold text-gray-900">{{ exercise.name }}</h2>
+          <div class="mt-2">
+            <span class="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+              {{ exercise.primary_muscle }}
+            </span>
           </div>
-          <button 
-            @click="navigateTo('/exercices')"
-            class="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-          >
-            Retour
-          </button>
         </div>
+        <Button 
+          variant="outline"
+          @click="navigateTo('/exercices')"
+        >
+          Retour
+        </Button>
       </div>
 
       <!-- Statistiques -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Statistiques</h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-            <p class="text-sm text-gray-500 dark:text-gray-400">Total des séries</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total_sets }}</p>
+      <div class="bg-white rounded-xl p-8">
+        <div class="space-y-6">
+          <div>
+            <h3 class="text-lg font-medium">Statistiques</h3>
+            <p class="text-sm text-muted-foreground">Résumé de vos performances</p>
           </div>
           
-          <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-            <p class="text-sm text-gray-500 dark:text-gray-400">Poids maximum</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.max_weight }} kg</p>
-          </div>
-          
-          <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-            <p class="text-sm text-gray-500 dark:text-gray-400">Répétitions maximum</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.max_reps }}</p>
-          </div>
-          
-          <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-            <p class="text-sm text-gray-500 dark:text-gray-400">Poids moyen</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.avg_weight }} kg</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="bg-muted/50 p-4 rounded-xl">
+              <p class="text-sm text-muted-foreground">Total des séries</p>
+              <p class="text-2xl font-semibold">{{ stats.total_sets }}</p>
+            </div>
+            
+            <div class="bg-muted/50 p-4 rounded-xl">
+              <p class="text-sm text-muted-foreground">Poids maximum</p>
+              <p class="text-2xl font-semibold">{{ stats.max_weight }} kg</p>
+            </div>
+            
+            <div class="bg-muted/50 p-4 rounded-xl">
+              <p class="text-sm text-muted-foreground">Répétitions maximum</p>
+              <p class="text-2xl font-semibold">{{ stats.max_reps }}</p>
+            </div>
+            
+            <div class="bg-muted/50 p-4 rounded-xl">
+              <p class="text-sm text-muted-foreground">Poids moyen</p>
+              <p class="text-2xl font-semibold">{{ stats.avg_weight }} kg</p>
+            </div>
           </div>
         </div>
       </div>
@@ -65,125 +70,128 @@
       </div>
 
       <!-- Historique des séries -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Historique des séries</h2>
-        
-        <div v-if="sets.length > 0" class="space-y-4">
-          <div 
-            v-for="set in sets" 
-            :key="set.id"
-            class="border dark:border-gray-700 rounded-lg p-4"
-          >
-            <div class="flex justify-between items-start">
-              <div class="grid grid-cols-3 gap-4 flex-1">
-                <div>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Poids</p>
-                  <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ set.weight_kg }} kg</p>
+      <div class="bg-white rounded-xl p-8">
+        <div class="space-y-6">
+          <div>
+            <h3 class="text-lg font-medium">Historique des séries</h3>
+            <p class="text-sm text-muted-foreground">Liste de toutes vos séries</p>
+          </div>
+          
+          <div v-if="sets.length > 0" class="space-y-4">
+            <div 
+              v-for="set in sets" 
+              :key="set.id"
+              class="relative bg-white rounded-xl p-4 group overflow-hidden"
+            >
+              <!-- Effet de bordure néon -->
+              <div class="absolute inset-0 rounded-xl bg-primary/20 blur-md transition-all duration-300 group-hover:bg-primary/30 group-hover:blur-lg"></div>
+              <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/50 via-primary/30 to-primary/50 animate-[pulse_2s_ease-in-out_infinite] group-hover:from-primary/60 group-hover:via-primary/40 group-hover:to-primary/60"></div>
+              <div class="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/40 to-transparent animate-[glow_3s_ease-in-out_infinite] group-hover:from-primary/50 group-hover:to-transparent"></div>
+              <div class="absolute inset-[1px] rounded-xl bg-white"></div>
+
+              <div class="relative">
+                <div class="flex justify-between items-start">
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+                    <div>
+                      <p class="text-sm text-muted-foreground">Poids</p>
+                      <p class="text-lg font-medium">{{ set.weight_kg }} kg</p>
+                    </div>
+                    <div>
+                      <p class="text-sm text-muted-foreground">Répétitions</p>
+                      <p class="text-lg font-medium">{{ set.reps }}</p>
+                    </div>
+                    <div>
+                      <p class="text-sm text-muted-foreground">Date</p>
+                      <p class="text-lg font-medium">{{ formatDate(set.created_at) }}</p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="ghost"
+                    size="icon"
+                    @click="openEditModal(set)"
+                  >
+                    <Pencil class="h-4 w-4" />
+                  </Button>
                 </div>
-                <div>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Répétitions</p>
-                  <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ set.reps }}</p>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Date</p>
-                  <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ formatDate(set.created_at) }}</p>
+                <div v-if="set.note" class="mt-2 text-sm text-muted-foreground">
+                  {{ set.note }}
                 </div>
               </div>
-              <button 
-                @click="openEditModal(set)"
-                class="p-2 text-gray-500 hover:text-primary transition-colors"
-              >
-                <Pencil class="h-5 w-5" />
-              </button>
-            </div>
-            <div v-if="set.note" class="mt-2 text-sm text-gray-600 dark:text-gray-300">
-              {{ set.note }}
             </div>
           </div>
-        </div>
-        <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
-          Aucune série enregistrée pour cet exercice
+          <div v-else class="text-center py-8 text-muted-foreground">
+            Aucune série enregistrée pour cet exercice
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Modal d'édition -->
-    <div v-if="editingSet" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Modifier la série</h3>
-          <button @click="closeEditModal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-            <X class="h-5 w-5" />
-          </button>
-        </div>
+    <Dialog :open="!!editingSet" @update:open="closeEditModal">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Modifier la série</DialogTitle>
+        </DialogHeader>
         
         <form @submit.prevent="handleEditSet" class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Poids (kg)</label>
-              <input 
+            <div class="space-y-2">
+              <Label>Poids (kg)</Label>
+              <Input 
                 v-model="editForm.weight_kg" 
                 type="number" 
                 step="0.5" 
-                class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                 required
-              >
+              />
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Répétitions</label>
-              <input 
+            <div class="space-y-2">
+              <Label>Répétitions</Label>
+              <Input 
                 v-model="editForm.reps" 
                 type="number" 
-                class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                 required
-              >
+              />
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Temps de repos (s)</label>
-              <input 
+            <div class="space-y-2">
+              <Label>Temps de repos (s)</Label>
+              <Input 
                 v-model="editForm.rest_seconds" 
                 type="number" 
-                class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                 required
-              >
+              />
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">RPE (1-10)</label>
-              <input 
+            <div class="space-y-2">
+              <Label>RPE (1-10)</Label>
+              <Input 
                 v-model="editForm.rpe" 
                 type="number" 
                 min="1" 
-                max="10" 
-                class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              >
+                max="10"
+              />
             </div>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Note</label>
-            <textarea 
+          <div class="space-y-2">
+            <Label>Note</Label>
+            <Textarea 
               v-model="editForm.note" 
-              class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
               rows="2"
-            ></textarea>
+            />
           </div>
-          <div class="flex justify-end space-x-2">
-            <button 
-              type="button" 
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
               @click="closeEditModal"
-              class="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               Annuler
-            </button>
-            <button 
-              type="submit" 
-              class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-            >
+            </Button>
+            <Button type="submit">
               Enregistrer
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -193,7 +201,12 @@ import { useSupabaseClient } from '#imports'
 import WeightRepsChart from '~/components/charts/WeightRepsChart.vue'
 import WeightProgressionChart from '~/components/charts/WeightProgressionChart.vue'
 import RMCalculator from '~/components/charts/RMCalculator.vue'
-import { Pencil, X } from 'lucide-vue-next'
+import { Pencil } from 'lucide-vue-next'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 
 const route = useRoute()
 const supabase = useSupabaseClient()
@@ -325,4 +338,26 @@ const handleEditSet = async () => {
 }
 
 onMounted(loadExerciseData)
-</script> 
+</script>
+
+<style scoped>
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.02);
+  }
+}
+</style> 

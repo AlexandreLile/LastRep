@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+  <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Progression du poids</h3>
     <div class="h-64">
       <Line

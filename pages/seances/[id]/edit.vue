@@ -8,37 +8,51 @@
       {{ error }}
     </div>
 
-    <div v-else-if="session" class="space-y-6">
+    <div v-else-if="session" class="space-y-8">
+      <!-- Header -->
+      <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900">{{ formData.title }}</h2>
+      </div>
+
       <!-- Formulaire d'édition -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <form @submit.prevent="handleSubmit" class="space-y-6">
-          <div class="space-y-4">
+      <div class="bg-white rounded-xl p-8">
+        <form @submit.prevent="handleSubmit" class="space-y-8">
+          <div class="space-y-6">
             <div>
-              <Label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Titre</label>
-              <Input
-                id="title"
-                v-model="formData.title"
-                type="text"
-                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:text-white sm:text-sm"
-                required
-              />
+              <h3 class="text-lg font-medium">Informations générales</h3>
+              <p class="text-sm text-muted-foreground">Modifiez les informations de votre séance.</p>
             </div>
 
-            <div>
-              <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Note</label>
-              <Textarea
-                id="notes"
-                v-model="formData.notes"
-                rows="4"
-                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:text-white sm:text-sm"
-              ></textarea>
+            <div class="space-y-4">
+              <div>
+                <Label for="title">Titre</Label>
+                <Input
+                  id="title"
+                  v-model="formData.title"
+                  type="text"
+                  required
+                />
+              </div>
+
+              <div>
+                <label for="notes">Note</label>
+                <Textarea
+                  id="notes"
+                  v-model="formData.notes"
+                  rows="4"
+                ></textarea>
+              </div>
             </div>
           </div>
 
           <!-- Section des exercices -->
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
+          <div class="space-y-6">
+            <div>
               <h3 class="text-lg font-medium">Exercices</h3>
+              <p class="text-sm text-muted-foreground">Gérez les exercices de votre séance.</p>
+            </div>
+
+            <div class="flex justify-end">
               <Button
                 type="button"
                 variant="outline"
@@ -49,90 +63,99 @@
             </div>
 
             <!-- Liste des exercices avec drag and drop -->
-            <div v-if="currentExercises.length > 0" class="space-y-2">
+            <div v-if="currentExercises.length > 0" class="space-y-3">
               <draggable
                 v-model="currentExercises"
                 item-key="id"
                 @end="handleDragEnd"
-                class="space-y-2"
+                class="space-y-3"
                 :animation="150"
-                ghost-class="ghost"
+                ghost-class="opacity-50"
               >
                 <template #item="{ element }">
-                  <div
-                    class="flex items-center justify-between p-3 border rounded-lg cursor-move bg-white dark:bg-gray-800"
-                  >
-                    <div class="flex items-center space-x-3">
-                      <GripVertical class="h-5 w-5 text-gray-400" />
-                      <div>
-                        <h4 class="font-medium">{{ element.exercise?.name }}</h4>
-                        <p class="text-sm text-muted-foreground">
-                          Muscle principal : {{ element.exercise?.primary_muscle }}
-                        </p>
+                  <div class="relative bg-white rounded-xl p-4 cursor-move group overflow-hidden">
+                    <!-- Effet de bordure néon -->
+                    <div class="absolute inset-0 rounded-xl bg-primary/20 blur-md transition-all duration-300 group-hover:bg-primary/30 group-hover:blur-lg"></div>
+                    <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/50 via-primary/30 to-primary/50 animate-[pulse_2s_ease-in-out_infinite] group-hover:from-primary/60 group-hover:via-primary/40 group-hover:to-primary/60"></div>
+                    <div class="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/40 to-transparent animate-[glow_3s_ease-in-out_infinite] group-hover:from-primary/50 group-hover:to-transparent"></div>
+                    <div class="absolute inset-[1px] rounded-xl bg-white"></div>
+
+                    <div class="relative flex items-center justify-between">
+                      <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-full bg-primary/20 transition-all duration-300 group-hover:bg-primary/30">
+                          <GripVertical class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
+                        </div>
+                        <div>
+                          <h4 class="text-base font-medium text-gray-900 transition-colors duration-300 group-hover:text-primary">{{ element.exercise?.name }}</h4>
+                          <span class="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-primary/10 group-hover:text-primary">
+                            {{ element.exercise?.primary_muscle }}
+                          </span>
+                        </div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        @click.prevent.stop="removeExercise(element.id)"
+                      >
+                        <Trash2 class="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      @click.prevent.stop="removeExercise(element.id)"
-                    >
-                      <Trash2 class="h-4 w-4" />
-                    </Button>
                   </div>
                 </template>
               </draggable>
             </div>
-            <div v-else class="text-center text-muted-foreground py-4">
+            <div v-else class="text-center py-8 text-muted-foreground">
               Aucun exercice ajouté
             </div>
           </div>
 
-          <div class="flex justify-end gap-4">
-            <button
-              type="button"
-              @click="router.push('/seances')"
-              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-            >
-              Annuler
-            </button>
+          <div class="flex flex-wrap justify-end items-center gap-3 sm:flex-nowrap">
+            <div class="w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                @click="router.push('/seances')"
+                class="w-full sm:w-auto"
+              >
+                Annuler
+              </Button>
+            </div>
 
+            <div class="w-full sm:w-auto">
+              <Button
+                type="submit"
+                :disabled="saving"
+                class="w-full sm:w-auto"
+              >
+                <span v-if="saving">Enregistrement...</span>
+                <span v-else>Enregistrer</span>
+              </Button>
+            </div>
 
-
-   
-
-            
-            <button
-              type="submit"
-              :disabled="saving"
-              class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
-            >
-              <span v-if="saving">Enregistrement...</span>
-              <span v-else>Enregistrer</span>
-            </button>
-
-            <AlertDialog>
-    <AlertDialogTrigger as-child>
-      <Button variant="destructive">
-        Supprimer
-      </Button>
-    </AlertDialogTrigger>
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>Etes vous sûr de vouloir supprimer cette séance ?</AlertDialogTitle>
-        <AlertDialogDescription>
-          Cette action est irréversible.
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>Annuler</AlertDialogCancel>
-        <AlertDialogAction class="bg-red-500 text-white hover:bg-red-600" @click="deleteSession"  variant="destructive">supprimer</AlertDialogAction>
-             
-   
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
-
-
+            <div class="w-full sm:w-auto">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="destructive"
+                    class="w-full sm:w-auto"
+                  >
+                    Supprimer
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Etes vous sûr de vouloir supprimer cette séance ?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Cette action est irréversible.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction @click="deleteSession" variant="destructive">Supprimer</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
         </form>
       </div>
@@ -152,7 +175,6 @@
       </DialogContent>
     </Dialog>
   </div>
-
 </template>
 
 <script setup>

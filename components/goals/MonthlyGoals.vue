@@ -32,16 +32,20 @@
       <div class="flex flex-wrap gap-4">
         <!-- Badge Régularité -->
         <div 
-          class="p-4 rounded-lg transition-colors duration-300 flex-1 min-w-[200px]"
-          :class="sessionsCount >= 12 ? 'bg-primary/5' : 'bg-gray-50 dark:bg-gray-800'"
+          class="p-4 rounded-lg transition-all duration-300 flex-1 min-w-[200px]"
+          :class="[
+            sessionsCount >= 12 ? 'bg-primary/20 shadow-lg shadow-primary/20' : 'bg-gray-50 dark:bg-gray-800'
+          ]"
         >
           <div class="flex items-center space-x-3">
             <div 
-              class="p-2 rounded-full transition-colors duration-300"
-              :class="sessionsCount >= 12 ? 'bg-primary/10' : 'bg-gray-100 dark:bg-gray-700'"
+              class="p-2 rounded-full transition-all duration-300"
+              :class="[
+                sessionsCount >= 12 ? 'bg-primary/30 animate-[zoom_2s_ease-in-out_infinite]' : 'bg-gray-100 dark:bg-gray-700'
+              ]"
             >
               <Target 
-                class="h-5 w-5 transition-colors duration-300"
+                class="h-5 w-5 transition-all duration-300"
                 :class="sessionsCount >= 12 ? 'text-primary' : 'text-gray-400'"
               />
             </div>
@@ -54,16 +58,20 @@
 
         <!-- Badge Détermination -->
         <div 
-          class="p-4 rounded-lg transition-colors duration-300 flex-1 min-w-[200px]"
-          :class="sessionsCount >= 16 ? 'bg-primary/5' : 'bg-gray-50 dark:bg-gray-800'"
+          class="p-4 rounded-lg transition-all duration-300 flex-1 min-w-[200px]"
+          :class="[
+            sessionsCount >= 16 ? 'bg-primary/20 shadow-lg shadow-primary/20' : 'bg-gray-50 dark:bg-gray-800'
+          ]"
         >
           <div class="flex items-center space-x-3">
             <div 
-              class="p-2 rounded-full transition-colors duration-300"
-              :class="sessionsCount >= 16 ? 'bg-primary/10' : 'bg-gray-100 dark:bg-gray-700'"
+              class="p-2 rounded-full transition-all duration-300"
+              :class="[
+                sessionsCount >= 16 ? 'bg-primary/30 animate-[zoom_2s_ease-in-out_infinite]' : 'bg-gray-100 dark:bg-gray-700'
+              ]"
             >
               <Trophy 
-                class="h-5 w-5 transition-colors duration-300"
+                class="h-5 w-5 transition-all duration-300"
                 :class="sessionsCount >= 16 ? 'text-primary' : 'text-gray-400'"
               />
             </div>
@@ -76,16 +84,20 @@
 
         <!-- Badge Expert -->
         <div 
-          class="p-4 rounded-lg transition-colors duration-300 flex-1 min-w-[200px]"
-          :class="sessionsCount >= 20 ? 'bg-primary/5' : 'bg-gray-50 dark:bg-gray-800'"
+          class="p-4 rounded-lg transition-all duration-300 flex-1 min-w-[200px]"
+          :class="[
+            sessionsCount >= 20 ? 'bg-primary/20 shadow-lg shadow-primary/20' : 'bg-gray-50 dark:bg-gray-800'
+          ]"
         >
           <div class="flex items-center space-x-3">
             <div 
-              class="p-2 rounded-full transition-colors duration-300"
-              :class="sessionsCount >= 20 ? 'bg-primary/10' : 'bg-gray-100 dark:bg-gray-700'"
+              class="p-2 rounded-full transition-all duration-300"
+              :class="[
+                sessionsCount >= 20 ? 'bg-primary/30 animate-[zoom_2s_ease-in-out_infinite]' : 'bg-gray-100 dark:bg-gray-700'
+              ]"
             >
               <Award 
-                class="h-5 w-5 transition-colors duration-300"
+                class="h-5 w-5 transition-all duration-300"
                 :class="sessionsCount >= 20 ? 'text-primary' : 'text-gray-400'"
               />
             </div>
@@ -98,16 +110,20 @@
 
         <!-- Badge Elite -->
         <div 
-          class="p-4 rounded-lg transition-colors duration-300 flex-1 min-w-[200px]"
-          :class="sessionsCount >= 24 ? 'bg-primary/5' : 'bg-gray-50 dark:bg-gray-800'"
+          class="p-4 rounded-lg transition-all duration-300 flex-1 min-w-[200px]"
+          :class="[
+            sessionsCount >= 24 ? 'bg-primary/20 shadow-lg shadow-primary/20' : 'bg-gray-50 dark:bg-gray-800'
+          ]"
         >
           <div class="flex items-center space-x-3">
             <div 
-              class="p-2 rounded-full transition-colors duration-300"
-              :class="sessionsCount >= 24 ? 'bg-primary/10' : 'bg-gray-100 dark:bg-gray-700'"
+              class="p-2 rounded-full transition-all duration-300"
+              :class="[
+                sessionsCount >= 24 ? 'bg-primary/30 animate-[zoom_2s_ease-in-out_infinite]' : 'bg-gray-100 dark:bg-gray-700'
+              ]"
             >
               <Medal 
-                class="h-5 w-5 transition-colors duration-300"
+                class="h-5 w-5 transition-all duration-300"
                 :class="sessionsCount >= 24 ? 'text-primary' : 'text-gray-400'"
               />
             </div>
@@ -216,4 +232,15 @@ const loadMonthlyStats = async () => {
 onMounted(() => {
   loadMonthlyStats()
 })
-</script> 
+</script>
+
+<style scoped>
+@keyframes zoom {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+</style> 
