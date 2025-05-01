@@ -1,135 +1,142 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
+  <div class="space-y-6">
     <div v-if="loading" class="flex justify-center items-center h-64">
-      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
     </div>
 
-    <div v-else-if="error" class="text-red-500 text-center py-8">
+    <div v-else-if="error" class="flex items-center justify-center p-4 text-sm text-red-500 bg-red-50 rounded-lg">
       {{ error }}
     </div>
 
-    <div v-else class="space-y-6">
+    <div v-else class="space-y-6 mt-24 md:mt-0">
       <!-- En-tête de l'exercice -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <div class="flex justify-between items-start">
-          <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ exercise.exercise?.name }}</h1>
-            <p class="text-gray-500 dark:text-gray-400 mt-2">
-              Muscle principal : {{ exercise.exercise?.primary_muscle }}
-            </p>
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <h2 class="text-2xl font-semibold tracking-tight">{{ exercise.exercise?.name }}</h2>
+          <div class="flex items-center space-x-2 text-sm text-muted-foreground">
+            <Dumbbell class="w-4 h-4" />
+            <span>{{ exercise.exercise?.primary_muscle }}</span>
           </div>
-          <button 
-            @click="navigateTo(`/seances/${$route.params.id}/start`)" 
-            class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
-          >
-            Retour
-          </button>
         </div>
+        <Button variant="outline" size="sm" @click="navigateTo(`/seances/${$route.params.id}/start`)" class="w-full md:w-auto">
+          Retour
+        </Button>
       </div>
 
       <!-- Formulaire d'ajout de série -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Ajouter une série</h2>
-        <form @submit.prevent="handleAddSet" class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Poids (kg)</label>
-              <input 
+      <div class="bg-white rounded-xl p-6 space-y-6">
+        <div class="flex items-center space-x-2">
+          <Plus class="w-5 h-5 text-primary" />
+          <h3 class="text-lg font-semibold tracking-tight">Ajouter une série</h3>
+        </div>
+
+        <form @submit.prevent="handleAddSet" class="space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <Label>Poids (kg)</Label>
+              <Input 
                 v-model="newSet.weight" 
                 type="number" 
-                step="0.5" 
-                class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                step="0.5"
                 required
-              >
+              />
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Répétitions</label>
-              <input 
+            <div class="space-y-2">
+              <Label>Répétitions</Label>
+              <Input 
                 v-model="newSet.reps" 
-                type="number" 
-                class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                type="number"
                 required
-              >
+              />
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Temps de repos (secondes)</label>
-              <input 
+            <div class="space-y-2">
+              <Label>Temps de repos (secondes)</Label>
+              <Input 
                 v-model="newSet.restTime" 
-                type="number" 
-                class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                type="number"
                 required
-              >
+              />
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">RPE (1-10)</label>
-              <input 
+            <div class="space-y-2">
+              <Label>RPE (1-10)</Label>
+              <Input 
                 v-model="newSet.rpe" 
                 type="number" 
                 min="1" 
-                max="10" 
-                class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              >
+                max="10"
+              />
             </div>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Note</label>
-            <textarea 
+          <div class="space-y-2">
+            <Label>Note</Label>
+            <Textarea 
               v-model="newSet.note" 
-              class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
               rows="2"
-            ></textarea>
+              placeholder="Ajouter une note (optionnel)"
+            />
           </div>
-          <button 
-            type="submit" 
-            class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
-            :disabled="exerciseSetLoading"
-          >
+          <Button type="submit" :disabled="exerciseSetLoading" class="w-full sm:w-auto">
+            <Loader2 v-if="exerciseSetLoading" class="w-4 h-4 mr-2 animate-spin" />
             {{ exerciseSetLoading ? 'Ajout en cours...' : 'Ajouter la série' }}
-          </button>
+          </Button>
         </form>
       </div>
 
       <!-- Liste des séries -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Séries effectuées</h2>
+      <div class="bg-white rounded-xl p-6 space-y-6">
+        <div class="flex items-center space-x-2">
+          <ListOrdered class="w-5 h-5 text-primary" />
+          <h3 class="text-lg font-semibold tracking-tight">Séries effectuées</h3>
+        </div>
+
         <div v-if="exerciseSets.length > 0" class="space-y-4">
           <div 
             v-for="set in exerciseSets" 
             :key="set.id" 
-            class="border dark:border-gray-700 rounded-lg p-4 flex justify-between items-start"
+            class="bg-muted/50 rounded-lg p-4 space-y-4"
           >
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
-              <div>
-                <span class="text-sm text-gray-500 dark:text-gray-400">Poids</span>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div class="space-y-1">
+                <span class="text-sm text-muted-foreground">Poids</span>
                 <p class="font-medium">{{ set.weight_kg }} kg</p>
               </div>
-              <div>
-                <span class="text-sm text-gray-500 dark:text-gray-400">Répétitions</span>
+              <div class="space-y-1">
+                <span class="text-sm text-muted-foreground">Répétitions</span>
                 <p class="font-medium">{{ set.reps }}</p>
               </div>
-              <div>
-                <span class="text-sm text-gray-500 dark:text-gray-400">Repos</span>
+              <div class="space-y-1">
+                <span class="text-sm text-muted-foreground">Repos</span>
                 <p class="font-medium">{{ set.rest_seconds }}s</p>
               </div>
-              <div>
-                <span class="text-sm text-gray-500 dark:text-gray-400">RPE</span>
+              <div class="space-y-1">
+                <span class="text-sm text-muted-foreground">RPE</span>
                 <p class="font-medium">{{ set.rpe || '-' }}</p>
               </div>
             </div>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              @click="deleteSet(set.id)"
-              class="text-red-500 hover:text-red-600"
-            >
-              <Trash2 class="h-4 w-4" />
-            </Button>
-            <p v-if="set.note" class="mt-2 text-sm text-gray-600 dark:text-gray-300 col-span-full">{{ set.note }}</p>
+            
+            <div v-if="set.note" class="text-sm text-muted-foreground">
+              {{ set.note }}
+            </div>
+
+            <div class="flex justify-end">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                @click="deleteSet(set.id)"
+                class="text-red-500 hover:text-red-600 hover:bg-red-50"
+              >
+                <Trash2 class="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
-        <p v-else class="text-center text-gray-500 dark:text-gray-400 py-4">
-          Aucune série effectuée pour le moment
-        </p>
+        
+        <div v-else class="flex flex-col items-center justify-center py-8 px-4 space-y-4 bg-muted/50 rounded-lg">
+          <ListX class="w-12 h-12 text-muted-foreground/50" />
+          <p class="text-sm text-muted-foreground text-center">
+            Aucune série effectuée pour le moment
+          </p>
+        </div>
       </div>
     </div>
   </div>
@@ -143,7 +150,11 @@ import { usePerformedSession } from '~/composables/usePerformedSession'
 import { useExerciseSet } from '~/composables/useExerciseSet'
 import { useSupabaseClient } from '#imports'
 import { useSupabaseUser } from '#imports'
-import { Trash2 } from 'lucide-vue-next'
+import { Trash2, Dumbbell, Plus, ListOrdered, ListX, Loader2 } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 
 const route = useRoute()
 const supabase = useSupabaseClient()
@@ -168,17 +179,20 @@ const handleAddSet = async () => {
     const { error: addError } = await addExerciseSet(exercise.value.exercise.id, newSet.value)
     if (addError) throw addError
     
-    // Réinitialiser le formulaire
-    newSet.value = {
-      weight: '',
-      reps: '',
-      restTime: '',
-      rpe: '',
-      note: ''
-    }
-    
     // Recharger les séries
     await loadExerciseSets()
+
+    // Préremplir le formulaire avec la dernière série (celle qu'on vient d'ajouter)
+    if (exerciseSets.value && exerciseSets.value.length > 0) {
+      const lastSet = exerciseSets.value[0]
+      newSet.value = {
+        weight: lastSet.weight_kg,
+        reps: lastSet.reps,
+        restTime: lastSet.rest_seconds,
+        rpe: lastSet.rpe || '',
+        note: lastSet.note || ''
+      }
+    }
   } catch (e) {
     error.value = e.message
   }
@@ -208,6 +222,18 @@ const loadExercise = async () => {
 
     // Charger les séries de l'exercice
     await loadExerciseSets()
+
+    // Préremplir le formulaire avec la dernière série
+    if (exerciseSets.value && exerciseSets.value.length > 0) {
+      const lastSet = exerciseSets.value[0]
+      newSet.value = {
+        weight: lastSet.weight_kg,
+        reps: lastSet.reps,
+        restTime: lastSet.rest_seconds,
+        rpe: lastSet.rpe || '',
+        note: lastSet.note || ''
+      }
+    }
   } catch (e) {
     error.value = e.message
   } finally {
