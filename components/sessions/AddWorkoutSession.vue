@@ -17,7 +17,12 @@
           type="text" 
           placeholder="Ex: Séance haut du corps"
           class="w-full"
+          :class="{ 'border-red-500 focus:ring-red-500': showError && !formData.title.trim() }"
+          required
         />
+        <p v-if="showError && !formData.title.trim()" class="text-sm text-red-500 mt-1">
+          Le titre de la séance est requis
+        </p>
       </div>
 
       <div class="space-y-2">
@@ -31,7 +36,11 @@
       </div>
 
       <div class="flex justify-end">
-        <Button type="submit" :disabled="loading">
+        <Button 
+          type="submit" 
+          :disabled="loading || !formData.title.trim()"
+          :class="{ 'opacity-50 cursor-not-allowed': !formData.title.trim() }"
+        >
           <span v-if="loading" class="animate-spin mr-2">⌛</span>
           Créer la séance
         </Button>
@@ -41,13 +50,13 @@
 </template>
 
 <script setup>
-
 import { useWorkoutSessions } from '~/composables/useWorkoutSession';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 const user = useSupabaseUser();
 const { createWorkoutSession, loading, error } = useWorkoutSessions(user);
+const showError = ref(false);
 
 const formData = ref({
   title: '',
@@ -56,9 +65,16 @@ const formData = ref({
 });
 
 const handleSubmit = async () => {
+  showError.value = true;
+  
+  if (!formData.value.title.trim()) {
+    return;
+  }
+
   try {
     const result = await createWorkoutSession(formData.value);
     if (result.success) {
+      showError.value = false;
       // Réinitialiser le formulaire
       formData.value = {
         title: '',

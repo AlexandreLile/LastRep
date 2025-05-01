@@ -1,25 +1,60 @@
 <template>
-  <div>
-    <h3 class="text-lg font-medium text-gray-900 mb-4">Dernière séance</h3>
-    <div v-if="loading" class="flex justify-center items-center h-32">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-    </div>
-    <div v-else-if="lastSession" class="space-y-4">
-      <div class="flex justify-between items-center">
-        <span class="text-gray-600">Séance</span>
-        <span class="font-medium">{{ lastSession.title }}</span>
+  <div class="bg-white rounded-xl p-6">
+    <div class="space-y-6">
+      <div class="flex items-center space-x-2">
+        <Timer class="w-5 h-5 text-primary" />
+        <h3 class="text-lg font-semibold tracking-tight">Dernière séance</h3>
       </div>
-      <div class="flex justify-between items-center">
-        <span class="text-gray-600">Date</span>
-        <span class="font-medium">{{ formatDate(lastSession.ended_at) }}</span>
+
+      <div v-if="loading" class="flex justify-center items-center h-32">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
-      <div class="flex justify-between items-center">
-        <span class="text-gray-600">Poids total</span>
-        <span class="font-medium">{{ totalWeight.toLocaleString('fr-FR') }} kg</span>
+
+      <div v-else-if="lastSession" class="space-y-6">
+        <!-- Titre de la séance -->
+        <div class="space-y-2">
+          <h4 class="text-xl font-semibold text-gray-900">{{ lastSession.title }}</h4>
+          <div class="flex items-center space-x-3 text-sm text-muted-foreground">
+            <div class="flex items-center space-x-1">
+              <Calendar class="w-4 h-4" />
+              <span>{{ formatDate(lastSession.ended_at) }}</span>
+            </div>
+            <span>•</span>
+            <div class="flex items-center space-x-1">
+              <Clock class="w-4 h-4" />
+              <span>{{ formatDuration(lastSession.started_at, lastSession.ended_at) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Volume total -->
+        <div class="bg-primary/10 rounded-lg p-6">
+          <div class="space-y-2">
+            <span class="text-sm text-muted-foreground">Volume total</span>
+            <div class="flex items-baseline space-x-2">
+              <span class="text-3xl font-bold text-primary">{{ totalWeight.toLocaleString('fr-FR') }}</span>
+              <span class="text-lg text-muted-foreground">kg</span>
+              <div v-if="volumeDifference !== null" 
+                   :class="[
+                     'flex items-center space-x-1 text-sm font-medium',
+                     volumeDifference > 0 ? 'text-green-500' : volumeDifference < 0 ? 'text-red-500' : 'text-muted-foreground'
+                   ]"
+              >
+                <ArrowUp v-if="volumeDifference > 0" class="w-4 h-4" />
+                <ArrowDown v-if="volumeDifference < 0" class="w-4 h-4" />
+                <span>{{ Math.abs(volumeDifference).toLocaleString('fr-FR') }} kg</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div v-else class="text-gray-500 text-center py-8">
-      Aucune séance effectuée
+
+      <div v-else class="flex flex-col items-center justify-center py-8 px-4 space-y-4 bg-muted/50 rounded-lg">
+        <Dumbbell class="w-12 h-12 text-muted-foreground/50" />
+        <p class="text-sm text-muted-foreground text-center">
+          Aucune séance effectuée
+        </p>
+      </div>
     </div>
   </div>
 </template>
@@ -27,16 +62,18 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useSupabaseClient } from '#imports'
+import { Timer, Dumbbell, ArrowUp, ArrowDown, Calendar, Clock } from 'lucide-vue-next'
 
 const supabase = useSupabaseClient()
 const loading = ref(true)
 const lastSession = ref(null)
 const totalWeight = ref(0)
+const volumeDifference = ref(null)
 
 const fetchLastSession = async () => {
   try {
-    const user = await supabase.auth.getUser()
-    console.log('User ID:', user.data.user.id)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
 
     // Récupérer la dernière séance effectuée
     const { data: session, error: sessionError } = await supabase
@@ -47,21 +84,20 @@ const fetchLastSession = async () => {
         ended_at,
         workout_session_id,
         workoutsession (
-          title
+          title,
+          workoutexercise (
+            id,
+            exercise_id
+          )
         )
       `)
-      .eq('user_id', user.data.user.id)
+      .eq('user_id', user.id)
       .order('ended_at', { ascending: false })
       .not('ended_at', 'is', null)
       .limit(1)
       .single()
 
-    if (sessionError) {
-      console.error('Erreur session:', sessionError)
-      throw sessionError
-    }
-
-    console.log('Dernière séance:', session)
+    if (sessionError) throw sessionError
 
     if (session && session.started_at && session.ended_at) {
       lastSession.value = {
@@ -69,52 +105,70 @@ const fetchLastSession = async () => {
         title: session.workoutsession.title
       }
 
-      // D'abord, vérifions tous les sets de l'utilisateur
-      const { data: allSets, error: allSetsError } = await supabase
-        .from('exerciseset')
-        .select('*')
-        .eq('user_id', user.data.user.id)
+      // Récupérer les exercices de la séance
+      const exerciseIds = session.workoutsession.workoutexercise.map(ex => ex.exercise_id)
 
-      if (allSetsError) {
-        console.error('Erreur récupération tous les sets:', allSetsError)
-      } else {
-        console.log('Tous les sets de l\'utilisateur:', allSets)
-      }
-
-      // Récupérer le poids total de la séance
-      const { data: sets, error: setsError } = await supabase
+      // Récupérer les sets de la dernière séance
+      const { data: currentSets, error: currentSetsError } = await supabase
         .from('exerciseset')
         .select(`
           weight_kg,
           reps,
-          exercise_id,
           created_at
         `)
-        .eq('user_id', user.data.user.id)
-        .eq('performed_session_id', session.id)
+        .in('exercise_id', exerciseIds)
+        .eq('user_id', user.id)
+        .gte('created_at', session.started_at)
+        .lte('created_at', session.ended_at)
 
-      if (setsError) {
-        console.error('Erreur sets:', setsError)
-        throw setsError
-      }
+      if (currentSetsError) throw currentSetsError
 
-      console.log('Sets récupérés pour la session:', sets)
-      console.log('ID de la session:', session.id)
-
-      if (sets && sets.length > 0) {
-        // Calcul du poids total (poids × répétitions pour chaque série)
-        totalWeight.value = sets.reduce((total, set) => {
-          console.log('Calcul pour le set:', {
-            weight: set.weight_kg,
-            reps: set.reps,
-            subtotal: set.weight_kg * set.reps
-          })
+      // Calculer le volume total de la séance actuelle
+      if (currentSets && currentSets.length > 0) {
+        totalWeight.value = currentSets.reduce((total, set) => {
           return total + (set.weight_kg * set.reps)
         }, 0)
 
-        console.log('Poids total calculé:', totalWeight.value)
+        // Récupérer toutes les séances effectuées pour ce workout_session_id
+        const { data: allSessions, error: allSessionsError } = await supabase
+          .from('performedsession')
+          .select(`
+            id,
+            started_at,
+            ended_at
+          `)
+          .eq('user_id', user.id)
+          .eq('workout_session_id', session.workout_session_id)
+          .order('ended_at', { ascending: false })
+
+        if (!allSessionsError && allSessions && allSessions.length > 1) {
+          // Trouver la séance précédente (la deuxième dans la liste puisqu'elles sont triées par date décroissante)
+          const previousSession = allSessions.find(s => s.id !== session.id)
+
+          if (previousSession) {
+            // Récupérer les sets de la séance précédente
+            const { data: previousSets, error: previousSetsError } = await supabase
+              .from('exerciseset')
+              .select(`
+                weight_kg,
+                reps
+              `)
+              .in('exercise_id', exerciseIds)
+              .eq('user_id', user.id)
+              .gte('created_at', previousSession.started_at)
+              .lte('created_at', previousSession.ended_at)
+
+            if (!previousSetsError && previousSets && previousSets.length > 0) {
+              const previousVolume = previousSets.reduce((total, set) => {
+                return total + (set.weight_kg * set.reps)
+              }, 0)
+              
+              // Calculer la différence
+              volumeDifference.value = totalWeight.value - previousVolume
+            }
+          }
+        }
       } else {
-        console.log('Aucun set trouvé pour cette séance')
         totalWeight.value = 0
       }
     }
@@ -132,6 +186,20 @@ const formatDate = (dateString) => {
     month: 'long',
     year: 'numeric'
   })
+}
+
+const formatDuration = (start, end) => {
+  const startDate = new Date(start)
+  const endDate = new Date(end)
+  const durationMs = endDate - startDate
+  const minutes = Math.floor(durationMs / (1000 * 60))
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+
+  if (hours > 0) {
+    return `${hours}h${remainingMinutes > 0 ? ` ${remainingMinutes}min` : ''}`
+  }
+  return `${minutes}min`
 }
 
 onMounted(() => {

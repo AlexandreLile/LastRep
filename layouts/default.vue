@@ -10,7 +10,7 @@
 
   <!-- Sidebar -->
   <div 
-    class="fixed left-0 top-0 h-full w-64 bg-white/80 backdrop-blur-sm p-6 border-r border-gray-200 shadow-sm z-40 transition-transform duration-300 md:translate-x-0"
+    class="fixed left-0 top-0 h-full w-64 bg-white/80 backdrop-blur-sm p-6 border-r border-gray-200 shadow-sm z-40 transition-transform duration-300 md:translate-x-0 flex flex-col"
     :class="[isMenuOpen ? 'translate-x-0' : '-translate-x-full']"
   >
     <div class="mb-8">
@@ -19,7 +19,7 @@
       </h1>
     </div>
     
-    <nav class="space-y-4">
+    <nav class="space-y-4 flex-1">
       <NuxtLink 
         to="/" 
         class="flex items-center space-x-3 text-gray-600 hover:text-gray-900"
@@ -50,11 +50,47 @@
         <span>Exercices</span>
       </NuxtLink>
 
-      <Button variant="ghost" @click="logout" class="w-full justify-start text-gray-600 hover:text-gray-900 mt-8">
-        <LogOut class="w-5 h-5 mr-3" />
-        Déconnexion
-      </Button>
+      <NuxtLink 
+        to="/historique" 
+        class="flex items-center space-x-3 text-gray-600 hover:text-gray-900"
+        :class="{ 'text-primary font-medium': currentPath === '/historique' }"
+        @click="closeMenuOnMobile"
+      >
+        <History class="w-5 h-5" />
+        <span>Historique</span>
+      </NuxtLink>
+
+      <NuxtLink 
+        to="/profil" 
+        class="flex items-center space-x-3 text-gray-600 hover:text-gray-900"
+        :class="{ 'text-primary font-medium': currentPath === '/profil' }"
+        @click="closeMenuOnMobile"
+      >
+        <User class="w-5 h-5" />
+        <span>Profil</span>
+      </NuxtLink>
     </nav>
+
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="ghost" class="w-full justify-start text-gray-600 hover:text-gray-900">
+          <LogOut class="w-5 h-5 mr-3" />
+          Déconnexion
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Déconnexion</AlertDialogTitle>
+          <AlertDialogDescription>
+            Êtes-vous sûr de vouloir vous déconnecter ?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annuler</AlertDialogCancel>
+          <AlertDialogAction @click="logout">Se déconnecter</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 
   <!-- Overlay pour fermer le menu sur mobile -->
@@ -71,9 +107,20 @@
 
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, Timer, Dumbbell, LogOut, Menu, X } from 'lucide-vue-next'
+import { LayoutDashboard, Timer, Dumbbell, LogOut, Menu, X, History, User } from 'lucide-vue-next'
 import { useSupabaseClient } from '#imports'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 const route = useRoute()
 const router = useRouter()

@@ -30,11 +30,12 @@ const chartData = ref({
     datasets: [{
         data: [],
         backgroundColor: [
-            'oklch(54.6% 0.245 262.881)', 
-            'oklch(59.1% 0.293 322.896)', 
-            'oklch(55.8% 0.288 302.321)', 
-            'oklch(59.2% 0.249 0.584)', 
-            'oklch(51.1% 0.262 276.966)',
+            '#3B82F6', // Bleu vif
+            '#10B981', // Vert émeraude
+            '#F59E0B', // Orange
+            '#EF4444', // Rouge
+            '#8B5CF6', // Violet
+            '#EC4899', // Rose
         ],
         borderWidth: 0,
         cutout: '80%',
@@ -78,15 +79,27 @@ const loadMuscleData = async () => {
 
         // Mettre à jour les données du graphique
         chartData.value = {
-            labels: Object.keys(muscleCount),
+            labels: Object.keys(muscleCount).map(muscle => {
+                // Traduire les noms des muscles en français
+                const translations = {
+                    'chest': 'Pectoraux',
+                    'back': 'Dos',
+                    'shoulders': 'Épaules',
+                    'legs': 'Jambes',
+                    'arms': 'Bras',
+                    'abs': 'Abdominaux'
+                }
+                return translations[muscle] || muscle
+            }),
             datasets: [{
                 data: Object.values(muscleCount),
                 backgroundColor: [
-                    'oklch(54.6% 0.245 262.881)', 
-                    'oklch(59.1% 0.293 322.896)', 
-                    'oklch(55.8% 0.288 302.321)', 
-                    'oklch(59.2% 0.249 0.584)', 
-                    'oklch(51.1% 0.262 276.966)',
+                    '#3B82F6', // Bleu vif
+                    '#10B981', // Vert émeraude
+                    '#F59E0B', // Orange
+                    '#EF4444', // Rouge
+                    '#8B5CF6', // Violet
+                    '#EC4899', // Rose
                 ],
                 borderWidth: 0,
                 cutout: '80%',
@@ -111,14 +124,14 @@ const chartOptions = {
             labels: {
                 color: 'hsl(var(--foreground))',
                 font: {
-                    size: 20,
+                    size: 14,
                     weight: 'medium',
                 },
-                padding: 16,
+                padding: 20,
                 usePointStyle: true,
                 pointStyle: 'circle',
-                boxWidth: 10,
-                boxHeight: 10,
+                boxWidth: 12,
+                boxHeight: 12,
             },
         },
         tooltip: {
@@ -131,17 +144,24 @@ const chartOptions = {
                     return `${label}: ${value} séances (${percentage}%)`
                 }
             },
-            backgroundColor: 'hsl(var(--background))',
-            titleColor: 'hsl(var(--foreground))',
-            bodyColor: 'hsl(var(--foreground))',
+            backgroundColor: 'white',
+            titleColor: 'black',
+            bodyColor: 'black',
             borderColor: 'hsl(var(--border))',
             borderWidth: 1,
             titleFont: {
-                weight: 'medium',
+                size: 14,
+                weight: 'bold',
             },
             bodyFont: {
+                size: 14,
                 weight: 'medium',
             },
+            padding: 12,
+            displayColors: true,
+            boxPadding: 6,
+            boxWidth: 12,
+            boxHeight: 12,
         }
     }
 }
