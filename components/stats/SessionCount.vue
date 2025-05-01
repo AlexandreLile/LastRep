@@ -1,8 +1,10 @@
 <template>
-  <div class="flex items-center justify-center bg-gray-100 p-4 rounded-lg">
+  <div class="flex items-center justify-center  p-4 rounded-lg">
     <div class="text-center">
+      <CalendarCheck class="h-6 w-6 text-primary mx-auto mb-2" />
+      <p class="text-sm text-muted-foreground">Séances</p>
       <p class="text-2xl font-bold text-primary">{{ sessionCount }}</p>
-      <p class="text-sm text-muted-foreground">Séances effectuées</p>
+      
     </div>
   </div>
 </template>
@@ -10,6 +12,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useSupabaseClient } from '#imports'
+import { CalendarCheck } from 'lucide-vue-next'
 
 const supabase = useSupabaseClient()
 const sessionCount = ref(0)

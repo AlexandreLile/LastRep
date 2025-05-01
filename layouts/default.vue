@@ -1,53 +1,99 @@
 <template>
-  <header class="fixed top-0 left-0 right-0 w-full z-50  p-4">
-    <div class="container mx-auto">
-      <nav class="flex justify-center items-center">
-        <ul class="flex items-center gap-6 bg-white rounded-full  shadow-lg">
-          <li 
-            :class="[
-              'font-bold py-2 px-4 rounded-full transition-colors  border-solid border-2 border-white',
-              currentPath === '/' ? 'bg-primary text-white' : ''
-            ]"
-          >
-            <NuxtLink to="/">
-              Accueil
-            </NuxtLink>
-          </li>
-          <li 
-            :class="[
-              'font-bold py-2 px-4 rounded-full transition-colors border-solid border-2 border-white',
-              currentPath === '/seances' ? 'bg-primary text-white' : ''
-            ]"
-          >
-            <NuxtLink to="/seances">
-              Séances
-            </NuxtLink>
-          </li>
+  <!-- Mobile Menu Button -->
+  <button 
+    @click="isMenuOpen = !isMenuOpen"
+    class="fixed top-4 right-4 z-50 p-2 rounded-lg bg-white shadow-sm border border-gray-200 md:hidden"
+  >
+    <Menu v-if="!isMenuOpen" class="w-6 h-6" />
+    <X v-else class="w-6 h-6" />
+  </button>
 
-          <li 
-            :class="[
-              'font-bold py-2 px-4 rounded-full transition-colors border-solid border-2 border-white',
-              currentPath === '/exercices' ? 'bg-primary text-white' : ''
-            ]"
-          >
-            <NuxtLink to="/exercices">
-              Exercices
-            </NuxtLink>
-          </li>
-        </ul>
-      </nav>
+  <!-- Sidebar -->
+  <div 
+    class="fixed left-0 top-0 h-full w-64 bg-white/80 backdrop-blur-sm p-6 border-r border-gray-200 shadow-sm z-40 transition-transform duration-300 md:translate-x-0"
+    :class="[isMenuOpen ? 'translate-x-0' : '-translate-x-full']"
+  >
+    <div class="mb-8">
+      <h1 class="text-2xl font-bold text-gray-900">
+        Last<strong class="text-primary">Rep</strong>
+      </h1>
     </div>
-  </header>
-  <main class="min-h-screen mt-16">
     
-      <slot />
-    
+    <nav class="space-y-4">
+      <NuxtLink 
+        to="/" 
+        class="flex items-center space-x-3 text-gray-600 hover:text-gray-900"
+        :class="{ 'text-primary font-medium': currentPath === '/' }"
+        @click="closeMenuOnMobile"
+      >
+        <LayoutDashboard class="w-5 h-5" />
+        <span>Vue d'ensemble</span>
+      </NuxtLink>
+
+      <NuxtLink 
+        to="/seances" 
+        class="flex items-center space-x-3 text-gray-600 hover:text-gray-900"
+        :class="{ 'text-primary font-medium': currentPath === '/seances' }"
+        @click="closeMenuOnMobile"
+      >
+        <Timer class="w-5 h-5" />
+        <span>Séances</span>
+      </NuxtLink>
+
+      <NuxtLink 
+        to="/exercices" 
+        class="flex items-center space-x-3 text-gray-600 hover:text-gray-900"
+        :class="{ 'text-primary font-medium': currentPath === '/exercices' }"
+        @click="closeMenuOnMobile"
+      >
+        <Dumbbell class="w-5 h-5" />
+        <span>Exercices</span>
+      </NuxtLink>
+
+      <Button variant="ghost" @click="logout" class="w-full justify-start text-gray-600 hover:text-gray-900 mt-8">
+        <LogOut class="w-5 h-5 mr-3" />
+        Déconnexion
+      </Button>
+    </nav>
+  </div>
+
+  <!-- Overlay pour fermer le menu sur mobile -->
+  <div 
+    v-if="isMenuOpen" 
+    class="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 md:hidden"
+    @click="isMenuOpen = false"
+  ></div>
+
+  <main class="min-h-screen bg-gray-50 p-4 md:p-8 md:pl-72">
+    <slot />
   </main>
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { LayoutDashboard, Timer, Dumbbell, LogOut, Menu, X } from 'lucide-vue-next'
+import { useSupabaseClient } from '#imports'
+import { Button } from '@/components/ui/button'
 
 const route = useRoute()
+const router = useRouter()
+const supabase = useSupabaseClient()
+
 const currentPath = computed(() => route.path)
+const isMenuOpen = ref(false)
+
+const closeMenuOnMobile = () => {
+  if (window.innerWidth < 768) { // 768px est le breakpoint md de Tailwind
+    isMenuOpen.value = false
+  }
+}
+
+const logout = async () => {
+  try {
+    await supabase.auth.signOut()
+    router.push('/login')
+  } catch (error) {
+    console.error('Erreur lors de la déconnexion:', error)
+  }
+}
 </script>

@@ -1,56 +1,87 @@
 <template>
-  <div class="w-fit">
-    <div class="flex items-center justify-between mb-2">
-      <button 
-        @click="previousMonth" 
-        class="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-      >
-        <ChevronLeft class="h-4 w-4" />
-      </button>
-      <h3 class="text-sm font-medium">
-        {{ formatMonthYear }}
-      </h3>
-      <button 
-        @click="nextMonth" 
-        class="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-      >
-        <ChevronRight class="h-4 w-4" />
-      </button>
+  <div class="p-6">
+    <!-- En-tête avec temps total -->
+    <div class="mb-8">
+      <div class="flex items-center space-x-2 mb-3">
+        <Clock class="w-5 h-5 text-primary" />
+        <h3 class="text-lg font-semibold text-gray-900">Cette semaine</h3>
+      </div>
+      <p class="text-3xl font-bold text-gray-900">{{ formatTotalDuration }}</p>
+      
+      <!-- Barres de temps par jour -->
+      <div class="grid grid-cols-7 gap-3 mt-6">
+        <div v-for="(day, index) in weekDays" :key="index" class="flex flex-col items-center">
+          <div class="h-28 w-2 bg-gray-100 rounded-full relative mb-2">
+            <div 
+              class="absolute bottom-0 w-full rounded-full transition-all duration-300 bg-primary"
+              :style="{ height: `${getHeightPercentage(day.duration)}%` }"
+            ></div>
+          </div>
+          <span class="text-xs font-medium text-gray-600">{{ day.label }}</span>
+          <span v-if="day.duration > 0" class="text-xs text-gray-500 mt-1">
+            {{ formatShortDuration(day.duration) }}
+          </span>
+        </div>
+      </div>
     </div>
 
-    <div class="grid grid-cols-7 gap-1 text-xs">
-      <!-- En-têtes des jours -->
-      <div 
-        v-for="day in ['L', 'M', 'M', 'J', 'V', 'S', 'D']" 
-        :key="day"
-        class="text-center font-medium text-gray-500 dark:text-gray-400"
-      >
-        {{ day }}
+    <!-- Séparateur -->
+    <div class="h-px bg-gray-200 my-6"></div>
+
+    <!-- Calendrier -->
+    <div>
+      <div class="flex items-center justify-between mb-6">
+        <button 
+          @click="previousMonth" 
+          class="p-2 rounded-md hover:bg-gray-100 transition-colors"
+        >
+          <ChevronLeft class="h-5 w-5" />
+        </button>
+        <h3 class="text-base font-semibold text-gray-900">
+          {{ formatMonthYear }}
+        </h3>
+        <button 
+          @click="nextMonth" 
+          class="p-2 rounded-md hover:bg-gray-100 transition-colors"
+        >
+          <ChevronRight class="h-5 w-5" />
+        </button>
       </div>
 
-      <!-- Jours du mois -->
-      <div 
-        v-for="day in monthDays" 
-        :key="day.date"
-        class="aspect-square"
-      >
+      <div class="grid grid-cols-7 gap-1">
+        <!-- En-têtes des jours -->
         <div 
-          class="w-full h-full flex items-center justify-center"
-          :class="{
-            'cursor-pointer': day.hasTraining
-          }"
-          @click="day.hasTraining ? selectDay(day) : null"
+          v-for="day in ['L', 'M', 'M', 'J', 'V', 'S', 'D']" 
+          :key="day"
+          class="text-center font-medium text-gray-500 text-sm py-2"
         >
-          <span 
-            class="w-7 h-7 flex items-center justify-center rounded-md"
+          {{ day }}
+        </div>
+
+        <!-- Jours du mois -->
+        <div 
+          v-for="day in monthDays" 
+          :key="day.date"
+          class="aspect-square"
+        >
+          <div 
+            class="w-full h-full flex items-center justify-center"
             :class="{
-              'bg-primary text-primary-foreground': day.hasTraining,
-              'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800': !day.hasTraining && day.isCurrentMonth,
-              'text-gray-400 dark:text-gray-500': !day.isCurrentMonth
+              'cursor-pointer hover:bg-gray-50': day.hasTraining
             }"
+            @click="day.hasTraining ? selectDay(day) : null"
           >
-            {{ day.date.getDate() }}
-          </span>
+            <span 
+              class="w-8 h-8 flex items-center justify-center rounded-full text-sm"
+              :class="{
+                'bg-primary text-white font-medium': day.hasTraining,
+                'text-gray-900': !day.hasTraining && day.isCurrentMonth,
+                'text-gray-400': !day.isCurrentMonth
+              }"
+            >
+              {{ day.date.getDate() }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -68,7 +99,7 @@
           >
             <h4 class="font-medium">{{ session.name }}</h4>
             <div class="mt-2 space-y-1">
-              <p class="text-sm text-gray-500 dark:text-gray-400">
+              <p class="text-sm text-gray-500">
                 Durée : {{ formatDuration(session.duration) }}
               </p>
             </div>
@@ -80,10 +111,7 @@
 </template>
 
 <script setup>
-
-import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
-
-
+import { ChevronLeft, ChevronRight, Clock } from 'lucide-vue-next'
 
 const supabase = useSupabaseClient()
 const currentDate = ref(new Date())
@@ -222,5 +250,67 @@ const handleDayClick = (date) => {
   }
 }
 
+// Nouveau computed pour les données de la semaine
+const weekDays = computed(() => {
+  const today = new Date()
+  const days = []
+  const dayLabels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+  
+  // Trouver le lundi de la semaine
+  const monday = new Date(today)
+  monday.setDate(today.getDate() - (today.getDay() || 7) + 1)
+  
+  // Créer les données pour chaque jour
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(monday)
+    date.setDate(monday.getDate() + i)
+    
+    // Trouver les sessions du jour
+    const daySessions = trainingSessions.value.filter(session => 
+      new Date(session.created_at).toDateString() === date.toDateString()
+    )
+    
+    // Calculer la durée totale du jour
+    const totalDuration = daySessions.reduce((total, session) => total + session.duration, 0)
+    
+    days.push({
+      date,
+      label: dayLabels[i],
+      duration: totalDuration
+    })
+  }
+  
+  return days
+})
+
+// Calculer le temps total de la semaine
+const formatTotalDuration = computed(() => {
+  const totalMinutes = weekDays.value.reduce((total, day) => total + day.duration, 0)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return `${hours} h ${minutes} m`
+})
+
+// Fonction pour calculer le pourcentage de hauteur de la barre
+const getHeightPercentage = (duration) => {
+  const maxDuration = Math.max(...weekDays.value.map(day => day.duration))
+  if (maxDuration === 0) return 0
+  return (duration / maxDuration) * 100
+}
+
+// Version courte du format de durée
+const formatShortDuration = (minutes) => {
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+  return remainingMinutes > 0 ? `${hours}h${remainingMinutes}` : `${hours}h`
+}
+
 onMounted(loadTrainingSessions)
-</script> 
+</script>
+
+<style scoped>
+.bg-primary {
+  transition: height 0.3s ease-in-out;
+}
+</style> 
