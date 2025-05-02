@@ -104,7 +104,7 @@
 
         <!-- Stats -->
         <div class="bg-white rounded-xl">
-          <SessionWeightChart :session-id="route.params.id" />
+          <SessionWeightChart :workout-session-id="route.params.id" />
         </div>
       </div>
     </div>

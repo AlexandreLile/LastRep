@@ -43,7 +43,7 @@ import { useSupabaseClient } from '#imports'
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const props = defineProps({
-  sessionId: {
+  workoutSessionId: {
     type: String,
     required: true
   }
@@ -63,59 +63,41 @@ const chartData = ref({
 
 const loadSessionWeightData = async () => {
   try {
-    // Récupérer d'abord les exercices de la séance
-    const { data: sessionExercises, error: exercisesError } = await supabase
-      .from('workoutexercise')
-      .select(`
-        id,
-        exercise_id
-      `)
-      .eq('session_id', props.sessionId)
-
-    if (exercisesError) throw exercisesError
-    if (!sessionExercises?.length) return
-
-    // Récupérer les sets pour ces exercices
-    const { data: sets, error: setsError } = await supabase
-      .from('exerciseset')
-      .select(`
-        weight_kg,
-        reps,
-        created_at
-      `)
-      .in('exercise_id', sessionExercises.map(ex => ex.exercise_id))
+    // 1. Récupérer toutes les séances effectuées pour ce workout_session_id
+    const { data: sessions, error: sessionsError } = await supabase
+      .from('performedsession')
+      .select('id, started_at')
+      .eq('workout_session_id', props.workoutSessionId)
       .eq('user_id', (await supabase.auth.getUser()).data.user.id)
-      .order('created_at', { ascending: true })
+      .order('started_at', { ascending: true })
 
-    if (setsError) throw setsError
+    if (sessionsError) throw sessionsError
+    if (!sessions?.length) return
 
-    // Grouper les sets par date
-    const setsByDate = sets.reduce((acc, set) => {
-      const date = new Date(set.created_at).toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'short'
-      })
-      
-      if (!acc[date]) {
-        acc[date] = 0
-      }
-      acc[date] += set.weight_kg * set.reps
-      return acc
-    }, {})
+    // 2. Pour chaque séance, récupérer tous les sets associés et calculer le volume
+    const volumes = []
+    const labels = []
 
-    // Convertir en format pour le graphique et trier par date
-    const dates = Object.keys(setsByDate).sort((a, b) => {
-      const dateA = new Date(a.split(' ').reverse().join(' '))
-      const dateB = new Date(b.split(' ').reverse().join(' '))
-      return dateA - dateB
-    })
+    for (const session of sessions) {
+      const { data: sets, error: setsError } = await supabase
+        .from('exerciseset')
+        .select('weight_kg, reps')
+        .eq('performed_session_id', session.id)
+        .eq('user_id', (await supabase.auth.getUser()).data.user.id)
 
-    // Mettre à jour les données du graphique
+      if (setsError) throw setsError
+
+      const volume = sets.reduce((sum, set) => sum + set.weight_kg * set.reps, 0)
+      volumes.push(volume)
+      labels.push(new Date(session.started_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }))
+    }
+
+    // 3. Mettre à jour les données du graphique
     chartData.value = {
-      labels: dates,
+      labels,
       datasets: [{
         label: 'Volume total',
-        data: dates.map(date => setsByDate[date]),
+        data: volumes,
         backgroundColor: 'oklch(51.1% 0.262 276.966)',
         borderColor: 'oklch(51.1% 0.262 276.966)',
         borderWidth: 1

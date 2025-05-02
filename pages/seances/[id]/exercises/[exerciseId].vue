@@ -156,6 +156,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
+definePageMeta({
+  layout: 'start-session'
+})
+
 const route = useRoute()
 const supabase = useSupabaseClient()
 const { getWorkoutExercise } = useWorkoutExercise()
@@ -200,7 +204,19 @@ const handleAddSet = async () => {
 
 const loadExerciseSets = async () => {
   try {
-    await getExerciseSets(exercise.value.exercise.id)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data, error: setsError } = await supabase
+      .from('exerciseset')
+      .select('*')
+      .eq('exercise_id', exercise.value.exercise.id)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    if (setsError) throw setsError
+    exerciseSets.value = data || []
   } catch (e) {
     error.value = e.message
   }

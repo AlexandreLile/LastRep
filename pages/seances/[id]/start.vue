@@ -142,6 +142,10 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 
+definePageMeta({
+  layout: 'start-session'
+})
+
 const route = useRoute()
 const router = useRouter()
 const supabase = useSupabaseClient()
@@ -179,6 +183,18 @@ const handleEndSession = async () => {
 
 const handleCancelSession = async () => {
   try {
+    const currentSession = getCurrentSession()
+    if (currentSession) {
+      // Supprimer toutes les séries de la session
+      const { error: deleteError } = await supabase
+        .from('exerciseset')
+        .delete()
+        .gte('created_at', currentSession.started_at)
+        .lte('created_at', currentSession.ended_at || new Date().toISOString())
+
+      if (deleteError) throw deleteError
+    }
+    
     // Supprimer la session du localStorage
     if (process.client) {
       localStorage.removeItem('currentSession')
