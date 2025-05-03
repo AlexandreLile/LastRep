@@ -27,50 +27,32 @@
         </Button>
       </div>
 
-      <!-- Statistiques -->
-      <div class="bg-white rounded-xl p-8">
-        <div class="space-y-6">
-          <div>
-            <h3 class="text-lg font-medium">Statistiques</h3>
-            <p class="text-sm text-muted-foreground">Résumé de vos performances</p>
-          </div>
-          
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="bg-muted/50 p-4 rounded-xl">
-              <p class="text-sm text-muted-foreground">Total des séries</p>
-              <p class="text-2xl font-semibold">{{ stats.total_sets }}</p>
-            </div>
-            
-            <div class="bg-muted/50 p-4 rounded-xl">
-              <p class="text-sm text-muted-foreground">Poids maximum</p>
-              <p class="text-2xl font-semibold">{{ stats.max_weight }} kg</p>
-            </div>
-            
-            <div class="bg-muted/50 p-4 rounded-xl">
-              <p class="text-sm text-muted-foreground">Répétitions maximum</p>
-              <p class="text-2xl font-semibold">{{ stats.max_reps }}</p>
-            </div>
-            
-            <div class="bg-muted/50 p-4 rounded-xl">
-              <p class="text-sm text-muted-foreground">Poids moyen</p>
-              <p class="text-2xl font-semibold">{{ stats.avg_weight }} kg</p>
-            </div>
-          </div>
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8">
+        <div class="bg-white rounded-xl p-6">
+          <LastSetRMStats :exercise-id="route.params.id" />
+        </div>
+        <div class="bg-white rounded-xl p-6">
+          <LastExerciseSessionStats :exercise-id="route.params.id" />
         </div>
       </div>
 
       <!-- Graphiques -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <WeightRepsChart :exercise-id="route.params.id" />
-        <WeightProgressionChart :exercise-id="route.params.id" />
+        <div class="bg-white rounded-xl p-6">
+          <WeightRepsChart :exercise-id="route.params.id" />
+        </div>
+        <div class="bg-white rounded-xl p-6">
+          <WeightProgressionChart :exercise-id="route.params.id" />
+        </div>
       </div>
 
-      <div class="mt-6">
+      <div class="mt-6 bg-white rounded-xl p-6">
         <RMCalculator :exercise-id="route.params.id" />
       </div>
 
       <!-- Historique des séries -->
-      <div class="bg-white rounded-xl p-8">
+      <div class="bg-white rounded-xl p-6">
         <div class="space-y-6">
           <div>
             <h3 class="text-lg font-medium">Historique des séries</h3>
@@ -81,41 +63,33 @@
             <div 
               v-for="set in sets" 
               :key="set.id"
-              class="relative bg-white rounded-xl p-4 group overflow-hidden"
+              class="relative bg-white border border-muted rounded-xl p-4 hover:shadow-md transition-all duration-200"
             >
-              <!-- Effet de bordure néon -->
-              <div class="absolute inset-0 rounded-xl bg-primary/20 blur-md transition-all duration-300 group-hover:bg-primary/30 group-hover:blur-lg"></div>
-              <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/50 via-primary/30 to-primary/50 animate-[pulse_2s_ease-in-out_infinite] group-hover:from-primary/60 group-hover:via-primary/40 group-hover:to-primary/60"></div>
-              <div class="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/40 to-transparent animate-[glow_3s_ease-in-out_infinite] group-hover:from-primary/50 group-hover:to-transparent"></div>
-              <div class="absolute inset-[1px] rounded-xl bg-white"></div>
-
-              <div class="relative">
-                <div class="flex justify-between items-start">
-                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
-                    <div>
-                      <p class="text-sm text-muted-foreground">Poids</p>
-                      <p class="text-lg font-medium">{{ set.weight_kg }} kg</p>
-                    </div>
-                    <div>
-                      <p class="text-sm text-muted-foreground">Répétitions</p>
-                      <p class="text-lg font-medium">{{ set.reps }}</p>
-                    </div>
-                    <div>
-                      <p class="text-sm text-muted-foreground">Date</p>
-                      <p class="text-lg font-medium">{{ formatDate(set.created_at) }}</p>
-                    </div>
+              <div class="flex justify-between items-start">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+                  <div>
+                    <p class="text-sm text-muted-foreground">Poids</p>
+                    <p class="text-lg font-medium">{{ set.weight_kg }} kg</p>
                   </div>
-                  <Button 
-                    variant="ghost"
-                    size="icon"
-                    @click="openEditModal(set)"
-                  >
-                    <Pencil class="h-4 w-4" />
-                  </Button>
+                  <div>
+                    <p class="text-sm text-muted-foreground">Répétitions</p>
+                    <p class="text-lg font-medium">{{ set.reps }}</p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-muted-foreground">Date</p>
+                    <p class="text-lg font-medium">{{ formatDate(set.created_at) }}</p>
+                  </div>
                 </div>
-                <div v-if="set.note" class="mt-2 text-sm text-muted-foreground">
-                  {{ set.note }}
-                </div>
+                <Button 
+                  variant="ghost"
+                  size="icon"
+                  @click="openEditModal(set)"
+                >
+                  <Pencil class="h-4 w-4" />
+                </Button>
+              </div>
+              <div v-if="set.note" class="mt-2 text-sm text-muted-foreground">
+                {{ set.note }}
               </div>
             </div>
           </div>
@@ -201,6 +175,8 @@ import { useSupabaseClient } from '#imports'
 import WeightRepsChart from '~/components/charts/WeightRepsChart.vue'
 import WeightProgressionChart from '~/components/charts/WeightProgressionChart.vue'
 import RMCalculator from '~/components/charts/RMCalculator.vue'
+import LastSetRMStats from '~/components/stats/LastSetRMStats.vue'
+import LastExerciseSessionStats from '~/components/stats/LastExerciseSessionStats.vue'
 import { Pencil } from 'lucide-vue-next'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -213,12 +189,6 @@ const supabase = useSupabaseClient()
 
 const exercise = ref(null)
 const sets = ref([])
-const stats = ref({
-  total_sets: 0,
-  max_weight: 0,
-  max_reps: 0,
-  avg_weight: 0
-})
 const loading = ref(true)
 const error = ref(null)
 const editingSet = ref(null)
@@ -268,15 +238,7 @@ const loadExerciseData = async () => {
     if (setsError) throw setsError
     sets.value = setsData
 
-    // Calculer les statistiques
-    if (setsData.length > 0) {
-      stats.value = {
-        total_sets: setsData.length,
-        max_weight: Math.max(...setsData.map(s => s.weight_kg)),
-        max_reps: Math.max(...setsData.map(s => s.reps)),
-        avg_weight: setsData.reduce((acc, curr) => acc + curr.weight_kg, 0) / setsData.length
-      }
-    }
+    // Les statistiques sont maintenant gérées par les composants dédiés
   } catch (e) {
     error.value = e.message
   } finally {

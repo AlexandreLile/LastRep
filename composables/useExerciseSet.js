@@ -4,6 +4,15 @@ export const useExerciseSet = () => {
   const exerciseSets = ref([])
   const error = ref(null)
   const loading = ref(false)
+  const tempSessionSets = ref([]) // Pour stocker les IDs des sets de la session
+
+  // Initialiser tempSessionSets depuis localStorage si disponible
+  if (process.client) {
+    const storedSets = localStorage.getItem('tempSessionSets')
+    if (storedSets) {
+      tempSessionSets.value = JSON.parse(storedSets)
+    }
+  }
 
   const addExerciseSet = async (exerciseId, data) => {
     try {
@@ -32,6 +41,16 @@ export const useExerciseSet = () => {
         .single()
 
       if (insertError) throw insertError
+
+      // Ajouter l'ID du nouveau set à notre liste temporaire
+      if (newSet && newSet.id) {
+        tempSessionSets.value.push(newSet.id)
+        // Sauvegarder dans localStorage
+        if (process.client) {
+          localStorage.setItem('tempSessionSets', JSON.stringify(tempSessionSets.value))
+        }
+      }
+      
       exerciseSets.value.push(newSet)
       return { data: newSet, error: null }
     } catch (e) {
@@ -70,11 +89,62 @@ export const useExerciseSet = () => {
     }
   }
 
+  const updateExerciseSetsWithSessionId = async (performedSessionId) => {
+    try {
+      loading.value = true
+      const supabase = useSupabaseClient()
+      const user = (await supabase.auth.getUser()).data.user
+      
+      if (!user) {
+        throw new Error('Utilisateur non authentifié')
+      }
+
+      // Récupérer la liste des IDs des sets de la session depuis localStorage
+      let setIds = []
+      if (process.client) {
+        const storedSets = localStorage.getItem('tempSessionSets')
+        if (storedSets) {
+          setIds = JSON.parse(storedSets)
+        }
+      } else {
+        setIds = tempSessionSets.value
+      }
+
+      if (setIds.length === 0) {
+        return { data: null, error: null }
+      }
+
+      // Mettre à jour tous les sets avec le performed_session_id
+      const { data, error: updateError } = await supabase
+        .from('exerciseset')
+        .update({ performed_session_id: performedSessionId })
+        .in('id', setIds)
+        .eq('user_id', user.id)
+        .select()
+
+      if (updateError) throw updateError
+
+      // Effacer la liste temporaire
+      tempSessionSets.value = []
+      if (process.client) {
+        localStorage.removeItem('tempSessionSets')
+      }
+
+      return { data, error: null }
+    } catch (e) {
+      error.value = e.message
+      return { data: null, error: e }
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     exerciseSets,
     error,
     loading,
     addExerciseSet,
-    getExerciseSets
+    getExerciseSets,
+    updateExerciseSetsWithSessionId
   }
 } 

@@ -171,11 +171,15 @@ const formatDate = (date) => {
 
 const handleEndSession = async () => {
   try {
-    await saveSession()
-    showCelebration.value = true
-    setTimeout(() => {
-      router.push(`/seances/${route.params.id}/train`)
-    }, 3000)
+    const sessionData = await saveSession()
+    
+    if (sessionData) {
+      // La mise à jour des exerciseSet est maintenant gérée dans saveSession
+      showCelebration.value = true
+      setTimeout(() => {
+        router.push(`/seances/${route.params.id}/train`)
+      }, 3000)
+    }
   } catch (e) {
     error.value = e.message || performedSessionError.value
   }

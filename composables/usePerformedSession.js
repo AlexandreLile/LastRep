@@ -32,19 +32,29 @@ export const usePerformedSession = (supabase) => {
         throw new Error('Aucune session en cours')
       }
 
+      // Créer un objet sans temp_id
+      const sessionData = {
+        workout_session_id: localSession.value.workout_session_id,
+        user_id: localSession.value.user_id,
+        started_at: localSession.value.started_at,
+        ended_at: new Date().toISOString()
+      }
+
       const { data, error: saveError } = await supabase
         .from('performedsession')
-        .insert([
-          {
-            ...localSession.value,
-            ended_at: new Date().toISOString()
-          }
-        ])
+        .insert([sessionData])
         .select()
         .single()
 
       if (saveError) throw saveError
       performedSession.value = data
+      
+      // Mettre à jour tous les exerciseSets avec le performed_session_id
+      if (data && data.id) {
+        const { updateExerciseSetsWithSessionId } = useExerciseSet()
+        await updateExerciseSetsWithSessionId(data.id)
+      }
+      
       localSession.value = null
       // Supprimer du localStorage
       if (process.client) {

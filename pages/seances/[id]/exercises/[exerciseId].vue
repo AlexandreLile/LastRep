@@ -169,6 +169,7 @@ const { exerciseSets, error: exerciseSetError, loading: exerciseSetLoading, addE
 const exercise = ref(null)
 const loading = ref(true)
 const error = ref(null)
+const sessionId = ref(null)
 
 const newSet = ref({
   weight: '',
@@ -180,7 +181,12 @@ const newSet = ref({
 
 const handleAddSet = async () => {
   try {
-    const { error: addError } = await addExerciseSet(exercise.value.exercise.id, newSet.value)
+    // Ajouter l'exerciseSet
+    const { error: addError } = await addExerciseSet(
+      exercise.value.exercise.id, 
+      newSet.value
+    )
+    
     if (addError) throw addError
     
     // Recharger les séries
