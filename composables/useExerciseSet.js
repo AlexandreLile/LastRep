@@ -7,7 +7,7 @@ export const useExerciseSet = () => {
   const tempSessionSets = ref([]) // Pour stocker les IDs des sets de la session
 
   // Initialiser tempSessionSets depuis localStorage si disponible
-  if (process.client) {
+  if (typeof window !== 'undefined') {
     const storedSets = localStorage.getItem('tempSessionSets')
     if (storedSets) {
       tempSessionSets.value = JSON.parse(storedSets)
@@ -46,12 +46,14 @@ export const useExerciseSet = () => {
       if (newSet && newSet.id) {
         tempSessionSets.value.push(newSet.id)
         // Sauvegarder dans localStorage
-        if (process.client) {
+        if (typeof window !== 'undefined') {
           localStorage.setItem('tempSessionSets', JSON.stringify(tempSessionSets.value))
         }
       }
       
-      exerciseSets.value.push(newSet)
+      // Ajouter le nouveau set au début du tableau pour qu'il apparaisse en premier (ordre descendant par date)
+      exerciseSets.value = [newSet, ...exerciseSets.value]
+      console.log('Nouvelle série ajoutée dans le composable:', newSet)
       return { data: newSet, error: null }
     } catch (e) {
       error.value = e.message
@@ -101,7 +103,7 @@ export const useExerciseSet = () => {
 
       // Récupérer la liste des IDs des sets de la session depuis localStorage
       let setIds = []
-      if (process.client) {
+      if (typeof window !== 'undefined') {
         const storedSets = localStorage.getItem('tempSessionSets')
         if (storedSets) {
           setIds = JSON.parse(storedSets)
@@ -126,7 +128,7 @@ export const useExerciseSet = () => {
 
       // Effacer la liste temporaire
       tempSessionSets.value = []
-      if (process.client) {
+      if (typeof window !== 'undefined') {
         localStorage.removeItem('tempSessionSets')
       }
 

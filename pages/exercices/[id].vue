@@ -80,43 +80,70 @@
             <p class="text-sm text-muted-foreground">Liste de toutes vos séries</p>
           </div>
           
-          <div v-if="sets.length > 0" class="space-y-4">
-            <div 
-              v-for="set in sets" 
-              :key="set.id"
-              class="relative bg-white border border-muted rounded-xl p-4 hover:shadow-md transition-all duration-200"
-            >
-              <div class="flex justify-between items-start">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
-                  <div>
-                    <p class="text-sm text-muted-foreground">Poids</p>
-                    <p class="text-lg font-medium">{{ set.weight_kg }} kg</p>
+          <Tabs default-value="week" class="w-full">
+            <div class="overflow-x-auto px-2 pb-2 -mx-2">
+              <TabsList class="flex w-full min-w-max space-x-2">
+                <TabsTrigger 
+                  value="week" 
+                  class="whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-white"
+                >
+                  Cette semaine
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="month" 
+                  class="whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-white"
+                >
+                  Ce mois
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="year" 
+                  class="whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-white"
+                >
+                  Cette année
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent v-for="period in ['week', 'month', 'year']" :key="period" :value="period" class="mt-6">
+              <div v-if="filteredSets(period).length > 0" class="space-y-4">
+                <div 
+                  v-for="set in filteredSets(period)" 
+                  :key="set.id"
+                  class="relative bg-white border border-muted rounded-xl p-4 hover:shadow-md transition-all duration-200"
+                >
+                  <div class="flex justify-between items-start">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+                      <div>
+                        <p class="text-sm text-muted-foreground">Poids</p>
+                        <p class="text-lg font-medium">{{ set.weight_kg }} kg</p>
+                      </div>
+                      <div>
+                        <p class="text-sm text-muted-foreground">Répétitions</p>
+                        <p class="text-lg font-medium">{{ set.reps }}</p>
+                      </div>
+                      <div>
+                        <p class="text-sm text-muted-foreground">Date</p>
+                        <p class="text-lg font-medium">{{ formatDate(set.created_at) }}</p>
+                      </div>
+                    </div>
+                    <Button 
+                      variant="ghost"
+                      size="icon"
+                      @click="openEditModal(set)"
+                    >
+                      <Pencil class="h-4 w-4" />
+                    </Button>
                   </div>
-                  <div>
-                    <p class="text-sm text-muted-foreground">Répétitions</p>
-                    <p class="text-lg font-medium">{{ set.reps }}</p>
-                  </div>
-                  <div>
-                    <p class="text-sm text-muted-foreground">Date</p>
-                    <p class="text-lg font-medium">{{ formatDate(set.created_at) }}</p>
+                  <div v-if="set.note" class="mt-2 text-sm text-muted-foreground">
+                    {{ set.note }}
                   </div>
                 </div>
-                <Button 
-                  variant="ghost"
-                  size="icon"
-                  @click="openEditModal(set)"
-                >
-                  <Pencil class="h-4 w-4" />
-                </Button>
               </div>
-              <div v-if="set.note" class="mt-2 text-sm text-muted-foreground">
-                {{ set.note }}
+              <div v-else class="text-center py-8 text-muted-foreground">
+                Aucune série enregistrée pour cette période
               </div>
-            </div>
-          </div>
-          <div v-else class="text-center py-8 text-muted-foreground">
-            Aucune série enregistrée pour cet exercice
-          </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
@@ -205,6 +232,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
 const route = useRoute()
 const supabase = useSupabaseClient()
@@ -319,6 +347,37 @@ const handleEditSet = async () => {
   } catch (e) {
     error.value = e.message
   }
+}
+
+const filteredSets = (period) => {
+  const now = new Date()
+  let startDate = new Date()
+  
+  switch (period) {
+    case 'week':
+      // Get first day of current week (Sunday = 0, Monday = 1, etc.)
+      const firstDayOfWeek = 1 // Monday
+      const dayOfWeek = now.getDay() || 7 // Convert Sunday from 0 to 7
+      const diff = dayOfWeek >= firstDayOfWeek ? dayOfWeek - firstDayOfWeek : 6 - firstDayOfWeek + dayOfWeek
+      startDate.setDate(now.getDate() - diff)
+      break
+    case 'month':
+      // First day of current month
+      startDate.setDate(1)
+      break
+    case 'year':
+      // First day of current year
+      startDate.setMonth(0, 1)
+      break
+  }
+  
+  // Set to beginning of the day
+  startDate.setHours(0, 0, 0, 0)
+  
+  return sets.value.filter(set => {
+    const setDate = new Date(set.created_at)
+    return setDate >= startDate
+  })
 }
 
 onMounted(loadExerciseData)
