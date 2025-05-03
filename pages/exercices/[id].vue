@@ -39,15 +39,31 @@
 
       <!-- Graphiques -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white rounded-xl p-6">
-          <WeightRepsChart :exercise-id="route.params.id" />
+        <div class="bg-white rounded-xl p-6 flex flex-col h-full">
+          <div class="mb-4">
+            <h3 class="text-lg font-medium mb-2">Poids vs Répétitions</h3>
+            <p class="text-sm text-muted-foreground">Maximum de répétitions pour chaque poids</p>
+          </div>
+          <div class="flex-1">
+            <WeightRepsChart :exercise-id="route.params.id" />
+          </div>
         </div>
-        <div class="bg-white rounded-xl p-6">
-          <WeightProgressionChart :exercise-id="route.params.id" />
+        <div class="bg-white rounded-xl p-6 flex flex-col h-full">
+          <div class="mb-4">
+            <h3 class="text-lg font-medium mb-2">Progression du poids</h3>
+            <p class="text-sm text-muted-foreground">Poids maximum par jour d'entraînement</p>
+          </div>
+          <div class="flex-1">
+            <WeightProgressionChart :exercise-id="route.params.id" />
+          </div>
         </div>
       </div>
 
       <div class="mt-6 bg-white rounded-xl p-6">
+        <div class="mb-4">
+          <h3 class="text-lg font-medium mb-2">Calculateur de 1RM</h3>
+          <p class="text-sm text-muted-foreground">Estimation de votre répétition maximale</p>
+        </div>
         <RMCalculator :exercise-id="route.params.id" />
       </div>
 

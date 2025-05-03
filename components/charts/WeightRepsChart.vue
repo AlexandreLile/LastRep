@@ -1,36 +1,33 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Poids vs Répétitions</h3>
-    <div class="h-64">
-      <Bar
-        v-if="chartData"
-        :data="chartData"
-        :options="{
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
+  <div class="h-64">
+    <Bar
+      v-if="chartData"
+      :data="chartData"
+      :options="{
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Répétitions (max)'
             }
           },
-          scales: {
-            y: {
-              beginAtZero: true,
-              title: {
-                display: true,
-                text: 'Répétitions'
-              }
-            },
-            x: {
-              title: {
-                display: true,
-                text: 'Poids (kg)'
-              }
+          x: {
+            title: {
+              display: true,
+              text: 'Poids (kg)'
             }
           }
-        }"
-      />
-    </div>
+        }
+      }"
+    />
   </div>
 </template>
 
@@ -50,6 +47,7 @@ const props = defineProps({
 })
 
 const chartData = ref(null)
+const MAX_DATA_POINTS = 20 // Limite max de barres à afficher
 
 const loadData = async () => {
   try {
@@ -67,21 +65,57 @@ const loadData = async () => {
 
     if (error) throw error
 
-    // Grouper les répétitions par poids
-    const groupedData = data.reduce((acc, curr) => {
+    // Trouver le maximum de répétitions pour chaque poids
+    const maxRepsByWeight = data.reduce((acc, curr) => {
       const weight = `${curr.weight_kg}kg`
-      if (!acc[weight]) {
-        acc[weight] = 0
+      if (!acc[weight] || curr.reps > acc[weight]) {
+        acc[weight] = curr.reps
       }
-      acc[weight] += curr.reps
       return acc
     }, {})
 
+    // Trier les poids par valeur numérique croissante
+    let sortedWeights = Object.keys(maxRepsByWeight).sort((a, b) => {
+      return parseFloat(a) - parseFloat(b)
+    })
+
+    // Si trop de données, regrouper les poids par incréments
+    if (sortedWeights.length > MAX_DATA_POINTS) {
+      const groupedMaxReps = {}
+      const allWeights = sortedWeights.map(w => parseFloat(w))
+      const minWeight = Math.min(...allWeights)
+      const maxWeight = Math.max(...allWeights)
+      const range = maxWeight - minWeight
+      
+      // Calculer l'incrément optimal
+      let increment = 2.5 // Incrément minimum
+      if (range / increment > MAX_DATA_POINTS) {
+        // Augmenter l'incrément pour avoir moins de barres
+        increment = Math.ceil(range / MAX_DATA_POINTS / 2.5) * 2.5
+      }
+      
+      // Regrouper par incréments
+      sortedWeights.forEach(weight => {
+        const numWeight = parseFloat(weight)
+        // Arrondir au plus proche multiple de l'incrément
+        const groupKey = `${Math.round(numWeight / increment) * increment}kg`
+        if (!groupedMaxReps[groupKey] || maxRepsByWeight[weight] > groupedMaxReps[groupKey]) {
+          groupedMaxReps[groupKey] = maxRepsByWeight[weight]
+        }
+      })
+      
+      // Mettre à jour les données
+      sortedWeights = Object.keys(groupedMaxReps).sort((a, b) => {
+        return parseFloat(a) - parseFloat(b)
+      })
+      maxRepsByWeight = groupedMaxReps
+    }
+
     chartData.value = {
-      labels: Object.keys(groupedData),
+      labels: sortedWeights,
       datasets: [{
-        label: 'Répétitions',
-        data: Object.values(groupedData),
+        label: 'Répétitions max',
+        data: sortedWeights.map(weight => maxRepsByWeight[weight]),
         backgroundColor: 'oklch(51.1% 0.262 276.966)',
         borderColor: 'oklch(51.1% 0.262 276.966)',
         borderWidth: 1

@@ -1,13 +1,10 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Progression du poids</h3>
-    <div class="h-64">
-      <Line
-        v-if="chartData"
-        :data="chartData"
-        :options="chartOptions"
-      />
-    </div>
+  <div class="h-64">
+    <Line
+      v-if="chartData"
+      :data="chartData"
+      :options="chartOptions"
+    />
   </div>
 </template>
 
@@ -28,6 +25,38 @@ const props = defineProps({
 
 const chartData = ref(null)
 const chartOptions = ref(null)
+const MAX_DATA_POINTS = 30 // Limite max de points à afficher
+
+// Fonction pour regrouper les données par période (semaine ou mois)
+const groupDataByPeriod = (data, period = 'week') => {
+  // Trier les données par date croissante
+  data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+  
+  const groups = {}
+  
+  data.forEach(item => {
+    const date = new Date(item.created_at)
+    let key
+    
+    if (period === 'week') {
+      // Obtenir le premier jour de la semaine (lundi)
+      const day = date.getDay() || 7 // getDay() renvoie 0 pour dimanche, donc on convertit en 7
+      const firstDayOfWeek = new Date(date)
+      firstDayOfWeek.setDate(date.getDate() - day + 1)
+      key = firstDayOfWeek.toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: 'numeric' }) + ' (sem)'
+    } else if (period === 'month') {
+      key = date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long' })
+    } else {
+      key = date.toLocaleDateString('fr-FR')
+    }
+    
+    if (!groups[key] || item.weight_kg > groups[key]) {
+      groups[key] = item.weight_kg
+    }
+  })
+  
+  return { dates: Object.keys(groups), weights: Object.values(groups) }
+}
 
 const loadData = async () => {
   try {
@@ -45,8 +74,35 @@ const loadData = async () => {
 
     if (error) throw error
 
-    const weights = data.map(item => item.weight_kg)
-    const dates = data.map(item => new Date(item.created_at).toLocaleDateString('fr-FR'))
+    let dates, weights
+    
+    // Regrouper par date et trouver le poids maximum pour chaque jour
+    const dailyMaxWeights = data.reduce((acc, item) => {
+      const date = new Date(item.created_at).toLocaleDateString('fr-FR')
+      if (!acc[date] || item.weight_kg > acc[date]) {
+        acc[date] = item.weight_kg
+      }
+      return acc
+    }, {})
+
+    // Convertir en tableaux pour le graphique
+    dates = Object.keys(dailyMaxWeights)
+    weights = Object.values(dailyMaxWeights)
+    
+    // Si trop de données, regrouper par semaine ou par mois
+    if (dates.length > MAX_DATA_POINTS) {
+      // Si plus de MAX_DATA_POINTS jours, regrouper par semaine
+      const grouped = groupDataByPeriod(data, 'week')
+      dates = grouped.dates
+      weights = grouped.weights
+      
+      // Si toujours trop, regrouper par mois
+      if (dates.length > MAX_DATA_POINTS) {
+        const groupedByMonth = groupDataByPeriod(data, 'month')
+        dates = groupedByMonth.dates
+        weights = groupedByMonth.weights
+      }
+    }
     
     // Trouver le poids minimum et maximum
     const minWeight = Math.min(...weights)
@@ -55,11 +111,13 @@ const loadData = async () => {
     chartData.value = {
       labels: dates,
       datasets: [{
-        label: 'Poids',
+        label: 'Poids max',
         data: weights,
         borderColor: 'oklch(51.1% 0.262 276.966)',
         backgroundColor: 'oklch(51.1% 0.262 276.966)',
-        tension: 0.4
+        tension: 0.4,
+        pointRadius: 5,
+        pointHoverRadius: 7
       }]
     }
 
@@ -68,14 +126,21 @@ const loadData = async () => {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return `Poids max: ${context.parsed.y} kg`;
+            }
+          }
+        },
         legend: {
           display: false
         }
       },
       scales: {
         y: {
-          min: Math.max(0, minWeight - 5), // Commencer 5kg en dessous du poids minimum
-          max: maxWeight + 5, // Finir 5kg au-dessus du poids maximum
+          min: Math.max(0, minWeight - 5),
+          max: maxWeight + 5,
           title: {
             display: true,
             text: 'Poids (kg)'
@@ -85,6 +150,10 @@ const loadData = async () => {
           title: {
             display: true,
             text: 'Date'
+          },
+          ticks: {
+            maxRotation: 45,
+            minRotation: 45
           }
         }
       }
