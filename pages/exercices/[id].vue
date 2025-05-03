@@ -28,12 +28,15 @@
       </div>
 
       <!-- Stats Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
         <div class="bg-white rounded-xl p-6">
           <LastSetRMStats :exercise-id="route.params.id" />
         </div>
         <div class="bg-white rounded-xl p-6">
           <LastExerciseSessionStats :exercise-id="route.params.id" />
+        </div>
+        <div class="bg-white rounded-xl p-6">
+          <TotalVolumeStats :exercise-id="route.params.id" />
         </div>
       </div>
 
@@ -61,10 +64,12 @@
 
       <div class="mt-6 bg-white rounded-xl p-6">
         <div class="mb-4">
-          <h3 class="text-lg font-medium mb-2">Calculateur de 1RM</h3>
-          <p class="text-sm text-muted-foreground">Estimation de votre répétition maximale</p>
+          <h3 class="text-lg font-medium mb-2">1RM estimé</h3>
+          <p class="text-sm text-muted-foreground">Répétition maximale estimée</p>
         </div>
-        <RMCalculator :exercise-id="route.params.id" />
+        <div class="text-2xl font-semibold">
+          <RMCalculator :exercise-id="route.params.id" />
+        </div>
       </div>
 
       <!-- Historique des séries -->
@@ -193,6 +198,7 @@ import WeightProgressionChart from '~/components/charts/WeightProgressionChart.v
 import RMCalculator from '~/components/charts/RMCalculator.vue'
 import LastSetRMStats from '~/components/stats/LastSetRMStats.vue'
 import LastExerciseSessionStats from '~/components/stats/LastExerciseSessionStats.vue'
+import TotalVolumeStats from '~/components/stats/TotalVolumeStats.vue'
 import { Pencil } from 'lucide-vue-next'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'

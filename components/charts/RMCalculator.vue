@@ -36,20 +36,33 @@ const loadBestSet = async () => {
       throw new Error('Utilisateur non authentifié')
     }
 
-    // Récupérer toutes les séries de l'exercice
+    // Récupérer toutes les séries de cet exercice, quelle que soit la séance
     const { data, error: fetchError } = await supabase
       .from('exerciseset')
-      .select('weight_kg, reps')
+      .select('weight_kg, reps, created_at')
       .eq('exercise_id', props.exerciseId)
       .eq('user_id', user.id)
-      .order('weight_kg', { ascending: false })
-      .limit(1)
-
+      .order('created_at', { ascending: false })
+      
     if (fetchError) throw fetchError
 
     if (data && data.length > 0) {
-      bestSet.value = data[0]
-      estimatedRM.value = calculateRM(bestSet.value.weight_kg, bestSet.value.reps)
+      // Trouver la série avec le 1RM estimé le plus élevé
+      let maxRM = 0
+      let bestSetFound = null
+      
+      data.forEach(set => {
+        const rm = calculateRM(set.weight_kg, set.reps)
+        if (rm > maxRM) {
+          maxRM = rm
+          bestSetFound = set
+        }
+      })
+      
+      if (bestSetFound) {
+        bestSet.value = bestSetFound
+        estimatedRM.value = maxRM
+      }
     }
   } catch (e) {
     error.value = e.message
