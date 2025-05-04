@@ -39,7 +39,8 @@ export default defineNuxtConfig({
     cookieOptions: {
       secure: process.env.NODE_ENV === 'production',
       path: '/',
-      maxAge: 60 * 60 * 8,
+      maxAge: 60 * 60 * 24 * 7, // 7 jours
+      domain: process.env.NODE_ENV === 'production' ? '' : undefined, // Le domaine sera automatiquement défini
       sameSite: 'lax'
     },
     clientOptions: {
