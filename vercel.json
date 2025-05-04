@@ -1,9 +1,20 @@
 {
   "version": 2,
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
   "builds": [
     {
       "src": "nuxt.config.ts",
-      "use": "@nuxtjs/vercel-builder"
+      "use": "@nuxtjs/vercel-builder",
+      "config": {
+        "tscOptions": {
+          "sourceMap": true
+        },
+        "postbuild": [
+          "cp tsconfig.json .output/",
+          "cp nuxt.config.ts .output/"
+        ]
+      }
     }
   ],
   "headers": [
