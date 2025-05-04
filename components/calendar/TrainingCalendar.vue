@@ -1,11 +1,8 @@
 <template>
-  <div class="p-6">
-    <!-- En-tête avec temps total -->
+  <div>
+    <!-- Temps total hebdomadaire -->
     <div class="mb-8">
-      <div class="flex items-center space-x-2 mb-3">
-        <Clock class="w-5 h-5 text-primary" />
-        <h3 class="text-lg font-semibold text-gray-900">Cette semaine</h3>
-      </div>
+      <div class="mb-1 text-sm text-muted-foreground font-medium">Cette semaine</div>
       <p class="text-3xl font-bold text-gray-900">{{ formatTotalDuration }}</p>
       
       <!-- Barres de temps par jour -->

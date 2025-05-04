@@ -1,46 +1,22 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Progression du volume</h3>
+  <div class="bg-white dark:bg-gray-800 rounded-lg">
     <div class="h-64">
-      <Bar
+      <Line
         v-if="chartData"
         :data="chartData"
-        :options="{
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              title: {
-                display: true,
-                text: 'Volume (kg)'
-              }
-            },
-            x: {
-              title: {
-                display: true,
-                text: 'Date'
-              }
-            }
-          }
-        }"
+        :options="chartOptions"
       />
     </div>
   </div>
 </template>
 
 <script setup>
-import { Bar } from 'vue-chartjs'
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
-import { ref, onMounted } from 'vue'
+import { Line } from 'vue-chartjs'
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
+import { ref, onMounted, computed } from 'vue'
 import { useSupabaseClient } from '#imports'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 const props = defineProps({
   workoutSessionId: {
@@ -50,15 +26,64 @@ const props = defineProps({
 })
 
 const supabase = useSupabaseClient()
-const chartData = ref({
-  labels: [],
+const volumes = ref([])
+const labels = ref([])
+
+const chartData = computed(() => ({
+  labels: labels.value,
   datasets: [{
     label: 'Volume total',
-    data: [],
-    backgroundColor: 'oklch(51.1% 0.262 276.966)',
+    data: volumes.value,
     borderColor: 'oklch(51.1% 0.262 276.966)',
-    borderWidth: 1
+    backgroundColor: 'oklch(51.1% 0.262 276.966)',
+    tension: 0.4,
+    pointRadius: 5,
+    pointHoverRadius: 7,
+    fill: false
   }]
+}))
+
+const chartOptions = computed(() => {
+  const minVolume = volumes.value.length ? Math.min(...volumes.value) : 0
+  const maxVolume = volumes.value.length ? Math.max(...volumes.value) : 100
+  
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            return `Volume: ${context.parsed.y} kg`;
+          }
+        }
+      },
+      legend: {
+        display: false
+      }
+    },
+    scales: {
+      y: {
+        min: Math.max(0, minVolume - (maxVolume * 0.1)),
+        max: maxVolume + (maxVolume * 0.1),
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Volume (kg)'
+        }
+      },
+      x: {
+        title: {
+          display: true,
+          text: 'Date'
+        },
+        ticks: {
+          maxRotation: 45,
+          minRotation: 45
+        }
+      }
+    }
+  }
 })
 
 const loadSessionWeightData = async () => {
@@ -75,8 +100,8 @@ const loadSessionWeightData = async () => {
     if (!sessions?.length) return
 
     // 2. Pour chaque séance, récupérer tous les sets associés et calculer le volume
-    const volumes = []
-    const labels = []
+    const tempVolumes = []
+    const tempLabels = []
 
     for (const session of sessions) {
       const { data: sets, error: setsError } = await supabase
@@ -88,21 +113,13 @@ const loadSessionWeightData = async () => {
       if (setsError) throw setsError
 
       const volume = sets.reduce((sum, set) => sum + set.weight_kg * set.reps, 0)
-      volumes.push(volume)
-      labels.push(new Date(session.started_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }))
+      tempVolumes.push(volume)
+      tempLabels.push(new Date(session.started_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }))
     }
 
     // 3. Mettre à jour les données du graphique
-    chartData.value = {
-      labels,
-      datasets: [{
-        label: 'Volume total',
-        data: volumes,
-        backgroundColor: 'oklch(51.1% 0.262 276.966)',
-        borderColor: 'oklch(51.1% 0.262 276.966)',
-        borderWidth: 1
-      }]
-    }
+    volumes.value = tempVolumes
+    labels.value = tempLabels
   } catch (error) {
     console.error('Erreur lors du chargement des données:', error)
   }

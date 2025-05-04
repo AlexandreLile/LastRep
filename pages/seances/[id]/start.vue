@@ -13,6 +13,9 @@
       <span>MODE ENTRAÎNEMENT</span>
     </div>
 
+    <!-- Padding supplémentaire pour le contenu sous le badge MODE ENTRAINEMENT -->
+    <div class="pt-16 sm:pt-0"></div>
+
     <!-- Animation de célébration -->
     <div v-if="showCelebration" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 text-center">
@@ -38,36 +41,38 @@
 
     <div v-else-if="session" class="space-y-8">
       <!-- En-tête amélioré -->
-      <div class="bg-white rounded-xl p-6">
-        <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div class="flex items-start gap-4">
-            <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
-              <Dumbbell class="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h2 class="text-2xl font-bold text-gray-900">{{ session.title }}</h2>
-              <div v-if="currentSession" class="flex items-center mt-2">
-                <Calendar class="w-4 h-4 text-muted-foreground mr-1.5" />
-                <span class="text-sm text-muted-foreground">
-                  Début : {{ formatDate(currentSession.started_at) }}
-                </span>
+      <div class="bg-white rounded-xl p-4 sm:p-6">
+        <div class="flex flex-col gap-4 sm:gap-6">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
+                <Dumbbell class="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h2 class="text-2xl font-bold text-gray-900">{{ session.title }}</h2>
+                <div v-if="currentSession" class="flex items-center mt-2">
+                  <Calendar class="w-4 h-4 text-muted-foreground mr-1.5" />
+                  <span class="text-sm text-muted-foreground">
+                    Début : {{ formatDate(currentSession.started_at) }}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <!-- Chronomètre -->
-          <div class="flex flex-col items-center bg-gray-50/70 rounded-lg p-3">
-            <div class="text-xs text-muted-foreground mb-1">DURÉE DE LA SÉANCE</div>
-            <div class="text-xl font-mono font-semibold tracking-wide">{{ formatElapsedTime }}</div>
+            
+            <!-- Chronomètre -->
+            <div class="flex flex-col items-center bg-gray-50/70 rounded-lg p-3 mt-4 sm:mt-0">
+              <div class="text-xs text-muted-foreground mb-1">DURÉE DE LA SÉANCE</div>
+              <div class="text-xl font-mono font-semibold tracking-wide">{{ formatElapsedTime }}</div>
+            </div>
           </div>
           
           <!-- Boutons d'action -->
-          <div class="flex gap-4">
+          <div class="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full">
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button 
                   variant="outline"
-                  class="flex items-center gap-2"
+                  class="flex items-center gap-2 w-full sm:w-auto"
                 >
                   <X class="w-4 h-4" />
                   Annuler
@@ -90,7 +95,7 @@
               <AlertDialogTrigger asChild>
                 <Button 
                   variant="destructive"
-                  class="flex items-center gap-2"
+                  class="flex items-center gap-2 w-full sm:w-auto"
                 >
                   <CheckCircle class="w-4 h-4" />
                   Terminer la séance
@@ -133,44 +138,27 @@
             :style="{animationDelay: `${index * 0.1}s`}"
             :class="{'animate-fade-in': true}"
           >
-            <!-- Actions de contrôle pour l'exercice -->
-            <div class="absolute top-2 right-2 flex items-center space-x-2">
-              <button 
-                @click.stop="toggleExerciseStatus(exercise.exercise_id)"
-                class="w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200"
-                :class="{
-                  'bg-green-100 hover:bg-green-200': exercise.completionStatus,
-                  'bg-gray-100 hover:bg-gray-200': !exercise.completionStatus
-                }"
-              >
-                <Check v-if="exercise.completionStatus" class="w-4 h-4 text-green-600" />
-                <CircleSlash v-else class="w-4 h-4 text-gray-400" />
-              </button>
-              
-              <button 
-                @click.stop="goToExercise(exercise.id)"
-                class="w-8 h-8 bg-primary/10 hover:bg-primary/20 rounded-full flex items-center justify-center transition-colors duration-200"
-              >
-                <ArrowRight class="w-4 h-4 text-primary" />
-              </button>
-            </div>
-            
             <!-- Contenu principal -->
-            <div 
-              class="flex items-center gap-3 cursor-pointer" 
-              @click="goToExercise(exercise.id)"
-            >
-              <div class="p-2 rounded-full bg-primary/20 transition-all duration-300 group-hover:bg-primary/30 group-hover:scale-110 relative">
-                <Dumbbell class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
-                <!-- Indicateur visuel de statut -->
-                <div v-if="exercise.completionStatus" class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+            <div class="flex flex-col space-y-3">
+              <!-- Partie supérieure: nom et icône principale -->
+              <div class="flex items-start gap-3">
+                <div class="p-2 rounded-full bg-primary/20 transition-all duration-300 group-hover:bg-primary/30 group-hover:scale-110 relative">
+                  <Dumbbell class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
+                  <!-- Indicateur visuel de statut -->
+                  <div v-if="exercise.completionStatus" class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                </div>
+                <div class="flex-grow">
+                  <h4 class="text-base font-medium text-gray-900 transition-colors duration-300 group-hover:text-primary">{{ exercise.exercise?.name }}</h4>
+                </div>
               </div>
-              <div class="flex-grow">
-                <h4 class="text-base font-medium text-gray-900 transition-colors duration-300 group-hover:text-primary">{{ exercise.exercise?.name }}</h4>
-                <div class="flex items-center justify-between mt-1">
-                  <span class="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-primary/10 group-hover:text-primary">
-                    {{ exercise.exercise?.primary_muscle }}
-                  </span>
+              
+              <!-- Partie inférieure: Muscle, statut et actions -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span class="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-primary/10 group-hover:text-primary">
+                  {{ exercise.exercise?.primary_muscle }}
+                </span>
+                
+                <div class="flex items-center gap-2 justify-between sm:justify-end">
                   <span 
                     class="text-xs px-2 py-0.5 rounded-full"
                     :class="{
@@ -180,9 +168,37 @@
                   >
                     {{ exercise.completionStatus ? 'Complété' : 'À faire' }}
                   </span>
+                  
+                  <!-- Actions de contrôle pour l'exercice -->
+                  <div class="flex items-center space-x-2">
+                    <button 
+                      @click.stop="toggleExerciseStatus(exercise.exercise_id)"
+                      class="w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200"
+                      :class="{
+                        'bg-green-100 hover:bg-green-200': exercise.completionStatus,
+                        'bg-gray-100 hover:bg-gray-200': !exercise.completionStatus
+                      }"
+                    >
+                      <Check v-if="exercise.completionStatus" class="w-4 h-4 text-green-600" />
+                      <CircleSlash v-else class="w-4 h-4 text-gray-400" />
+                    </button>
+                    
+                    <button 
+                      @click.stop="goToExercise(exercise.id)"
+                      class="w-8 h-8 bg-primary/10 hover:bg-primary/20 rounded-full flex items-center justify-center transition-colors duration-200"
+                    >
+                      <ArrowRight class="w-4 h-4 text-primary" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
+            
+            <!-- Surface cliquable pour toute la carte -->
+            <div 
+              class="absolute inset-0 cursor-pointer" 
+              @click="goToExercise(exercise.id)"
+            ></div>
           </div>
         </div>
 

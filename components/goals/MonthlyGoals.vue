@@ -1,7 +1,6 @@
 <template>
-  <div class="space-y-6 p-6">
-    <div class="flex items-center justify-between">
-      <h2 class="text-lg font-semibold">Objectifs du mois</h2>
+  <div class="space-y-6">
+    <div class="flex justify-end">
       <span class="text-sm text-gray-500">{{ currentMonth }}</span>
     </div>
 
