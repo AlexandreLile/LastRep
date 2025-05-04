@@ -1,63 +1,92 @@
 <template>
   <div class="container mx-auto px-4 py-8">
+    <!-- Loader -->
     <div v-if="loading" class="flex justify-center items-center h-64">
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
     </div>
 
-    <div v-else-if="error" class="text-red-500 text-center py-8">
-      {{ error }}
+    <!-- Erreur -->
+    <div v-else-if="error" class="bg-white rounded-xl p-6 text-center">
+      <div class="w-12 h-12 flex-shrink-0 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <AlertTriangle class="h-6 w-6 text-red-500" />
+      </div>
+      <h3 class="text-lg font-medium text-red-500 mb-2">Une erreur est survenue</h3>
+      <p class="text-muted-foreground">{{ error }}</p>
     </div>
 
-    <div v-else-if="session" class="space-y-8">
-      <!-- Header -->
-      <div class="mb-8">
-        <h2 class="text-2xl font-semibold text-gray-900">{{ formData.title }}</h2>
+    <!-- Contenu principal -->
+    <div v-else-if="session" class="space-y-6">
+      <!-- Header amélioré -->
+      <div class="mb-8 bg-white rounded-xl p-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
+            <Edit class="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">Modifier la séance</h2>
+            <p class="text-sm text-muted-foreground">Personnalisez et réorganisez votre programme d'entraînement</p>
+          </div>
+        </div>
       </div>
 
       <!-- Formulaire d'édition -->
-      <div class="bg-white rounded-xl p-8">
-        <form @submit.prevent="handleSubmit" class="space-y-8">
-          <div class="space-y-6">
-            <div>
-              <h3 class="text-lg font-medium">Informations générales</h3>
-              <p class="text-sm text-muted-foreground">Modifiez les informations de votre séance.</p>
+      <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <form @submit.prevent="handleSubmit" class="space-y-6">
+          <div class="space-y-5">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <FileText class="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold">Informations générales</h3>
+                <p class="text-sm text-muted-foreground">Modifiez les informations de votre séance</p>
+              </div>
             </div>
 
             <div class="space-y-4">
               <div>
-                <Label for="title">Titre</Label>
+                <Label for="title" class="font-medium">Titre</Label>
                 <Input
                   id="title"
                   v-model="formData.title"
                   type="text"
                   required
+                  class="w-full"
                 />
               </div>
 
               <div>
-                <label for="notes">Note</label>
+                <Label for="notes" class="font-medium">Notes</Label>
                 <Textarea
                   id="notes"
                   v-model="formData.notes"
                   rows="4"
-                ></textarea>
+                  class="w-full resize-none"
+                  placeholder="Ajoutez des informations supplémentaires ici..."
+                ></Textarea>
               </div>
             </div>
           </div>
 
           <!-- Section des exercices -->
-          <div class="space-y-6">
-            <div>
-              <h3 class="text-lg font-medium">Exercices</h3>
-              <p class="text-sm text-muted-foreground">Gérez les exercices de votre séance.</p>
+          <div class="space-y-5 pt-4">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <Dumbbell class="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold">Exercices</h3>
+                <p class="text-sm text-muted-foreground">Gérez les exercices de votre séance</p>
+              </div>
             </div>
 
             <div class="flex justify-end">
               <Button
                 type="button"
-                variant="outline"
+                class="flex items-center gap-2"
                 @click="showAddExercise = true"
               >
+                <Plus class="h-4 w-4" />
                 Ajouter des exercices
               </Button>
             </div>
@@ -73,21 +102,18 @@
                 ghost-class="opacity-50"
               >
                 <template #item="{ element }">
-                  <div class="relative bg-white rounded-xl p-4 cursor-move group overflow-hidden">
+                  <div class="relative bg-white rounded-xl p-4 cursor-move group overflow-hidden border border-gray-200 hover:shadow-md transition-all duration-300">
                     <!-- Effet de bordure néon -->
-                    <div class="absolute inset-0 rounded-xl bg-primary/20 blur-md transition-all duration-300 group-hover:bg-primary/30 group-hover:blur-lg"></div>
-                    <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/50 via-primary/30 to-primary/50 animate-[pulse_2s_ease-in-out_infinite] group-hover:from-primary/60 group-hover:via-primary/40 group-hover:to-primary/60"></div>
-                    <div class="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/40 to-transparent animate-[glow_3s_ease-in-out_infinite] group-hover:from-primary/50 group-hover:to-transparent"></div>
-                    <div class="absolute inset-[1px] rounded-xl bg-white"></div>
-
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary/70 rounded-l-xl group-hover:bg-primary transition-all duration-300"></div>
+                    
                     <div class="relative flex items-center justify-between">
                       <div class="flex items-center gap-3">
-                        <div class="p-2 rounded-full bg-primary/20 transition-all duration-300 group-hover:bg-primary/30">
-                          <GripVertical class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
+                        <div class="p-2 rounded-full bg-primary/10 transition-all duration-300 group-hover:bg-primary/20">
+                          <GripVertical class="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
                         </div>
                         <div>
                           <h4 class="text-base font-medium text-gray-900 transition-colors duration-300 group-hover:text-primary">{{ element.exercise?.name }}</h4>
-                          <span class="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-primary/10 group-hover:text-primary">
+                          <span class="text-sm text-muted-foreground bg-gray-100 px-3 py-1 rounded-full inline-block mt-1 transition-all duration-300 group-hover:bg-primary/10 group-hover:text-primary">
                             {{ element.exercise?.primary_muscle }}
                           </span>
                         </div>
@@ -95,6 +121,7 @@
                       <Button
                         variant="ghost"
                         size="icon"
+                        class="h-8 w-8 opacity-70 hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all duration-300"
                         @click.prevent.stop="removeExercise(element.id)"
                       >
                         <Trash2 class="h-4 w-4" />
@@ -104,19 +131,32 @@
                 </template>
               </draggable>
             </div>
-            <div v-else class="text-center py-8 text-muted-foreground">
-              Aucun exercice ajouté
+            <div v-else class="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+              <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <Dumbbell class="h-8 w-8 text-gray-400" />
+              </div>
+              <p class="text-muted-foreground text-center">Aucun exercice n'a été ajouté à cette séance</p>
+              <Button 
+                variant="outline" 
+                class="mt-4 flex items-center gap-2"
+                @click="showAddExercise = true"
+              >
+                <Plus class="h-4 w-4" />
+                Ajouter un exercice
+              </Button>
             </div>
           </div>
 
-          <div class="flex flex-wrap justify-end items-center gap-3 sm:flex-nowrap">
+          <!-- Boutons d'action -->
+          <div class="bg-gray-50 -mx-6 -mb-6 p-6 rounded-b-xl border-t border-gray-100 flex flex-wrap justify-end items-center gap-3 sm:flex-nowrap mt-8">
             <div class="w-full sm:w-auto">
               <Button
                 type="button"
                 variant="outline"
                 @click="router.push('/seances')"
-                class="w-full sm:w-auto"
+                class="w-full sm:w-auto group"
               >
+                <ArrowLeft class="h-4 w-4 mr-2 transition-transform duration-300 group-hover:-translate-x-1" />
                 Annuler
               </Button>
             </div>
@@ -127,8 +167,9 @@
                 :disabled="saving"
                 class="w-full sm:w-auto"
               >
-                <span v-if="saving">Enregistrement...</span>
-                <span v-else>Enregistrer</span>
+                <Save v-if="!saving" class="h-4 w-4 mr-2" />
+                <Loader2 v-else class="h-4 w-4 mr-2 animate-spin" />
+                {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
               </Button>
             </div>
 
@@ -137,8 +178,9 @@
                 <AlertDialogTrigger asChild>
                   <Button 
                     variant="destructive"
-                    class="w-full sm:w-auto"
+                    class="w-full sm:w-auto flex items-center gap-2"
                   >
+                    <Trash2 class="h-4 w-4" />
                     Supprimer
                   </Button>
                 </AlertDialogTrigger>
@@ -146,7 +188,7 @@
                   <AlertDialogHeader>
                     <AlertDialogTitle>Etes vous sûr de vouloir supprimer cette séance ?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Cette action est irréversible.
+                      Cette action est irréversible et supprimera définitivement cette séance.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -163,9 +205,12 @@
 
     <!-- Modal d'ajout d'exercices -->
     <Dialog :open="showAddExercise" @update:open="showAddExercise = false">
-      <DialogContent class="sm:max-w-[425px]">
+      <DialogContent class="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Ajouter des exercices</DialogTitle>
+          <DialogDescription>
+            Sélectionnez des exercices à ajouter à votre séance d'entraînement
+          </DialogDescription>
         </DialogHeader>
         <AddExerciseToSession
           :session-id="route.params.id"
@@ -180,7 +225,7 @@
 <script setup>
 import { useWorkoutSessions } from '~/composables/useWorkoutSession';
 import { useWorkoutExercise } from '~/composables/useWorkoutExercise';
-import { Trash2, GripVertical } from 'lucide-vue-next';
+import { Trash2, GripVertical, Edit, FileText, Dumbbell, Plus, ArrowLeft, Save, Loader2, AlertTriangle } from 'lucide-vue-next';
 import AddExerciseToSession from '@/components/exercises/AddExerciseToSession.vue';
 import draggable from 'vuedraggable';
 import { useSupabaseClient } from '#imports';
@@ -286,26 +331,24 @@ const handleExercisesUpdate = async (newExercises) => {
 };
 
 const deleteSession = async () => {
-  
-    try {
-      // D'abord, mettre à jour toutes les performedsession associées pour retirer la référence
-      const { error: updateError } = await supabase
-        .from('performedsession')
-        .update({ workout_session_id: null })
-        .eq('workout_session_id', route.params.id)
+  try {
+    // D'abord, mettre à jour toutes les performedsession associées pour retirer la référence
+    const { error: updateError } = await supabase
+      .from('performedsession')
+      .update({ workout_session_id: null })
+      .eq('workout_session_id', route.params.id)
 
-      if (updateError) throw updateError
+    if (updateError) throw updateError
 
-      // Ensuite, supprimer la workout session
-      const { error: deleteError } = await deleteWorkoutSession(route.params.id)
-      if (deleteError) throw deleteError
+    // Ensuite, supprimer la workout session
+    const { error: deleteError } = await deleteWorkoutSession(route.params.id)
+    if (deleteError) throw deleteError
 
-      router.push('/seances')
-    } catch (e) {
-      console.error('Erreur lors de la suppression de la séance:', e);
-      error.value = e.message;
-    }
-  
+    router.push('/seances')
+  } catch (e) {
+    console.error('Erreur lors de la suppression de la séance:', e);
+    error.value = e.message;
+  }
 };
 
 onMounted(loadSession);
