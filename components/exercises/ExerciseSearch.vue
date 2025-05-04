@@ -41,9 +41,7 @@
         <div
           v-for="exercise in filteredExercises"
           :key="exercise.id"
-          @click.stop="selectExercise(exercise)"
-          @touchend.stop="selectExercise(exercise)"
-          class="group relative cursor-pointer hover:bg-primary/5 active:bg-primary/10 transition-all duration-200 p-3 flex flex-col sm:flex-row sm:items-center gap-3 border-b last:border-b-0"
+          class="group relative hover:bg-primary/5 active:bg-primary/10 transition-all duration-200 p-3 flex flex-col sm:flex-row sm:items-center gap-3 border-b last:border-b-0"
         >
           <!-- Indicateur visuel de sélection à gauche -->
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-primary/50 transition-all duration-300"></div>

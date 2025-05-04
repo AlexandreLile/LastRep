@@ -27,6 +27,10 @@ export const useAuth = () => {
       const { error } = await supabase.auth.signInWithPassword({
         email: email.value,
         password: password.value,
+        options: {
+          // Garder la session active pendant 30 jours
+          persistSession: true
+        }
       });
       if (error) {
         errorMessage.value = translateError(error.message);
