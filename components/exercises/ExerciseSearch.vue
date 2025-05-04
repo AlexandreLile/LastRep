@@ -13,7 +13,8 @@
                 v-model="searchQuery"
                 type="text"
                 placeholder="Rechercher un exercice..."
-                @input="isSearching = true"
+                @input="handleSearchInput"
+                @keyup="handleSearchInput"
                 @focus="isSearching = true"
                 class="w-full pl-10"
                 autocomplete="off"
@@ -82,7 +83,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue';
 import { onClickOutside } from '@vueuse/core';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -113,11 +114,29 @@ const checkMobile = () => {
   isMobile.value = window.innerWidth < 768;
 };
 
+// Gérer l'input de recherche
+const handleSearchInput = () => {
+  isSearching.value = true;
+  // Force la mise à jour du filteredExercises
+  forceUpdate();
+};
+
+// Force la mise à jour du computed en cas de problème sur mobile
+const forceUpdate = () => {
+  if (isMobile.value) {
+    // Techniquement rien à faire ici car le v-model met déjà à jour searchQuery
+    // mais cela force une réévaluation du contexte réactif
+    searchQuery.value = searchQuery.value;
+  }
+};
+
 // Liste des exercices filtrés
 const filteredExercises = computed(() => {
   if (!searchQuery.value) return [];
   
-  const query = searchQuery.value.toLowerCase();
+  const query = searchQuery.value.toLowerCase().trim();
+  if (query.length === 0) return [];
+  
   return exercises.value.filter(exercise => 
     exercise.name.toLowerCase().includes(query) ||
     exercise.primary_muscle.toLowerCase().includes(query)
@@ -155,6 +174,13 @@ const handleDocumentClick = (event) => {
     isSearching.value = false;
   }
 };
+
+// Observer les changements de searchQuery pour mobile
+watch(searchQuery, () => {
+  if (isMobile.value && searchQuery.value) {
+    isSearching.value = true;
+  }
+});
 
 // Vérifier si un exercice est déjà ajouté
 const isExerciseAdded = (exerciseId) => {
