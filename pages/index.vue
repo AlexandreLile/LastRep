@@ -17,14 +17,38 @@
 
     <!-- Stats Grid avec styles améliorés -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
-      <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300 transform hover:scale-[1.01]">
-        <SessionCount />
+      <div class="bg-white rounded-xl p-6 border border-gray-100">
+        <div class="flex flex-col h-full">
+          <div class="mb-3 flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <Dumbbell class="w-5 h-5 text-primary" />
+            </div>
+            <h3 class="text-sm font-medium text-muted-foreground">Séances complétées</h3>
+          </div>
+          <SessionCount class="mt-auto" />
+        </div>
       </div>
-      <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300 transform hover:scale-[1.01]">
-        <TotalWeightLifted />
+      <div class="bg-white rounded-xl p-6 border border-gray-100">
+        <div class="flex flex-col h-full">
+          <div class="mb-3 flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <Weight class="w-5 h-5 text-primary" />
+            </div>
+            <h3 class="text-sm font-medium text-muted-foreground">Poids total soulevé</h3>
+          </div>
+          <TotalWeightLifted class="mt-auto" />
+        </div>
       </div>
-      <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300 transform hover:scale-[1.01]">
-        <TotalTrainingTime />
+      <div class="bg-white rounded-xl p-6 border border-gray-100">
+        <div class="flex flex-col h-full">
+          <div class="mb-3 flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <ClockIcon class="w-5 h-5 text-primary" />
+            </div>
+            <h3 class="text-sm font-medium text-muted-foreground">Temps d'entraînement</h3>
+          </div>
+          <TotalTrainingTime class="mt-auto" />
+        </div>
       </div>
     </div>
 
@@ -33,7 +57,7 @@
       <!-- Left Column -->
       <div class="flex flex-col gap-6">
         <!-- Monthly Goals -->
-        <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+        <div class="bg-white rounded-xl p-6">
           <div class="flex items-center gap-3 mb-4">
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
               <Target class="w-5 h-5 text-primary" />
@@ -44,7 +68,7 @@
         </div>
         
         <!-- Last Session -->
-        <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+        <div class="bg-white rounded-xl p-6">
           <div class="flex items-center gap-3 mb-4">
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
               <Timer class="w-5 h-5 text-primary" />
@@ -56,7 +80,7 @@
       </div>
 
       <!-- Right Column - Calendar -->
-      <div class="bg-white rounded-xl p-6 self-start hover:shadow-md transition-all duration-300">
+      <div class="bg-white rounded-xl p-6 self-start">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <Calendar class="w-5 h-5 text-primary" />
@@ -83,7 +107,7 @@
 import { ref } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { useRouter } from 'vue-router'
-import { LayoutDashboard, Timer, Target, LogOut, Calendar } from 'lucide-vue-next'
+import { LayoutDashboard, Timer, Target, LogOut, Calendar, Dumbbell, Weight, Clock as ClockIcon } from 'lucide-vue-next'
 import SessionCount from '~/components/stats/SessionCount.vue'
 import TotalWeightLifted from '~/components/stats/TotalWeightLifted.vue'
 import TotalTrainingTime from '~/components/stats/TotalTrainingTime.vue'

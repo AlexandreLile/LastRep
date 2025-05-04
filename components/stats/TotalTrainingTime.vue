@@ -1,40 +1,48 @@
 <template>
-  <div class="flex items-center justify-center p-4 rounded-lg">
-    <div v-if="loading" class="text-center">
-      <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary mx-auto"></div>
+  <div>
+    <div v-if="loading" class="flex justify-center items-center py-4">
+      <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
     </div>
-    <div v-else-if="error" class="text-center text-red-500">
+    <div v-else-if="error" class="text-red-500 text-sm py-2">
       {{ error }}
     </div>
-    <div v-else class="text-center">
-      <Timer class="h-6 w-6 text-primary mx-auto mb-2" />
-      <p class="text-sm text-muted-foreground">Temps</p>
-      <p class="text-2xl font-bold text-primary">{{ formatDuration(totalDuration) }}</p>
-      
+    <div v-else class="flex flex-col">
+      <p class="text-3xl font-bold text-gray-900">{{ formatDuration(totalDuration) }}</p>
+      <div class="flex items-center mt-1">
+        <p class="text-sm text-muted-foreground">temps d'entraînement</p>
+        <div class="ml-auto bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-full">
+          <span>{{ formatDuration(averageDuration) }}/séance</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useSupabaseClient } from '#imports'
-import { Timer } from 'lucide-vue-next'
 
 const supabase = useSupabaseClient()
 const totalDuration = ref(0)
+const sessionsCount = ref(0)
 const loading = ref(true)
 const error = ref(null)
 
+const averageDuration = computed(() => {
+  if (sessionsCount.value === 0) return 0
+  return Math.round(totalDuration.value / sessionsCount.value)
+})
+
 const formatDuration = (minutes) => {
-  if (!minutes) return '0 min'
+  if (!minutes) return '0min'
   
   const hours = Math.floor(minutes / 60)
   const remainingMinutes = minutes % 60
   
   if (hours > 0) {
-    return `${hours}h${remainingMinutes > 0 ? ` ${remainingMinutes} min` : ''}`
+    return `${hours}h${remainingMinutes > 0 ? `${remainingMinutes}m` : ''}`
   }
-  return `${minutes} min`
+  return `${minutes}min`
 }
 
 const loadTotalDuration = async () => {
@@ -61,6 +69,8 @@ const loadTotalDuration = async () => {
       totalDuration.value = 0
       return
     }
+
+    sessionsCount.value = data.length;
 
     // Calculer la durée totale en minutes
     totalDuration.value = data.reduce((total, session) => {

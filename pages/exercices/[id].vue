@@ -157,7 +157,7 @@
               <div 
                 v-for="set in filteredSets(period)" 
                 :key="set.id"
-                class="relative bg-white border border-muted rounded-xl p-4 hover:shadow-md transition-all duration-200 group"
+                class="relative bg-white border border-primary/30 rounded-xl p-4 hover:shadow-md hover:border-primary transition-all duration-200 group"
               >
                 <div class="flex justify-between items-start">
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
@@ -187,7 +187,7 @@
                     variant="ghost"
                     size="icon"
                     @click="openEditModal(set)"
-                    class="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    class="text-primary hover:bg-primary/10"
                   >
                     <Pencil class="h-4 w-4" />
                   </Button>
