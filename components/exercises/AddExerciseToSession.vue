@@ -1,17 +1,21 @@
 <template>
-  <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h2 class="text-lg font-semibold">Ajouter des exercices</h2>
-      <Button variant="outline" @click="$emit('close')">
-        Fermer
-      </Button>
-    </div>
-
+  <div class="space-y-6 overflow-hidden">
     <ExerciseSearch
       :exercises="exercises"
       :added-exercises="currentExercises"
       @add-exercise="handleAddExercise"
     />
+    
+    <!-- Bouton de fermeture en bas pour une meilleure accessibilité mobile -->
+    <div class="flex justify-center mt-4 px-2">
+      <Button 
+        variant="default" 
+        class="w-full"
+        @click="$emit('close')"
+      >
+        Terminé
+      </Button>
+    </div>
   </div>
 </template>
 

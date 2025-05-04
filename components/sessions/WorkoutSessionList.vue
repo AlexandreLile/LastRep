@@ -37,9 +37,15 @@
                 <p class="text-xs text-muted-foreground">Dernière modification: {{ formatDate(session.updated_at) }}</p>
               </div>
             </div>
-            <div class="flex items-center">
-              <Button variant="ghost" size="icon" class="opacity-0 group-hover:opacity-100 transition-all duration-300" @click.stop="editSession(session)">
+            <div class="hidden sm:flex items-center">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                class="flex items-center gap-1 text-gray-500 hover:text-primary" 
+                @click.stop="editSession(session)"
+              >
                 <Pencil class="h-4 w-4" />
+                <span class="text-sm">Modifier</span>
               </Button>
             </div>
           </div>
@@ -56,6 +62,19 @@
                 {{ exercise.exercise.name }}
               </span>
             </div>
+          </div>
+
+          <!-- Actions visibles seulement sur mobile -->
+          <div class="sm:hidden flex justify-end mt-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              class="flex items-center gap-1 text-gray-700 bg-gray-100 hover:bg-primary/10 hover:text-primary px-3 py-1" 
+              @click.stop="editSession(session)"
+            >
+              <Pencil class="h-3.5 w-3.5" />
+              <span class="text-xs">Éditer</span>
+            </Button>
           </div>
         </div>
       </div>

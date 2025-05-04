@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
+  <div class="container mx-auto px-2 sm:px-4 py-8">
     <!-- Loader -->
     <div v-if="loading" class="flex justify-center items-center h-64">
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -30,7 +30,7 @@
       </div>
 
       <!-- Formulaire d'édition -->
-      <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+      <div class="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
         <form @submit.prevent="handleSubmit" class="space-y-6">
           <div class="space-y-5">
             <div class="flex items-center gap-3 mb-4">
@@ -100,33 +100,43 @@
                 class="space-y-3"
                 :animation="150"
                 ghost-class="opacity-50"
+                handle=".drag-handle"
               >
                 <template #item="{ element }">
-                  <div class="relative bg-white rounded-xl p-4 cursor-move group overflow-hidden border border-gray-200 hover:shadow-md transition-all duration-300">
+                  <div class="relative bg-white rounded-xl p-3 sm:p-4 group overflow-hidden border border-gray-200 hover:shadow-lg transition-all duration-300">
                     <!-- Effet de bordure néon -->
-                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary/70 rounded-l-xl group-hover:bg-primary transition-all duration-300"></div>
+                    <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary/70 rounded-l-xl group-hover:bg-primary transition-all duration-300"></div>
                     
-                    <div class="relative flex items-center justify-between">
+                    <div class="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <!-- Informations sur l'exercice et poignée de drag -->
                       <div class="flex items-center gap-3">
-                        <div class="p-2 rounded-full bg-primary/10 transition-all duration-300 group-hover:bg-primary/20">
+                        <div class="p-3 rounded-full bg-primary/10 transition-all duration-300 group-hover:bg-primary/20 drag-handle cursor-grab active:cursor-grabbing shadow-sm">
                           <GripVertical class="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
                         </div>
-                        <div>
-                          <h4 class="text-base font-medium text-gray-900 transition-colors duration-300 group-hover:text-primary">{{ element.exercise?.name }}</h4>
-                          <span class="text-sm text-muted-foreground bg-gray-100 px-3 py-1 rounded-full inline-block mt-1 transition-all duration-300 group-hover:bg-primary/10 group-hover:text-primary">
-                            {{ element.exercise?.primary_muscle }}
-                          </span>
+                        <div class="flex-1">
+                          <h4 class="text-base font-semibold text-gray-900 transition-colors duration-300 group-hover:text-primary">{{ element.exercise?.name }}</h4>
+                          <div class="flex flex-wrap gap-2 mt-2">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                              {{ element.exercise?.primary_muscle }}
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      
+                      <!-- Bouton supprimer plus grand et plus visible -->
                       <Button
                         variant="ghost"
-                        size="icon"
-                        class="h-8 w-8 opacity-70 hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all duration-300"
+                        size="sm"
+                        class="h-10 px-3 gap-2 opacity-90 hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all duration-300 flex items-center mt-2 sm:mt-0 border border-transparent hover:border-red-200"
                         @click.prevent.stop="removeExercise(element.id)"
                       >
                         <Trash2 class="h-4 w-4" />
+                        <span class="text-sm font-medium">Supprimer</span>
                       </Button>
                     </div>
+                    
+                    <!-- Effet de brillance au hover -->
+                    <div class="absolute inset-0 -z-10 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
                   </div>
                 </template>
               </draggable>
@@ -148,40 +158,17 @@
           </div>
 
           <!-- Boutons d'action -->
-          <div class="bg-gray-50 -mx-6 -mb-6 p-6 rounded-b-xl border-t border-gray-100 flex flex-wrap justify-end items-center gap-3 sm:flex-nowrap mt-8">
-            <div class="w-full sm:w-auto">
-              <Button
-                type="button"
-                variant="outline"
-                @click="router.push('/seances')"
-                class="w-full sm:w-auto group"
-              >
-                <ArrowLeft class="h-4 w-4 mr-2 transition-transform duration-300 group-hover:-translate-x-1" />
-                Annuler
-              </Button>
-            </div>
-
-            <div class="w-full sm:w-auto">
-              <Button
-                type="submit"
-                :disabled="saving"
-                class="w-full sm:w-auto"
-              >
-                <Save v-if="!saving" class="h-4 w-4 mr-2" />
-                <Loader2 v-else class="h-4 w-4 mr-2 animate-spin" />
-                {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
-              </Button>
-            </div>
-
-            <div class="w-full sm:w-auto">
+          <div class="bg-gray-50 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 p-4 sm:p-6 rounded-b-xl border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-3 mt-8">
+            <!-- Bouton Supprimer à gauche et visible en premier sur mobile -->
+            <div class="w-full sm:w-auto order-1 sm:order-1">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button 
                     variant="destructive"
-                    class="w-full sm:w-auto flex items-center gap-2"
+                    class="w-full sm:w-auto flex items-center justify-center gap-2"
                   >
-                    <Trash2 class="h-4 w-4" />
-                    Supprimer
+                    <Trash2 class="h-5 w-5" />
+                    <span>Supprimer</span>
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -198,6 +185,34 @@
                 </AlertDialogContent>
               </AlertDialog>
             </div>
+            
+            <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto order-2 sm:order-2">
+              <!-- Bouton Annuler -->
+              <div class="w-full sm:w-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  @click="router.push('/seances')"
+                  class="w-full sm:w-auto group"
+                >
+                  <ArrowLeft class="h-4 w-4 mr-2 transition-transform duration-300 group-hover:-translate-x-1" />
+                  Annuler
+                </Button>
+              </div>
+
+              <!-- Bouton Enregistrer -->
+              <div class="w-full sm:w-auto">
+                <Button
+                  type="submit"
+                  :disabled="saving"
+                  class="w-full sm:w-auto"
+                >
+                  <Save v-if="!saving" class="h-4 w-4 mr-2" />
+                  <Loader2 v-else class="h-4 w-4 mr-2 animate-spin" />
+                  {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+                </Button>
+              </div>
+            </div>
           </div>
         </form>
       </div>
@@ -205,11 +220,11 @@
 
     <!-- Modal d'ajout d'exercices -->
     <Dialog :open="showAddExercise" @update:open="showAddExercise = false">
-      <DialogContent class="sm:max-w-lg">
+      <DialogContent class="sm:max-w-lg max-w-[95vw] w-full overflow-hidden p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Ajouter des exercices</DialogTitle>
           <DialogDescription>
-            Sélectionnez des exercices à ajouter à votre séance d'entraînement
+            Sélectionnez des exercices à ajouter à votre séance
           </DialogDescription>
         </DialogHeader>
         <AddExerciseToSession
