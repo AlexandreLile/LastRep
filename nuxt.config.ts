@@ -36,21 +36,6 @@ export default defineNuxtConfig({
         "/check-email",
       ],
     },
-    cookieOptions: {
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 jours
-      domain: process.env.NODE_ENV === 'production' ? '' : undefined, // Le domaine sera automatiquement défini
-      sameSite: 'lax'
-    },
-    clientOptions: {
-      auth: {
-        flowType: 'pkce',
-        detectSessionInUrl: true,
-        persistSession: true,
-        autoRefreshToken: true,
-      }
-    }
   },
 
   nitro: {
