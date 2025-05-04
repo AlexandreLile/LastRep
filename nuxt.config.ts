@@ -36,6 +36,20 @@ export default defineNuxtConfig({
         "/check-email",
       ],
     },
+    cookieOptions: {
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60 * 8,
+      sameSite: 'lax'
+    },
+    clientOptions: {
+      auth: {
+        flowType: 'pkce',
+        detectSessionInUrl: true,
+        persistSession: true,
+        autoRefreshToken: true,
+      }
+    }
   },
 
   nitro: {
