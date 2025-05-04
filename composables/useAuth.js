@@ -5,6 +5,7 @@ export const useAuth = () => {
   const email = ref("");
   const password = ref("");
   const errorMessage = ref("");
+  const loading = ref(false);
 
   const translateError = (message) => {
     switch (message) {
@@ -21,6 +22,7 @@ export const useAuth = () => {
 
   const handleLogin = async () => {
     errorMessage.value = "";
+    loading.value = true;
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email: email.value,
@@ -34,11 +36,14 @@ export const useAuth = () => {
     } catch (error) {
       errorMessage.value = "Une erreur inattendue est survenue.";
       console.error("Erreur de connexion:", error);
+    } finally {
+      loading.value = false;
     }
   };
 
   const handleRegister = async () => {
     errorMessage.value = "";
+    loading.value = true;
     try {
       const { error } = await supabase.auth.signUp({
         email: email.value,
@@ -54,11 +59,14 @@ export const useAuth = () => {
     } catch (error) {
       errorMessage.value = "Une erreur inattendue est survenue.";
       console.error("Erreur d'inscription:", error);
+    } finally {
+      loading.value = false;
     }
   };
 
   const handleGoogleLogin = async () => {
     errorMessage.value = "";
+    loading.value = true;
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -78,6 +86,8 @@ export const useAuth = () => {
     } catch (error) {
       errorMessage.value = "Une erreur inattendue est survenue.";
       console.error("Erreur de connexion Google:", error);
+    } finally {
+      loading.value = false;
     }
   };
 
@@ -85,6 +95,7 @@ export const useAuth = () => {
     email,
     password,
     errorMessage,
+    loading,
     handleLogin,
     handleRegister,
     handleGoogleLogin,
