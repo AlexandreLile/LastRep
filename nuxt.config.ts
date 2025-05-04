@@ -36,6 +36,7 @@ export default defineNuxtConfig({
         "/check-email",
       ],
     },
+    useSsrCookies: true,
   },
 
   nitro: {
