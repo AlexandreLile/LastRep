@@ -17,7 +17,7 @@
     <!-- Contenu principal -->
     <div v-else-if="session" class="space-y-6">
       <!-- Header amélioré -->
-      <div class="mb-8 bg-white rounded-xl p-6">
+      <div class="mb-6 bg-white rounded-xl p-4 sm:p-6">
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
             <Edit class="h-6 w-6 text-primary" />
@@ -30,10 +30,10 @@
       </div>
 
       <!-- Formulaire d'édition -->
-      <div class="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
-        <form @submit.prevent="handleSubmit" class="space-y-6">
-          <div class="space-y-5">
-            <div class="flex items-center gap-3 mb-4">
+      <div class="bg-white rounded-xl p-3 sm:p-6 shadow-sm border border-gray-100">
+        <form @submit.prevent="handleSubmit" class="space-y-5">
+          <div class="space-y-4">
+            <div class="flex items-center gap-3 mb-3">
               <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                 <FileText class="w-5 h-5 text-primary" />
               </div>
@@ -60,7 +60,7 @@
                 <Textarea
                   id="notes"
                   v-model="formData.notes"
-                  rows="4"
+                  rows="3"
                   class="w-full resize-none"
                   placeholder="Ajoutez des informations supplémentaires ici..."
                 ></Textarea>
@@ -69,26 +69,33 @@
           </div>
 
           <!-- Section des exercices -->
-          <div class="space-y-5 pt-4">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                <Dumbbell class="w-5 h-5 text-primary" />
+          <div class="space-y-4 pt-3">
+            <div class="flex items-center justify-between gap-3 mb-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Dumbbell class="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold">Exercices</h3>
+                  <p class="text-sm text-muted-foreground">Gérez les exercices de votre séance</p>
+                </div>
               </div>
-              <div>
-                <h3 class="text-lg font-semibold">Exercices</h3>
-                <p class="text-sm text-muted-foreground">Gérez les exercices de votre séance</p>
-              </div>
-            </div>
-
-            <div class="flex justify-end">
+              
               <Button
                 type="button"
-                class="flex items-center gap-2"
+                class="flex items-center gap-2 shadow-sm hover:shadow transition-all duration-300"
                 @click="showAddExercise = true"
               >
                 <Plus class="h-4 w-4" />
-                Ajouter des exercices
+                <span class="hidden sm:inline">Ajouter des exercices</span>
+                <span class="sm:hidden">Ajouter</span>
               </Button>
+            </div>
+
+            <!-- Instructions de drag and drop -->
+            <div v-if="currentExercises.length > 1" class="text-sm text-center p-2 bg-primary/5 rounded-lg mb-2 text-primary/80 flex items-center justify-center gap-2">
+              <GripVertical class="h-4 w-4" />
+              <span>Maintenez et glissez pour réorganiser les exercices</span>
             </div>
 
             <!-- Liste des exercices avec drag and drop -->
@@ -96,21 +103,29 @@
               <draggable
                 v-model="currentExercises"
                 item-key="id"
+                @start="dragStart"
                 @end="handleDragEnd"
-                class="space-y-3"
-                :animation="150"
-                ghost-class="opacity-50"
+                class="space-y-3 min-h-[100px]"
+                :animation="250"
+                ghost-class="ghost-item"
+                chosen-class="dragging-item"
                 handle=".drag-handle"
               >
-                <template #item="{ element }">
-                  <div class="relative bg-white rounded-xl p-3 sm:p-4 group overflow-hidden border border-gray-200 hover:shadow-lg transition-all duration-300">
+                <template #item="{ element, index }">
+                  <div class="relative bg-white rounded-xl p-3 sm:p-4 group overflow-hidden border border-gray-200 hover:shadow-lg transition-all duration-300 transform-gpu will-change-transform"
+                    :class="{'scale-[0.99] z-10': isDragging && draggedItemId === element.id, 'hover:translate-y-[-2px]': !isDragging}">
                     <!-- Effet de bordure néon -->
                     <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary/70 rounded-l-xl group-hover:bg-primary transition-all duration-300"></div>
                     
-                    <div class="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <!-- Indicateur d'ordre -->
+                    <div class="absolute left-3 top-3 flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                      {{ index + 1 }}
+                    </div>
+                    
+                    <div class="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 pl-6">
                       <!-- Informations sur l'exercice et poignée de drag -->
                       <div class="flex items-center gap-3">
-                        <div class="p-3 rounded-full bg-primary/10 transition-all duration-300 group-hover:bg-primary/20 drag-handle cursor-grab active:cursor-grabbing shadow-sm">
+                        <div class="p-2 rounded-full bg-primary/10 transition-all duration-300 group-hover:bg-primary/20 drag-handle cursor-grab active:cursor-grabbing shadow-sm hover:shadow focus:shadow-xl flex items-center justify-center">
                           <GripVertical class="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
                         </div>
                         <div class="flex-1">
@@ -127,8 +142,9 @@
                       <Button
                         variant="ghost"
                         size="sm"
-                        class="h-10 px-3 gap-2 opacity-90 hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all duration-300 flex items-center mt-2 sm:mt-0 border border-transparent hover:border-red-200"
+                        class="h-9 px-3 gap-2 opacity-90 hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all duration-300 flex items-center mt-2 sm:mt-0 border border-transparent hover:border-red-200"
                         @click.prevent.stop="removeExercise(element.id)"
+                        @touchend.prevent.stop="handleRemoveTouchEnd(element.id)"
                       >
                         <Trash2 class="h-4 w-4" />
                         <span class="text-sm font-medium">Supprimer</span>
@@ -141,7 +157,7 @@
                 </template>
               </draggable>
             </div>
-            <div v-else class="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            <div v-else class="flex flex-col items-center justify-center p-6 sm:p-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
               <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <Dumbbell class="h-8 w-8 text-gray-400" />
               </div>
@@ -158,7 +174,7 @@
           </div>
 
           <!-- Boutons d'action -->
-          <div class="bg-gray-50 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 p-4 sm:p-6 rounded-b-xl border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-3 mt-8">
+          <div class="bg-gray-50 -mx-3 sm:-mx-6 -mb-3 sm:-mb-6 p-4 sm:p-6 rounded-b-xl border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-3 mt-6">
             <!-- Bouton Supprimer à gauche et visible en premier sur mobile -->
             <div class="w-full sm:w-auto order-1 sm:order-1">
               <AlertDialog>
@@ -246,7 +262,7 @@ import draggable from 'vuedraggable';
 import { useSupabaseClient } from '#imports';
 import { useSupabaseUser } from '#imports';
 import { useRoute, useRouter } from 'vue-router';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -264,6 +280,9 @@ const loading = ref(true);
 const saving = ref(false);
 const error = ref(null);
 const showAddExercise = ref(false);
+const isDragging = ref(false);
+const draggedItemId = ref(null);
+const isMobile = ref(false);
 
 const formData = ref({
   title: '',
@@ -289,12 +308,21 @@ const loadSession = async () => {
   }
 };
 
+// Détecter si c'est un mobile
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768;
+};
+
 const handleSubmit = async () => {
   try {
     saving.value = true;
     const result = await editWorkoutSession(route.params.id, formData.value);
     if (!result.success) {
       throw new Error(result.error || 'Une erreur est survenue lors de l\'édition de la séance');
+    }
+    // Vibration tactile sur mobile pour confirmation
+    if (isMobile.value && window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate([50, 30, 50]);
     }
     // Rediriger vers la page d'entraînement après l'enregistrement
     router.push(`/seances/${route.params.id}/train`);
@@ -318,14 +346,48 @@ const removeExercise = async (workoutExerciseId) => {
     currentExercises.value = currentExercises.value.filter(
       exercise => exercise.id !== workoutExerciseId
     );
+    
+    // Vibration tactile sur mobile pour confirmation
+    if (isMobile.value && window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(100);
+    }
   } catch (e) {
     console.error('Erreur lors de la suppression de l\'exercice:', e);
   }
 };
 
+// Gérer le touchend sur le bouton supprimer
+const handleRemoveTouchEnd = (workoutExerciseId) => {
+  // Vibration tactile sur mobile
+  if (isMobile.value && window.navigator && window.navigator.vibrate) {
+    window.navigator.vibrate(50);
+  }
+  
+  removeExercise(workoutExerciseId);
+};
+
+// État du drag and drop
+const dragStart = (event) => {
+  isDragging.value = true;
+  draggedItemId.value = event.item.__draggable_context.element.id;
+  
+  // Vibration tactile sur mobile pour feedback
+  if (isMobile.value && window.navigator && window.navigator.vibrate) {
+    window.navigator.vibrate(50);
+  }
+};
+
 // Gérer le drag and drop
-const handleDragEnd = async () => {
+const handleDragEnd = async (event) => {
+  isDragging.value = false;
+  draggedItemId.value = null;
+  
   try {
+    // Vibration tactile sur mobile pour confirmation
+    if (isMobile.value && window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate([30, 20, 30]);
+    }
+    
     // Mettre à jour l'ordre de chaque exercice
     for (let i = 0; i < currentExercises.value.length; i++) {
       const exercise = currentExercises.value[i];
@@ -358,6 +420,11 @@ const deleteSession = async () => {
     // Ensuite, supprimer la workout session
     const { error: deleteError } = await deleteWorkoutSession(route.params.id)
     if (deleteError) throw deleteError
+    
+    // Vibration tactile sur mobile pour confirmation
+    if (isMobile.value && window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate([100, 50, 100]);
+    }
 
     router.push('/seances')
   } catch (e) {
@@ -366,5 +433,35 @@ const deleteSession = async () => {
   }
 };
 
-onMounted(loadSession);
-</script> 
+onMounted(() => {
+  loadSession();
+  checkMobile();
+  window.addEventListener('resize', checkMobile);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', checkMobile);
+});
+</script>
+
+<style scoped>
+.drag-handle {
+  touch-action: none;
+}
+
+.dragging-item {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+  outline: 2px solid hsla(var(--primary), 0.2);
+  z-index: 10;
+}
+
+.ghost-item {
+  opacity: 0.4;
+  background-color: hsla(var(--primary), 0.05);
+  border: 2px dashed hsla(var(--primary), 0.3);
+}
+</style> 
