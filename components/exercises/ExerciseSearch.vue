@@ -17,7 +17,7 @@
                 @input="handleSearchInput"
                 @keyup="handleSearchInput"
                 @focus="handleSearchFocus"
-                class="w-full pl-10"
+                class="w-full pl-10 search-input"
                 autocomplete="off"
               />
               <button 
@@ -439,6 +439,19 @@ const handleClearTouchEnd = (e) => {
     width: 36px;
     height: 36px;
   }
+}
+
+/* Correction du focus gris pour qu'il soit proportionnel */
+.search-input:focus {
+  box-shadow: 0 0 0 2px white, 0 0 0 4px hsl(var(--primary));
+  outline: none;
+  border-radius: var(--radius);
+}
+
+.search-input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px white, 0 0 0 4px hsl(var(--primary));
+  border-radius: var(--radius);
 }
 
 /* Animation pour les cartes d'exercices */

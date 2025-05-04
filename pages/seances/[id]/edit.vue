@@ -143,7 +143,7 @@
                         variant="ghost"
                         size="sm"
                         class="h-9 px-3 gap-2 opacity-90 hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all duration-300 flex items-center mt-2 sm:mt-0 border border-transparent hover:border-red-200"
-                        @click.prevent.stop="removeExercise(element.id)"
+                        @click.prevent.stop="openDeleteModal(element.id, element.exercise?.name)"
                         @touchend.prevent.stop="handleRemoveTouchEnd(element.id)"
                       >
                         <Trash2 class="h-4 w-4" />
@@ -250,6 +250,23 @@
         />
       </DialogContent>
     </Dialog>
+
+    <!-- Modale de confirmation pour la suppression d'exercice -->
+    <AlertDialog :open="showDeleteExerciseModal" @update:open="showDeleteExerciseModal = false">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Supprimer cet exercice ?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Êtes-vous sûr de vouloir supprimer "{{ exerciseToDeleteName }}" de cette séance ?
+            <br>Cette action est irréversible.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="showDeleteExerciseModal = false">Annuler</AlertDialogCancel>
+          <AlertDialogAction @click="confirmDeleteExercise" variant="destructive">Supprimer</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>
 
@@ -263,6 +280,17 @@ import { useSupabaseClient } from '#imports';
 import { useSupabaseUser } from '#imports';
 import { useRoute, useRouter } from 'vue-router';
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const route = useRoute();
 const router = useRouter();
@@ -283,6 +311,9 @@ const showAddExercise = ref(false);
 const isDragging = ref(false);
 const draggedItemId = ref(null);
 const isMobile = ref(false);
+const showDeleteExerciseModal = ref(false);
+const exerciseToDeleteId = ref(null);
+const exerciseToDeleteName = ref('');
 
 const formData = ref({
   title: '',
@@ -363,7 +394,11 @@ const handleRemoveTouchEnd = (workoutExerciseId) => {
     window.navigator.vibrate(50);
   }
   
-  removeExercise(workoutExerciseId);
+  // Récupérer le nom de l'exercice
+  const exercise = currentExercises.value.find(ex => ex.id === workoutExerciseId);
+  if (exercise) {
+    openDeleteModal(workoutExerciseId, exercise.exercise?.name);
+  }
 };
 
 // État du drag and drop
@@ -429,6 +464,34 @@ const deleteSession = async () => {
     router.push('/seances')
   } catch (e) {
     console.error('Erreur lors de la suppression de la séance:', e);
+    error.value = e.message;
+  }
+};
+
+const openDeleteModal = (id, name) => {
+  exerciseToDeleteId.value = id;
+  exerciseToDeleteName.value = name;
+  showDeleteExerciseModal.value = true;
+};
+
+const confirmDeleteExercise = async () => {
+  try {
+    const result = await removeWorkoutExercise(exerciseToDeleteId.value);
+    if (!result.success) {
+      throw new Error(result.error || 'Erreur lors de la suppression de l\'exercice');
+    }
+    // Mettre à jour la liste des exercices localement
+    currentExercises.value = currentExercises.value.filter(
+      exercise => exercise.id !== exerciseToDeleteId.value
+    );
+    
+    // Vibration tactile sur mobile pour confirmation
+    if (isMobile.value && window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(100);
+    }
+    showDeleteExerciseModal.value = false;
+  } catch (e) {
+    console.error('Erreur lors de la suppression de l\'exercice:', e);
     error.value = e.message;
   }
 };
