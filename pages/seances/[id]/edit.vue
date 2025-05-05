@@ -70,7 +70,7 @@
 
           <!-- Section des exercices -->
           <div class="space-y-4 pt-3">
-            <div class="flex items-center justify-between gap-3 mb-3">
+            <div class="flex items-center flex-wrap gap-3 mb-3">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                   <Dumbbell class="w-5 h-5 text-primary" />
@@ -81,15 +81,17 @@
                 </div>
               </div>
               
-              <Button
-                type="button"
-                class="flex items-center gap-2 shadow-sm hover:shadow transition-all duration-300"
-                @click="showAddExercise = true"
-              >
-                <Plus class="h-4 w-4" />
-                <span class="hidden sm:inline">Ajouter des exercices</span>
-                <span class="sm:hidden">Ajouter</span>
-              </Button>
+              <div class="mt-2 sm:mt-0 w-full sm:w-auto ml-auto">
+                <Button
+                  type="button"
+                  class="flex items-center gap-2 shadow-sm hover:shadow transition-all duration-300 w-full sm:w-auto"
+                  @click="showAddExercise = true"
+                >
+                  <Plus class="h-4 w-4" />
+                  <span class="hidden sm:inline">Ajouter des exercices</span>
+                  <span class="sm:hidden">Ajouter</span>
+                </Button>
+              </div>
             </div>
 
             <!-- Instructions de drag and drop -->
@@ -142,7 +144,7 @@
                       <Button
                         variant="ghost"
                         size="sm"
-                        class="h-9 px-3 gap-2 opacity-90 hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all duration-300 flex items-center mt-2 sm:mt-0 border border-transparent hover:border-red-200"
+                        class="h-9 px-3 gap-2 opacity-90 hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all duration-300 flex items-center mt-2 sm:mt-0 border border-transparent hover:border-red-200 self-end"
                         @click.prevent.stop="openDeleteModal(element.id, element.exercise?.name)"
                         @touchend.prevent.stop="handleRemoveTouchEnd(element.id)"
                       >

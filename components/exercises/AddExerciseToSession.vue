@@ -1,16 +1,27 @@
 <template>
-  <div class="space-y-6 overflow-hidden">
-    <ExerciseSearch
-      :exercises="exercises"
-      :added-exercises="currentExercises"
-      @add-exercise="handleAddExercise"
-    />
+  <div class="space-y-4 overflow-hidden max-h-[75vh] flex flex-col">
+    <!-- Titre et instructions pour mobile -->
+    <div class="px-3 pb-1 pt-2 text-center md:hidden">
+      <h3 class="text-base font-medium text-primary">Trouvez et ajoutez des exercices</h3>
+      <p class="text-xs text-muted-foreground mt-1">
+        Recherchez et ajoutez des exercices à votre séance d'entraînement
+      </p>
+    </div>
+
+    <!-- Composant de recherche avec flex-grow pour occuper l'espace disponible -->
+    <div class="flex-grow overflow-hidden">
+      <ExerciseSearch
+        :exercises="exercises"
+        :added-exercises="currentExercises"
+        @add-exercise="handleAddExercise"
+      />
+    </div>
     
-    <!-- Bouton de fermeture en bas pour une meilleure accessibilité mobile -->
-    <div class="flex justify-center mt-4 px-2">
+    <!-- Bouton de fermeture optimisé pour mobile -->
+    <div class="sticky bottom-0 bg-white border-t border-gray-200 p-3 shadow-md">
       <Button 
         variant="default" 
-        class="w-full"
+        class="w-full h-12 text-base"
         @click="$emit('close')"
       >
         Terminé
@@ -40,18 +51,31 @@ const {
   loading,
   error,
   getWorkoutExercises,
-  addExerciseToSession,
-  removeWorkoutExercise
+  addExerciseToSession
 } = useWorkoutExercise();
 
 const { exercises, getAllExercises } = useExercise();
+const isMobile = ref(false);
 
 // Charger les exercices de la séance et tous les exercices disponibles
 onMounted(async () => {
-  await Promise.all([
-    getWorkoutExercises(props.sessionId),
-    getAllExercises()
-  ]);
+  // Détecter si on est sur mobile
+  isMobile.value = window.innerWidth < 768 || ('ontouchstart' in window);
+  
+  // Charger les données
+  try {
+    await Promise.all([
+      getWorkoutExercises(props.sessionId),
+      getAllExercises()
+    ]);
+  } catch (err) {
+    console.error('Erreur lors du chargement des exercices:', err);
+  }
+  
+  // Donner un feedback tactile sur mobile
+  if (isMobile.value && window.navigator && window.navigator.vibrate) {
+    window.navigator.vibrate(30);
+  }
 });
 
 // Mettre à jour la liste des exercices quand un exercice est ajouté
@@ -63,13 +87,22 @@ watch(currentExercises, (newExercises) => {
 const handleAddExercise = async (exercise) => {
   try {
     const result = await addExerciseToSession(props.sessionId, exercise.id);
+    
     if (result.success) {
-      // Recharger les exercices de la séance pour avoir les données complètes
-      const { data } = await getWorkoutExercises(props.sessionId);
-      currentExercises.value = data;
-      emit('update-exercises', data);
-      // Fermer la modal
-      emit('close');
+      // Feedback tactile sur mobile
+      if (isMobile.value && window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate([30, 50, 30]);
+      }
+      
+      // Mettre à jour les exercices
+      await getWorkoutExercises(props.sessionId);
+      
+      // Fermer automatiquement la modal sur mobile après l'ajout 
+      if (isMobile.value) {
+        setTimeout(() => {
+          emit('close');
+        }, 300);
+      }
     } else {
       throw new Error(result.error);
     }
@@ -77,4 +110,13 @@ const handleAddExercise = async (exercise) => {
     console.error('Erreur lors de l\'ajout de l\'exercice:', e);
   }
 };
-</script> 
+</script>
+
+<style scoped>
+/* Optimisation pour les petits écrans */
+@media (max-height: 600px) {
+  .max-h-\[75vh\] {
+    max-height: 85vh;
+  }
+}
+</style> 

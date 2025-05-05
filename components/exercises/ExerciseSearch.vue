@@ -1,8 +1,8 @@
 <template>
   <div class="w-full overflow-hidden">
     <CardContent class="p-0">
-      <!-- Formulaire de recherche dynamique -->
-      <form ref="searchForm" class="space-y-4 px-2">
+      <!-- Formulaire de recherche mobile-first -->
+      <form ref="searchForm" class="space-y-4 px-2 pb-2">
         <FormField name="search">
           <Label for="search">Rechercher un exercice</Label>
           <div class="relative">
@@ -13,18 +13,17 @@
                 ref="searchInput"
                 v-model="searchQuery"
                 type="text"
+                inputmode="search"
+                autocapitalize="none"
                 placeholder="Rechercher un exercice..."
                 @input="handleSearchInput"
-                @keydown="handleKeyDown"
-                @focus="handleSearchFocus"
-                class="w-full pl-10 search-input"
+                class="w-full pl-10 pr-8 search-input"
                 autocomplete="off"
               />
               <button 
                 v-if="searchQuery" 
                 type="button" 
                 @click="clearSearch"
-                @touchend.prevent="handleClearTouchEnd"
                 class="absolute right-3 text-muted-foreground hover:text-foreground"
                 aria-label="Effacer la recherche"
               >
@@ -35,40 +34,41 @@
         </FormField>
       </form>
 
-      <!-- Liste des exercices avec pull-to-refresh -->
+      <!-- Liste des exercices - toujours affichée sur mobile -->
       <div
-        v-if="(isSearching || isMobile) && filteredExercises.length > 0"
+        v-if="exercises.length > 0"
         ref="exerciseList"
-        class="mt-4 bg-white dark:bg-gray-800 border rounded-xl shadow-lg overflow-y-auto overflow-x-hidden transition-all duration-300 exercise-list"
-        :class="{ 'max-h-60': !isMobile, 'max-h-[50vh]': isMobile }"
-        @touchstart="handleTouchStart"
-        @touchmove="handleTouchMove"
-        @touchend="handleTouchEnd"
+        class="mt-2 bg-white border rounded-xl shadow-sm overflow-y-auto overflow-x-hidden transition-all duration-300 exercise-list"
+        :class="{ 'max-h-60': !isMobile, 'max-h-[60vh]': isMobile }"
       >
-        <div v-if="isRefreshing" class="text-center py-2 text-primary text-sm font-medium flex items-center justify-center gap-2">
-          <span class="inline-block animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></span>
-          Mise à jour...
+        <div 
+          v-if="filteredExercises.length === 0 && searchQuery" 
+          class="p-4 text-center text-muted-foreground"
+        >
+          <div class="flex flex-col items-center">
+            <SearchX class="h-6 w-6 mb-2 text-muted-foreground" />
+            <p>Aucun exercice trouvé</p>
+          </div>
         </div>
         
         <div
-          v-for="exercise in filteredExercises"
+          v-for="exercise in filteredExercises.length > 0 ? filteredExercises : exercises"
           :key="exercise.id"
-          class="group relative hover:bg-primary/5 active:bg-primary/10 transition-all duration-200 p-3 flex flex-col sm:flex-row sm:items-center gap-3 border-b last:border-b-0 transform-gpu"
-          :class="{'scale-99 opacity-95': touchedExerciseId === exercise.id}"
+          class="group relative hover:bg-primary/5 active:bg-primary/10 transition-all duration-200 p-3 flex flex-col md:flex-row md:items-center gap-3 border-b last:border-b-0 transform-gpu"
         >
-          <!-- Indicateur visuel de sélection à gauche -->
+          <!-- Indicateur visuel à gauche -->
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-primary/50 transition-all duration-300"></div>
           
           <div class="flex items-start gap-2 w-full">
             <!-- Icône du muscle -->
-            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1 group-hover:scale-105 transition-transform duration-300">
+            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
               <Dumbbell class="h-5 w-5 text-primary" />
             </div>
             
             <div class="flex-1 min-w-0">
-              <div class="font-medium text-gray-900 group-hover:text-primary transition-colors duration-200 truncate pr-1">{{ exercise.name }}</div>
+              <div class="font-medium text-gray-900 truncate pr-1">{{ exercise.name }}</div>
               <div class="text-sm text-muted-foreground mt-1">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 group-hover:bg-primary/10 group-hover:text-primary transition-all duration-200">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                   {{ exercise.primary_muscle }}
                 </span>
               </div>
@@ -79,9 +79,8 @@
             :variant="isExerciseAdded(exercise.id) ? 'outline' : 'default'"
             size="sm"
             :disabled="isExerciseAdded(exercise.id)"
-            @click.stop="selectExercise(exercise)"
-            @touchend.stop.prevent="handleExerciseTouchEnd(exercise)"
-            class="transition-all duration-200 relative mt-2 sm:mt-0 w-full sm:w-auto transform-gpu hover:scale-105 active:scale-95"
+            @click="selectExercise(exercise)"
+            class="transition-all duration-200 mt-2 md:mt-0 w-full md:w-auto"
           >
             <span v-if="isExerciseAdded(exercise.id)" class="flex items-center justify-center gap-1">
               <Check class="h-4 w-4" />
@@ -92,19 +91,6 @@
               <span class="whitespace-nowrap">Ajouter</span>
             </span>
           </Button>
-        </div>
-      </div>
-      
-      <!-- Message si aucun exercice trouvé -->
-      <div
-        v-if="isSearching && searchQuery && filteredExercises.length === 0"
-        class="mt-4 bg-white dark:bg-gray-800 border rounded-xl shadow-lg p-6 text-center"
-      >
-        <div class="flex flex-col items-center">
-          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-            <SearchX class="h-8 w-8 text-muted-foreground" />
-          </div>
-          <p class="text-muted-foreground">Aucun exercice trouvé</p>
         </div>
       </div>
 
@@ -118,8 +104,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue';
-import { onClickOutside } from '@vueuse/core';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FormField } from '@/components/ui/form';
@@ -141,251 +126,93 @@ const searchForm = ref(null);
 const searchInput = ref(null);
 const exerciseList = ref(null);
 const searchQuery = ref('');
-const isSearching = ref(false);
 const { exercises, loading, error, getAllExercises } = useExercise();
 const isMobile = ref(false);
-const debounceTimer = ref(null);
-const touchStartY = ref(0);
-const pullDistance = ref(0);
-const isRefreshing = ref(false);
-const touchedExerciseId = ref(null);
-const touchTimeout = ref(null);
-const hasMoved = ref(false);
+const searchTimer = ref(null);
 
 // Fonction pour normaliser le texte (enlever les accents)
 const normalizeText = (text) => {
+  if (!text) return '';
   return text
-    .normalize('NFD')                  // Décomposer les caractères accentués
-    .replace(/[\u0300-\u036f]/g, '')   // Supprimer les marques diacritiques
-    .toLowerCase()                      // Convertir en minuscules
-    .trim();                            // Supprimer les espaces inutiles
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
 };
 
-// Détecter si c'est un mobile
+// Détecter si c'est un mobile - approche mobile-first
 const checkMobile = () => {
-  // Détecter les appareils mobiles en vérifiant à la fois la largeur d'écran et la présence d'événements tactiles
-  isMobile.value = window.innerWidth < 768 || ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  isMobile.value = window.innerWidth < 768 || ('ontouchstart' in window);
 };
 
-// Gérer l'input de recherche avec debounce
+// Gérer l'input de recherche avec une approche simplifiée pour mobile
 const handleSearchInput = () => {
-  isSearching.value = true;
-  
-  // Forcer la mise à jour immédiatement pour tous les appareils
-  // Mais utiliser un délai très court pour les mobiles pour éviter les problèmes de saisie
-  if (isMobile.value) {
-    // Sur mobile, déclencher la recherche après un délai très court
-    if (debounceTimer.value) {
-      clearTimeout(debounceTimer.value);
-    }
-    debounceTimer.value = setTimeout(() => {
-      forceUpdate();
-    }, 10); // Délai minimal pour le mobile
-  } else {
-    // Sur desktop, réagir immédiatement
-    forceUpdate();
-  }
-};
-
-// Gérer les événements clavier
-const handleKeyDown = (event) => {
-  // Ignorer certaines touches comme les flèches, shift, etc.
-  const ignoredKeys = ['Shift', 'Control', 'Alt', 'Meta', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
-  if (ignoredKeys.includes(event.key)) {
-    return;
+  // Annuler tout timer précédent
+  if (searchTimer.value) {
+    clearTimeout(searchTimer.value);
   }
   
-  // Forcer une mise à jour immédiate sur chaque touche significative
-  if (isMobile.value) {
-    // Ajouter un petit délai pour les appareils mobiles
-    if (debounceTimer.value) {
-      clearTimeout(debounceTimer.value);
-    }
-    debounceTimer.value = setTimeout(() => {
-      forceUpdate();
-    }, 10);
-  } else {
-    forceUpdate();
-  }
+  // Exécuter la recherche immédiatement sans délai
+  // Pas besoin de code supplémentaire ici car la réactivité de Vue 
+  // met automatiquement à jour filteredExercises lorsque searchQuery change
 };
 
-// Force la mise à jour du computed
-const forceUpdate = () => {
-  try {
-    // Méthode plus fiable pour déclencher la réactivité sans manipuler directement la valeur
-    if (searchQuery.value !== undefined) {
-      // Sur mobile, s'assurer que la recherche fonctionne sans espace
-      if (isMobile.value) {
-        // Forcer la réactivité en utilisant une approche différente pour le mobile
-        const query = searchQuery.value;
-        // Créer une copie temporaire pour forcer la mise à jour
-        searchQuery.value = '';
-        nextTick(() => {
-          searchQuery.value = query;
-        });
-      } else {
-        // Pour les ordinateurs, utiliser l'approche standard
-        const currentQuery = searchQuery.value.trim();
-        searchQuery.value = currentQuery + ' ';
-        nextTick(() => {
-          searchQuery.value = currentQuery;
-        });
-      }
-    }
-  } catch (err) {
-    console.error('Erreur lors de la mise à jour de la recherche:', err);
-  }
-};
-
-// Liste des exercices filtrés
+// Filtrer les exercices - Démarrer la recherche dès la première lettre
 const filteredExercises = computed(() => {
   if (!searchQuery.value) {
-    // Sur mobile, montre tous les exercices si le champ est vide
-    return isMobile.value ? exercises.value : [];
+    return exercises.value;
   }
   
-  // Normaliser la requête
   const query = normalizeText(searchQuery.value);
-  if (query.length === 0 && !isMobile.value) return [];
-  
-  // Diviser la requête en mots pour permettre une recherche multi-mots
-  // Tolérer les recherches courtes sur mobile (même un seul caractère)
-  const queryWords = query.split(/\s+/).filter(word => isMobile.value || word.length > 0);
-  
-  // Si aucun mot valide n'est trouvé, renvoyer tous les exercices sur mobile
-  if (queryWords.length === 0) {
-    return isMobile.value ? exercises.value : [];
-  }
   
   return exercises.value.filter(exercise => {
     const name = normalizeText(exercise.name);
     const muscle = normalizeText(exercise.primary_muscle);
     
-    // Sur mobile, chercher si au moins un mot correspond (OR logique)
-    if (isMobile.value) {
-      return queryWords.some(word => 
-        name.includes(word) || muscle.includes(word)
-      );
-    }
-    
-    // Sur desktop, tous les mots doivent correspondre (AND logique)
-    return queryWords.every(word => 
-      name.includes(word) || muscle.includes(word)
-    );
+    // Rechercher dans le nom ou le muscle dès la première lettre
+    return name.includes(query) || muscle.includes(query);
   });
 });
 
 // Effacer la recherche
 const clearSearch = () => {
   searchQuery.value = '';
-  // Sur mobile, garde l'état de recherche actif
-  isSearching.value = isMobile.value;
-  // Vibration pour feedback tactile sur mobile
+  // Donner un feedback tactile sur mobile
   if (isMobile.value && window.navigator && window.navigator.vibrate) {
     window.navigator.vibrate(50);
   }
-};
-
-// Gérer le focus sur la recherche
-const handleSearchFocus = () => {
-  isSearching.value = true;
-  // Auto-sélection du texte pour faciliter une nouvelle recherche
-  if (searchInput.value && searchInput.value.$el) {
-    const input = searchInput.value.$el.querySelector('input');
-    if (input) input.select();
-  }
+  // Redonner le focus à l'input
+  nextTick(() => {
+    focusSearchInput();
+  });
 };
 
 // Mettre le focus sur l'input de recherche
 const focusSearchInput = () => {
-  // Attendre que le DOM soit mis à jour
-  nextTick(() => {
-    try {
-      if (searchInput.value && typeof searchInput.value.$el !== 'undefined') {
-        // Pour un composant Input personnalisé qui peut encapsuler un input natif
-        const inputElement = searchInput.value.$el.querySelector('input');
-        if (inputElement && typeof inputElement.focus === 'function') {
-          inputElement.focus();
-        }
-      } else if (searchInput.value && typeof searchInput.value.focus === 'function') {
-        // Pour un élément input natif
-        searchInput.value.focus();
-      } else {
-        // Fallback: chercher manuellement l'input
-        const inputElement = document.getElementById('search');
-        if (inputElement && typeof inputElement.focus === 'function') {
-          inputElement.focus();
-        }
-      }
-    } catch (error) {
-      console.log('Impossible de mettre le focus sur l\'input:', error);
-    }
-  });
+  if (searchInput.value && searchInput.value.$el) {
+    const input = searchInput.value.$el.querySelector('input');
+    if (input) input.focus();
+  }
 };
 
 // Charger tous les exercices au montage
 onMounted(async () => {
-  // Charger les exercices
   await getAllExercises();
-  
-  // Vérifier si on est sur mobile
   checkMobile();
   window.addEventListener('resize', checkMobile);
   
-  // Optimisations pour les appareils mobiles
+  // Sur mobile, mettre le focus sur l'input de recherche
   if (isMobile.value) {
-    console.log('Mobile device detected, optimizing interface');
-    // Activer immédiatement l'interface de recherche sur mobile
-    isSearching.value = true;
-    
-    // Mettre le focus sur l'input avec un délai pour laisser le temps au render
-    setTimeout(() => {
-      focusSearchInput();
-      // Vibration subtile pour indiquer que l'interface est prête
-      if (window.navigator && window.navigator.vibrate) {
-        window.navigator.vibrate(20);
-      }
-    }, 300);
+    // Délai court pour laisser le DOM se mettre à jour
+    setTimeout(focusSearchInput, 100);
   }
-  
-  // Ajouter des gestionnaires d'événements pour les clics sur la page
-  document.addEventListener('click', handleDocumentClick);
-  document.addEventListener('touchend', handleDocumentClick);
 });
 
 // Nettoyer les événements
 onBeforeUnmount(() => {
   window.removeEventListener('resize', checkMobile);
-  document.removeEventListener('click', handleDocumentClick);
-  document.removeEventListener('touchend', handleDocumentClick);
-  
-  if (debounceTimer.value) {
-    clearTimeout(debounceTimer.value);
-  }
-  
-  if (touchTimeout.value) {
-    clearTimeout(touchTimeout.value);
-  }
-});
-
-// Gérer les clics sur le document
-const handleDocumentClick = (event) => {
-  const searchElement = searchForm.value;
-  if (searchElement && !searchElement.contains(event.target)) {
-    // Sur mobile, on garde toujours l'état de recherche actif
-    isSearching.value = isMobile.value;
-  }
-};
-
-// Observer les changements de searchQuery pour déclencher immédiatement la recherche sur mobile
-watch(searchQuery, (newValue) => {
-  // Sur mobile, on garde toujours l'état de recherche actif et on force la mise à jour
-  if (isMobile.value) {
-    isSearching.value = true;
-    // Mise à jour immédiate si le texte a changé
-    if (newValue !== null && newValue !== undefined) {
-      forceUpdate();
-    }
+  if (searchTimer.value) {
+    clearTimeout(searchTimer.value);
   }
 });
 
@@ -399,166 +226,45 @@ const selectExercise = (exercise) => {
   if (!isExerciseAdded(exercise.id)) {
     // Feedback tactile sur mobile
     if (isMobile.value && window.navigator && window.navigator.vibrate) {
-      window.navigator.vibrate(100);
+      window.navigator.vibrate(50);
     }
     
     emit('add-exercise', exercise);
-    searchQuery.value = '';
-    // Sur mobile, on garde l'interface de recherche ouverte
-    isSearching.value = isMobile.value;
   }
-};
-
-// Gestion des événements tactiles pour le pull-to-refresh
-const handleTouchStart = (e) => {
-  touchStartY.value = e.touches[0].clientY;
-  pullDistance.value = 0;
-  hasMoved.value = false;
-};
-
-const handleTouchMove = (e) => {
-  const touchY = e.touches[0].clientY;
-  const scrollTop = exerciseList.value?.scrollTop || 0;
-  
-  hasMoved.value = true;
-  
-  // Permettre le pull-to-refresh uniquement quand on est au début de la liste
-  if (scrollTop <= 0 && touchY > touchStartY.value) {
-    pullDistance.value = (touchY - touchStartY.value) * 0.5; // Facteur de résistance
-    
-    // Limiter la distance de tirage
-    if (pullDistance.value > 80) pullDistance.value = 80;
-    
-    // Empêcher le scroll natif si on tire vers le bas
-    if (pullDistance.value > 10) {
-      e.preventDefault();
-    }
-  }
-};
-
-const handleTouchEnd = async () => {
-  if (pullDistance.value > 60 && !isRefreshing.value) {
-    // Assez tiré pour déclencher le rafraîchissement
-    isRefreshing.value = true;
-    
-    // Feedback tactile
-    if (window.navigator && window.navigator.vibrate) {
-      window.navigator.vibrate(50);
-    }
-    
-    // Rafraîchir les données
-    try {
-      await getAllExercises();
-    } catch (error) {
-      console.error('Erreur lors du rafraîchissement des exercices:', error);
-    } finally {
-      // Réinitialiser après un court délai pour montrer l'animation
-      setTimeout(() => {
-        isRefreshing.value = false;
-        pullDistance.value = 0;
-      }, 800);
-    }
-  } else {
-    pullDistance.value = 0;
-  }
-};
-
-// Gestion des événements tactiles pour éviter les ajouts accidentels
-const handleExerciseTouchEnd = (exercise) => {
-  // Ne sélectionner l'exercice que si l'utilisateur n'a pas scrollé
-  if (!hasMoved.value) {
-    touchedExerciseId.value = exercise.id;
-    
-    // Feedback tactile sur mobile
-    if (window.navigator && window.navigator.vibrate) {
-      window.navigator.vibrate(50);
-    }
-    
-    // Animation visuelle de feedback tactile
-    setTimeout(() => {
-      touchedExerciseId.value = null;
-      selectExercise(exercise);
-    }, 150);
-  } else {
-    // Réinitialiser l'état de déplacement pour le prochain événement tactile
-    hasMoved.value = false;
-  }
-};
-
-// Gérer le touchend sur le bouton clear avec feedback tactile
-const handleClearTouchEnd = (e) => {
-  e.preventDefault();
-  
-  // Feedback tactile sur mobile
-  if (isMobile.value && window.navigator && window.navigator.vibrate) {
-    window.navigator.vibrate(50);
-  }
-  
-  clearSearch();
 };
 </script>
 
 <style scoped>
-/* Styles pour corriger les problèmes sur mobile */
+/* Styles pour mobile-first */
 @media (max-width: 768px) {
+  /* Empêcher iOS de zoomer sur le focus */
   input[type="text"] {
-    font-size: 16px; /* Empêche iOS de zoomer sur le focus */
-  }
-}
-
-/* Ajustements spécifiques pour les très petits écrans */
-@media (max-width: 450px) {
-  .group {
-    padding-left: 10px;
-    padding-right: 10px;
+    font-size: 16px;
   }
   
-  /* Assurer que le texte ne déborde pas */
-  .truncate {
-    max-width: 170px;
+  /* Optimisations pour le scroll sur mobile */
+  .exercise-list {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: y proximity;
+    overscroll-behavior: contain;
   }
   
-  /* Ajuster la taille de l'icône pour gagner de l'espace */
-  .w-10.h-10 {
-    width: 36px;
-    height: 36px;
+  /* Rendre les boutons et zones cliquables plus grands pour mobile */
+  button {
+    min-height: 44px;
   }
 }
 
-/* Correction du focus gris pour qu'il soit proportionnel */
-.search-input:focus {
-  box-shadow: 0 0 0 2px white, 0 0 0 4px hsl(var(--primary));
-  outline: none;
-  border-radius: var(--radius);
-}
-
-.search-input:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px white, 0 0 0 4px hsl(var(--primary));
-  border-radius: var(--radius);
-}
-
-/* Animation pour les cartes d'exercices */
+/* Amélioration de l'espacement */
 .group {
-  position: relative;
-  z-index: 1;
-  will-change: transform, opacity;
+  scroll-snap-align: start;
+  padding: 12px 16px;
 }
 
-.group:hover {
-  z-index: 2;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-/* Animation subtile au scroll */
-.exercise-list {
-  scroll-behavior: smooth;
-  overscroll-behavior: contain;
-}
-
-/* Effet d'échelle subtile pour le feedback tactile */
-.scale-99 {
-  transform: scale(0.99);
+/* Réduire la hauteur de la liste sur les petits écrans */
+@media (max-height: 600px) {
+  .exercise-list.max-h-\[60vh\] {
+    max-height: 50vh;
+  }
 }
 </style> 
