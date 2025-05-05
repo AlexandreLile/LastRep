@@ -18,8 +18,7 @@
                 autocorrect="off"
                 spellcheck="false"
                 placeholder="Rechercher un exercice..."
-                @keyup="forceUpdate"
-                @compositionend="forceSyncInput"
+                @input="forceUpdate"
                 class="w-full pl-10 pr-8 search-input"
                 autocomplete="off"
               />
@@ -148,14 +147,16 @@ const checkMobile = () => {
   isMobile.value = window.innerWidth < 768 || ('ontouchstart' in window);
 };
 
-// Force la mise à jour du computed manuellement
-const forceUpdate = () => {
-  // Créer une copie de la recherche pour forcer la réactivité
-  const currentValue = searchQuery.value;
-  // Une petite manipulation pour forcer Vue à recalculer le computed
+// Force la mise à jour du computed pour une réactivité immédiate
+const forceUpdate = (event) => {
+  // Capture la valeur actuelle du champ
+  const currentValue = event?.target?.value || searchQuery.value;
+  
+  // Forcer une mise à jour explicite
   searchQuery.value = '';
   nextTick(() => {
     searchQuery.value = currentValue;
+    console.log('Recherche forcée:', searchQuery.value);
   });
 };
 
@@ -167,19 +168,17 @@ watch(searchQuery, (newVal) => {
   console.log('Recherche en cours:', newVal);
 }, { immediate: true });
 
-// Filtrer les exercices - Démarrer la recherche dès la première lettre
+// Une version simplifiée mais efficace du filtrage
 const filteredExercises = computed(() => {
-  if (!searchQuery.value) {
-    return exercises.value;
-  }
+  const query = (searchQuery.value || '').toLowerCase();
   
-  const query = normalizeText(searchQuery.value);
+  // Si requête vide, retourner tous les exercices
+  if (!query) return exercises.value;
   
-  return exercises.value.filter(exercise => {
-    const name = normalizeText(exercise.name);
-    const muscle = normalizeText(exercise.primary_muscle);
-    
-    // Rechercher dans le nom ou le muscle dès la première lettre
+  // Sinon, filtrer explicitement
+  return exercises.value.filter(ex => {
+    const name = (ex.name || '').toLowerCase();
+    const muscle = (ex.primary_muscle || '').toLowerCase();
     return name.includes(query) || muscle.includes(query);
   });
 });
@@ -252,6 +251,8 @@ const forceSyncInput = (event) => {
   // Force également une mise à jour explicite
   forceUpdate();
 };
+
+
 </script>
 
 <style scoped>
