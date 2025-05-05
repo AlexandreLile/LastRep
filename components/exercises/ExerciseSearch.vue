@@ -15,8 +15,11 @@
                 type="text"
                 inputmode="search"
                 autocapitalize="none"
+                autocorrect="off"
+                spellcheck="false"
                 placeholder="Rechercher un exercice..."
                 @keyup="forceUpdate"
+                @compositionend="forceSyncInput"
                 class="w-full pl-10 pr-8 search-input"
                 autocomplete="off"
               />
@@ -238,6 +241,16 @@ const selectExercise = (exercise) => {
     
     emit('add-exercise', exercise);
   }
+};
+
+// Fonction pour synchroniser l'input après la composition IME (important pour les claviers mobiles)
+const forceSyncInput = (event) => {
+  // Forcer la mise à jour après la fin de la composition (saisie prédictive ou IME)
+  if (event.target.value !== searchQuery.value) {
+    searchQuery.value = event.target.value;
+  }
+  // Force également une mise à jour explicite
+  forceUpdate();
 };
 </script>
 
