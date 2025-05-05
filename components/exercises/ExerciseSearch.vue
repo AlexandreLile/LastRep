@@ -16,7 +16,7 @@
                 inputmode="search"
                 autocapitalize="none"
                 placeholder="Rechercher un exercice..."
-                @input="handleSearchInput"
+                @keyup="forceUpdate"
                 class="w-full pl-10 pr-8 search-input"
                 autocomplete="off"
               />
@@ -145,17 +145,24 @@ const checkMobile = () => {
   isMobile.value = window.innerWidth < 768 || ('ontouchstart' in window);
 };
 
-// Gérer l'input de recherche avec une approche simplifiée pour mobile
-const handleSearchInput = () => {
-  // Annuler tout timer précédent
-  if (searchTimer.value) {
-    clearTimeout(searchTimer.value);
-  }
-  
-  // Exécuter la recherche immédiatement sans délai
-  // Pas besoin de code supplémentaire ici car la réactivité de Vue 
-  // met automatiquement à jour filteredExercises lorsque searchQuery change
+// Force la mise à jour du computed manuellement
+const forceUpdate = () => {
+  // Créer une copie de la recherche pour forcer la réactivité
+  const currentValue = searchQuery.value;
+  // Une petite manipulation pour forcer Vue à recalculer le computed
+  searchQuery.value = '';
+  nextTick(() => {
+    searchQuery.value = currentValue;
+  });
 };
+
+// Ajouter un watcher pour forcer la réactivité
+watch(searchQuery, (newVal) => {
+  // Cette fonction vide est juste là pour garantir que Vue 
+  // réagit immédiatement à tout changement de searchQuery
+  // même pour la première lettre
+  console.log('Recherche en cours:', newVal);
+}, { immediate: true });
 
 // Filtrer les exercices - Démarrer la recherche dès la première lettre
 const filteredExercises = computed(() => {
