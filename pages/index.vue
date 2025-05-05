@@ -104,7 +104,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { useRouter } from 'vue-router'
 import { LayoutDashboard, Timer, Target, LogOut, Calendar, Dumbbell, Weight, Clock as ClockIcon } from 'lucide-vue-next'
@@ -115,14 +115,31 @@ import TrainingCalendar from '~/components/calendar/TrainingCalendar.vue'
 import MonthlyGoals from '~/components/goals/MonthlyGoals.vue'
 import LastSessionStats from '~/components/stats/LastSessionStats.vue'
 import { Button } from '@/components/ui/button'
+import { useAuthentication } from '~/composables/useAuthentication'
 
 // Définir la configuration de la page
 definePageMeta({
-  middleware: ['public']
+  middleware: ['client-only']
 })
+
+// Utiliser le composable d'authentification
+const { user, loading: authLoading, initialized, checkAuth } = useAuthentication()
+const dataLoading = ref(true)
 
 const supabase = useSupabaseClient()
 const router = useRouter()
+
+// Assurer que l'authentification est vérifiée avant d'afficher la page
+onMounted(async () => {
+  if (!initialized.value) {
+    await checkAuth()
+  }
+  
+  // Une fois l'authentification vérifiée, charger les données
+  setTimeout(() => {
+    dataLoading.value = false
+  }, 200)
+})
 
 const logout = async () => {
   try {

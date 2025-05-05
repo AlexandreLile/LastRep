@@ -4,7 +4,7 @@ import { defineNuxtConfig } from 'nuxt/config'
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: "2024-11-01",
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   css: ["~/assets/css/tailwind.css"],
   pages: true,
 
@@ -36,7 +36,7 @@ export default defineNuxtConfig({
         "/check-email",
       ],
     },
-    useSsrCookies: true,
+    useSsrCookies: false,
     cookieOptions: {
       maxAge: 60 * 60 * 24 * 30, // 30 jours en secondes
       sameSite: "lax",
@@ -46,24 +46,41 @@ export default defineNuxtConfig({
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: true,
+        storageKey: 'supabase-auth-token',
+        flowType: 'implicit'
       }
-    }
+    },
+    serviceKey: process.env.SUPABASE_SERVICE_KEY,
   },
 
   nitro: {
+    routeRules: {
+      '/': { ssr: false },
+      '/**': { ssr: false }
+    },
     prerender: {
       crawlLinks: false,
-      routes: ["/"],
-    },
-    routeRules: {
-      '/': { ssr: true },
-      '/**': { ssr: true }
+      routes: []
     }
   },
+  
+  ssr: false,
+  
   experimental: {
     payloadExtraction: false,
     clientFallback: true,
-    renderJsonPayloads: false
+    renderJsonPayloads: false,
+    asyncContext: false
   },
+  
+  app: {
+    head: {
+      charset: 'utf-8',
+      viewport: 'width=device-width, initial-scale=1',
+    },
+    pageTransition: false,
+    layoutTransition: false,
+    keepalive: false
+  }
 });
