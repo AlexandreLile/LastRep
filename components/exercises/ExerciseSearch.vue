@@ -15,7 +15,7 @@
                 type="text"
                 placeholder="Rechercher un exercice..."
                 @input="handleSearchInput"
-                @keyup="handleSearchInput"
+                @keydown="handleKeyDown"
                 @focus="handleSearchFocus"
                 class="w-full pl-10 search-input"
                 autocomplete="off"
@@ -170,10 +170,8 @@ const checkMobile = () => {
 const handleSearchInput = () => {
   isSearching.value = true;
   
-  // Activer la recherche immédiatement sur mobile
-  if (isMobile.value) {
-    forceUpdate();
-  }
+  // Forcer la mise à jour immédiatement pour tous les appareils
+  forceUpdate();
   
   // Annuler le timer précédent
   if (debounceTimer.value) {
@@ -183,13 +181,24 @@ const handleSearchInput = () => {
   // Créer un nouveau timer pour le debounce avec un délai plus court sur mobile
   debounceTimer.value = setTimeout(() => {
     forceUpdate();
-  }, isMobile.value ? 50 : 100); // Délai plus court sur mobile
+  }, isMobile.value ? 10 : 50); // Délai très court pour être plus réactif
+};
+
+// Gérer les événements clavier
+const handleKeyDown = (event) => {
+  // Forcer une mise à jour immédiate sur chaque touche
+  forceUpdate();
 };
 
 // Force la mise à jour du computed
 const forceUpdate = () => {
-  // Technique pour forcer une réévaluation du contexte réactif
-  searchQuery.value = searchQuery.value.trim();
+  // Pour forcer la réévaluation sans trim qui peut causer des problèmes
+  const currentQuery = searchQuery.value;
+  searchQuery.value = currentQuery + ' ';
+  // Utiliser nextTick pour s'assurer que Vue a eu le temps de réagir
+  nextTick(() => {
+    searchQuery.value = currentQuery;
+  });
 };
 
 // Liste des exercices filtrés
@@ -202,12 +211,17 @@ const filteredExercises = computed(() => {
   const query = normalizeText(searchQuery.value);
   if (query.length === 0 && !isMobile.value) return [];
   
+  // Diviser la requête en mots pour permettre une recherche multi-mots
+  const queryWords = query.split(/\s+/).filter(word => word.length > 0);
+  
   return exercises.value.filter(exercise => {
     const name = normalizeText(exercise.name);
     const muscle = normalizeText(exercise.primary_muscle);
     
-    // Recherche par parties du mot (pour être plus tolérant)
-    return name.includes(query) || muscle.includes(query);
+    // Vérifier si tous les mots de la requête sont présents
+    return queryWords.every(word => 
+      name.includes(word) || muscle.includes(word)
+    );
   });
 });
 

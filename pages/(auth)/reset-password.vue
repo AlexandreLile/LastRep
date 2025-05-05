@@ -36,11 +36,10 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 definePageMeta({
-  auth: false,
-  middleware: false,
   layout: false,
+  middleware: ["auth"]
 });
 
 const supabase = useSupabaseClient();
@@ -67,7 +66,7 @@ const handleResetPassword = async () => {
     }
 
     emailSent.value = true;
-  } catch (err) {
+  } catch (err: any) {
     error.value = err.message || "Une erreur est survenue";
   } finally {
     loading.value = false;

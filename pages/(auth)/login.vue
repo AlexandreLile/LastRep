@@ -102,6 +102,7 @@
 <script setup >
 definePageMeta({
   layout: false,
+  middleware: ["auth"]
 });
 import { useAuth } from "@/composables/useAuth";
 import { LogIn, LockKeyhole, Loader2, AlertTriangle } from 'lucide-vue-next';

@@ -98,6 +98,7 @@
 <script setup lang="ts">
 definePageMeta({
   layout: false,
+  middleware: ["auth"]
 });
 import { useAuth } from "@/composables/useAuth";
 import { UserPlus, CheckCircle, Loader2, AlertTriangle } from 'lucide-vue-next';
