@@ -163,7 +163,8 @@ const normalizeText = (text) => {
 
 // Détecter si c'est un mobile
 const checkMobile = () => {
-  isMobile.value = window.innerWidth < 768;
+  // Détecter les appareils mobiles en vérifiant à la fois la largeur d'écran et la présence d'événements tactiles
+  isMobile.value = window.innerWidth < 768 || ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 };
 
 // Gérer l'input de recherche avec debounce
@@ -171,34 +172,69 @@ const handleSearchInput = () => {
   isSearching.value = true;
   
   // Forcer la mise à jour immédiatement pour tous les appareils
-  forceUpdate();
-  
-  // Annuler le timer précédent
-  if (debounceTimer.value) {
-    clearTimeout(debounceTimer.value);
-  }
-  
-  // Créer un nouveau timer pour le debounce avec un délai plus court sur mobile
-  debounceTimer.value = setTimeout(() => {
+  // Mais utiliser un délai très court pour les mobiles pour éviter les problèmes de saisie
+  if (isMobile.value) {
+    // Sur mobile, déclencher la recherche après un délai très court
+    if (debounceTimer.value) {
+      clearTimeout(debounceTimer.value);
+    }
+    debounceTimer.value = setTimeout(() => {
+      forceUpdate();
+    }, 10); // Délai minimal pour le mobile
+  } else {
+    // Sur desktop, réagir immédiatement
     forceUpdate();
-  }, isMobile.value ? 10 : 50); // Délai très court pour être plus réactif
+  }
 };
 
 // Gérer les événements clavier
 const handleKeyDown = (event) => {
-  // Forcer une mise à jour immédiate sur chaque touche
-  forceUpdate();
+  // Ignorer certaines touches comme les flèches, shift, etc.
+  const ignoredKeys = ['Shift', 'Control', 'Alt', 'Meta', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+  if (ignoredKeys.includes(event.key)) {
+    return;
+  }
+  
+  // Forcer une mise à jour immédiate sur chaque touche significative
+  if (isMobile.value) {
+    // Ajouter un petit délai pour les appareils mobiles
+    if (debounceTimer.value) {
+      clearTimeout(debounceTimer.value);
+    }
+    debounceTimer.value = setTimeout(() => {
+      forceUpdate();
+    }, 10);
+  } else {
+    forceUpdate();
+  }
 };
 
 // Force la mise à jour du computed
 const forceUpdate = () => {
-  // Pour forcer la réévaluation sans trim qui peut causer des problèmes
-  const currentQuery = searchQuery.value;
-  searchQuery.value = currentQuery + ' ';
-  // Utiliser nextTick pour s'assurer que Vue a eu le temps de réagir
-  nextTick(() => {
-    searchQuery.value = currentQuery;
-  });
+  try {
+    // Méthode plus fiable pour déclencher la réactivité sans manipuler directement la valeur
+    if (searchQuery.value !== undefined) {
+      // Sur mobile, s'assurer que la recherche fonctionne sans espace
+      if (isMobile.value) {
+        // Forcer la réactivité en utilisant une approche différente pour le mobile
+        const query = searchQuery.value;
+        // Créer une copie temporaire pour forcer la mise à jour
+        searchQuery.value = '';
+        nextTick(() => {
+          searchQuery.value = query;
+        });
+      } else {
+        // Pour les ordinateurs, utiliser l'approche standard
+        const currentQuery = searchQuery.value.trim();
+        searchQuery.value = currentQuery + ' ';
+        nextTick(() => {
+          searchQuery.value = currentQuery;
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Erreur lors de la mise à jour de la recherche:', err);
+  }
 };
 
 // Liste des exercices filtrés
@@ -208,17 +244,31 @@ const filteredExercises = computed(() => {
     return isMobile.value ? exercises.value : [];
   }
   
+  // Normaliser la requête
   const query = normalizeText(searchQuery.value);
   if (query.length === 0 && !isMobile.value) return [];
   
   // Diviser la requête en mots pour permettre une recherche multi-mots
-  const queryWords = query.split(/\s+/).filter(word => word.length > 0);
+  // Tolérer les recherches courtes sur mobile (même un seul caractère)
+  const queryWords = query.split(/\s+/).filter(word => isMobile.value || word.length > 0);
+  
+  // Si aucun mot valide n'est trouvé, renvoyer tous les exercices sur mobile
+  if (queryWords.length === 0) {
+    return isMobile.value ? exercises.value : [];
+  }
   
   return exercises.value.filter(exercise => {
     const name = normalizeText(exercise.name);
     const muscle = normalizeText(exercise.primary_muscle);
     
-    // Vérifier si tous les mots de la requête sont présents
+    // Sur mobile, chercher si au moins un mot correspond (OR logique)
+    if (isMobile.value) {
+      return queryWords.some(word => 
+        name.includes(word) || muscle.includes(word)
+      );
+    }
+    
+    // Sur desktop, tous les mots doivent correspondre (AND logique)
     return queryWords.every(word => 
       name.includes(word) || muscle.includes(word)
     );
@@ -275,20 +325,32 @@ const focusSearchInput = () => {
 
 // Charger tous les exercices au montage
 onMounted(async () => {
+  // Charger les exercices
   await getAllExercises();
+  
+  // Vérifier si on est sur mobile
   checkMobile();
   window.addEventListener('resize', checkMobile);
+  
+  // Optimisations pour les appareils mobiles
+  if (isMobile.value) {
+    console.log('Mobile device detected, optimizing interface');
+    // Activer immédiatement l'interface de recherche sur mobile
+    isSearching.value = true;
+    
+    // Mettre le focus sur l'input avec un délai pour laisser le temps au render
+    setTimeout(() => {
+      focusSearchInput();
+      // Vibration subtile pour indiquer que l'interface est prête
+      if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(20);
+      }
+    }, 300);
+  }
   
   // Ajouter des gestionnaires d'événements pour les clics sur la page
   document.addEventListener('click', handleDocumentClick);
   document.addEventListener('touchend', handleDocumentClick);
-  
-  // Sur mobile, on active directement la recherche
-  if (isMobile.value) {
-    isSearching.value = true;
-    // Mettre le focus sur l'input de recherche avec un petit délai
-    setTimeout(focusSearchInput, 300);
-  }
 });
 
 // Nettoyer les événements
@@ -407,11 +469,19 @@ const handleExerciseTouchEnd = (exercise) => {
   if (!hasMoved.value) {
     touchedExerciseId.value = exercise.id;
     
+    // Feedback tactile sur mobile
+    if (window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(50);
+    }
+    
     // Animation visuelle de feedback tactile
     setTimeout(() => {
       touchedExerciseId.value = null;
       selectExercise(exercise);
     }, 150);
+  } else {
+    // Réinitialiser l'état de déplacement pour le prochain événement tactile
+    hasMoved.value = false;
   }
 };
 

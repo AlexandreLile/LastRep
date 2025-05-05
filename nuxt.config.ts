@@ -56,8 +56,14 @@ export default defineNuxtConfig({
       crawlLinks: false,
       routes: ["/"],
     },
+    routeRules: {
+      '/': { ssr: true },
+      '/**': { ssr: true }
+    }
   },
   experimental: {
     payloadExtraction: false,
+    clientFallback: true,
+    renderJsonPayloads: false
   },
 });

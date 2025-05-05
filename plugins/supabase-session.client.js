@@ -243,4 +243,24 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   nuxtApp.hook('app:unmount', () => {
     clearInterval(stabilityInterval);
   });
+
+  // Gérer les événements de chargement de page
+  window.addEventListener('load', async () => {
+    // Vérifier si l'utilisateur est connecté après le chargement de la page
+    const { data } = await supabase.auth.getSession();
+    if (data?.session) {
+      await setupPersistence();
+    } else {
+      await recoverSession();
+    }
+  });
+
+  // Tentative de récupération immédiate avant le montage complet
+  await recoverSession();
+  
+  return {
+    provide: {
+      enhanceSession: setupPersistence
+    }
+  }
 }); 

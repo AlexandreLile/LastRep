@@ -116,6 +116,11 @@ import MonthlyGoals from '~/components/goals/MonthlyGoals.vue'
 import LastSessionStats from '~/components/stats/LastSessionStats.vue'
 import { Button } from '@/components/ui/button'
 
+// Définir la configuration de la page
+definePageMeta({
+  middleware: ['public']
+})
+
 const supabase = useSupabaseClient()
 const router = useRouter()
 
