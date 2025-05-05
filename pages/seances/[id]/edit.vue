@@ -126,31 +126,29 @@
                     
                     <div class="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 pl-6">
                       <!-- Informations sur l'exercice et poignée de drag -->
-                      <div class="flex items-center gap-3">
+                      <div class="flex items-center gap-3 w-full">
                         <div class="p-2 rounded-full bg-primary/10 transition-all duration-300 group-hover:bg-primary/20 drag-handle cursor-grab active:cursor-grabbing shadow-sm hover:shadow focus:shadow-xl flex items-center justify-center">
                           <GripVertical class="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
                         </div>
                         <div class="flex-1">
                           <h4 class="text-base font-semibold text-gray-900 transition-colors duration-300 group-hover:text-primary">{{ element.exercise?.name }}</h4>
-                          <div class="flex flex-wrap gap-2 mt-2">
+                          <div class="flex items-center justify-between mt-2">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                               {{ element.exercise?.primary_muscle }}
                             </span>
+                            
+                            <!-- Bouton supprimer placé à droite de la catégorie musculaire -->
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              class="h-6 w-6 flex items-center justify-center rounded-full hover:bg-red-50 hover:text-red-500 transition-all duration-300"
+                              @click.prevent.stop="openDeleteModal(element.id, element.exercise?.name)"
+                            >
+                              <Trash2 class="h-3.5 w-3.5" />
+                            </Button>
                           </div>
                         </div>
                       </div>
-                      
-                      <!-- Bouton supprimer plus grand et plus visible -->
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        class="h-9 px-3 gap-2 opacity-90 hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all duration-300 flex items-center mt-2 sm:mt-0 border border-transparent hover:border-red-200 self-end"
-                        @click.prevent.stop="openDeleteModal(element.id, element.exercise?.name)"
-                        @touchend.prevent.stop="handleRemoveTouchEnd(element.id)"
-                      >
-                        <Trash2 class="h-4 w-4" />
-                        <span class="text-sm font-medium">Supprimer</span>
-                      </Button>
                     </div>
                     
                     <!-- Effet de brillance au hover -->
@@ -164,14 +162,6 @@
                 <Dumbbell class="h-8 w-8 text-gray-400" />
               </div>
               <p class="text-muted-foreground text-center">Aucun exercice n'a été ajouté à cette séance</p>
-              <Button 
-                variant="outline" 
-                class="mt-4 flex items-center gap-2"
-                @click="showAddExercise = true"
-              >
-                <Plus class="h-4 w-4" />
-                Ajouter un exercice
-              </Button>
             </div>
           </div>
 
@@ -386,20 +376,6 @@ const removeExercise = async (workoutExerciseId) => {
     }
   } catch (e) {
     console.error('Erreur lors de la suppression de l\'exercice:', e);
-  }
-};
-
-// Gérer le touchend sur le bouton supprimer
-const handleRemoveTouchEnd = (workoutExerciseId) => {
-  // Vibration tactile sur mobile
-  if (isMobile.value && window.navigator && window.navigator.vibrate) {
-    window.navigator.vibrate(50);
-  }
-  
-  // Récupérer le nom de l'exercice
-  const exercise = currentExercises.value.find(ex => ex.id === workoutExerciseId);
-  if (exercise) {
-    openDeleteModal(workoutExerciseId, exercise.exercise?.name);
   }
 };
 

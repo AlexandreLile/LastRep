@@ -1,5 +1,6 @@
 <template>
   <div class="space-y-6">
+    <Toaster />
     <div v-if="loading" class="flex justify-center items-center h-64">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
     </div>
@@ -7,7 +8,6 @@
     <div v-else-if="error" class="flex items-center justify-center p-4 text-sm text-red-500 bg-red-50 rounded-lg">
       {{ error }}
     </div>
-
     <div v-else class="space-y-6 mt-24 md:mt-0">
       <!-- En-tête de l'exercice -->
       <div class="bg-white rounded-xl p-6">
@@ -247,6 +247,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useWorkoutExercise } from '~/composables/useWorkoutExercise'
 import { usePerformedSession } from '~/composables/usePerformedSession'
 import { useExerciseSet } from '~/composables/useExerciseSet'
+import { toast } from 'vue-sonner'
+import { Toaster } from '@/components/ui/sonner'
 
 import { 
   Trash2, 
@@ -376,6 +378,13 @@ const handleAddSet = async () => {
     if (!bestSet.value || (addedSet && addedSet.weight_kg > bestSet.value.weight_kg)) {
       bestSet.value = addedSet
       console.log('Nouveau record personnel!')
+      toast.success('Nouveau record personnel! 🏆', {
+        description: `${addedSet.weight_kg}kg x ${addedSet.reps} répétitions`
+      })
+    } else {
+      toast.success('Série ajoutée avec succès!', {
+        description: `${addedSet.weight_kg}kg x ${addedSet.reps} répétitions`
+      })
     }
     
     // Préremplir le formulaire avec la dernière série (celle qu'on vient d'ajouter)
@@ -391,6 +400,9 @@ const handleAddSet = async () => {
   } catch (e) {
     error.value = e.message
     console.error('Erreur lors de l\'ajout d\'une série:', e)
+    toast.error('Erreur', {
+      description: `Impossible d'ajouter la série: ${e.message}`
+    })
   }
 }
 
@@ -495,6 +507,9 @@ const deleteSet = async (setId) => {
     if (deleteError) throw deleteError
 
     console.log('Série supprimée avec succès')
+    toast.info('Série supprimée', {
+      description: 'La série a été supprimée avec succès'
+    })
     
     // Mettre à jour la liste des tempSessionSets dans le localStorage
     if (typeof window !== 'undefined') {
@@ -513,6 +528,9 @@ const deleteSet = async (setId) => {
   } catch (e) {
     error.value = e.message
     console.error('Erreur lors de la suppression d\'une série:', e)
+    toast.error('Erreur', {
+      description: `Impossible de supprimer la série: ${e.message}`
+    })
     // En cas d'erreur, recharger les séries pour rétablir l'état correct
     await loadExerciseSets()
   }

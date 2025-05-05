@@ -68,7 +68,7 @@
             </div>
             
             <div class="flex-1 min-w-0">
-              <div class="font-medium text-gray-900 truncate pr-1">{{ exercise.name }}</div>
+              <div class="font-medium text-gray-900 break-words pr-1">{{ exercise.name }}</div>
               <div class="text-sm text-muted-foreground mt-1">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                   {{ exercise.primary_muscle }}
