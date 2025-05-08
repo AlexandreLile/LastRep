@@ -1,21 +1,18 @@
 export default defineNuxtRouteMiddleware((to) => {
-  // Ne pas exécuter sur le serveur
-  if (process.server) return
+  // Ne pas rediriger si on est déjà sur la page start ou sur une page d'exercice de la session en cours
+  if (to.path.includes('/start') || to.path.includes('/exercises/')) {
+    return
+  }
 
-  // Ne pas vérifier sur la page de démarrage de séance elle-même
-  if (to.path.includes('/seances/') && to.path.includes('/start')) return
-
-  // Récupérer la session en cours depuis le localStorage
+  // Vérifier si une session est en cours
   const currentSession = localStorage.getItem('currentSession')
-  
   if (currentSession) {
     try {
-      const sessionData = JSON.parse(currentSession)
-      
-      // Vérifier si la session a une date de début mais pas de date de fin
-      if (sessionData.started_at && !sessionData.ended_at) {
-        // Rediriger vers la page de démarrage de la séance
-        return navigateTo(`/seances/${sessionData.workout_session_id}/start`)
+      const session = JSON.parse(currentSession)
+      // Si la session a une date de début mais pas de date de fin, c'est une session en cours
+      if (session.started_at && !session.ended_at) {
+        // Rediriger vers la page start de la session en cours
+        return navigateTo(`/seances/${session.workout_session_id}/start`)
       }
     } catch (e) {
       console.error('Erreur lors de la vérification de la session:', e)
