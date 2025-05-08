@@ -9,7 +9,19 @@ export const usePerformedSession = (supabase) => {
   if (process.client) {
     const storedSession = localStorage.getItem('currentSession')
     if (storedSession) {
-      localSession.value = JSON.parse(storedSession)
+      try {
+        const parsedSession = JSON.parse(storedSession)
+        // Vérifier si la session n'est pas terminée
+        if (parsedSession.started_at && !parsedSession.ended_at) {
+          localSession.value = parsedSession
+        } else {
+          // Si la session est terminée, la nettoyer
+          localStorage.removeItem('currentSession')
+        }
+      } catch (e) {
+        console.error('Erreur lors du chargement de la session:', e)
+        localStorage.removeItem('currentSession')
+      }
     }
   }
 
@@ -17,7 +29,8 @@ export const usePerformedSession = (supabase) => {
     localSession.value = {
       workout_session_id: workoutSessionId,
       user_id: userId,
-      started_at: new Date().toISOString()
+      started_at: new Date().toISOString(),
+      ended_at: null // Explicitement définir ended_at comme null
     }
     // Sauvegarder dans le localStorage
     if (process.client) {
@@ -71,11 +84,18 @@ export const usePerformedSession = (supabase) => {
     return localSession.value
   }
 
+  // Nouvelle fonction pour vérifier si une session est en cours
+  const hasActiveSession = () => {
+    if (!localSession.value) return false
+    return localSession.value.started_at && !localSession.value.ended_at
+  }
+
   return {
     performedSession,
     error,
     prepareSession,
     saveSession,
-    getCurrentSession
+    getCurrentSession,
+    hasActiveSession
   }
 } 
