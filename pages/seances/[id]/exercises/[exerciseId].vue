@@ -24,6 +24,126 @@
       </DialogContent>
     </Dialog>
 
+    <Dialog :open="showEditModal" @update:open="showEditModal = $event">
+      <DialogContent class="sm:max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Modifier la série</DialogTitle>
+          <DialogDescription>
+            Modifiez les détails de votre série ou supprimez-la
+          </DialogDescription>
+        </DialogHeader>
+        <form @submit.prevent="handleUpdateSet" class="space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <Label class="font-medium">Poids (kg)</Label>
+              <Input 
+                v-model="editingSet.weight_kg" 
+                type="number" 
+                step="0.5"
+                class="focus:border-primary focus:ring-primary w-full"
+                required
+              />
+            </div>
+            <div class="space-y-2">
+              <Label class="font-medium">Répétitions</Label>
+              <Input 
+                v-model="editingSet.reps" 
+                type="number"
+                class="focus:border-primary focus:ring-primary w-full"
+                required
+              />
+            </div>
+            <div class="space-y-2">
+              <Label class="font-medium">Temps de repos (secondes)</Label>
+              <Input 
+                v-model="editingSet.rest_seconds" 
+                type="number"
+                class="focus:border-primary focus:ring-primary w-full"
+                required
+              />
+            </div>
+            <div class="space-y-2">
+              <Label class="font-medium">RPE (1-10)</Label>
+              <Input 
+                v-model="editingSet.rpe" 
+                type="number" 
+                min="1" 
+                max="10"
+                class="focus:border-primary focus:ring-primary w-full"
+              />
+            </div>
+          </div>
+          <div class="space-y-2">
+            <Label class="font-medium">Note</Label>
+            <Textarea 
+              v-model="editingSet.note" 
+              rows="2"
+              placeholder="Ajouter une note (optionnel)"
+              class="focus:border-primary focus:ring-primary w-full"
+            />
+          </div>
+          <div class="flex flex-col sm:flex-row justify-between gap-4">
+            <Button 
+              type="button" 
+              variant="destructive" 
+              @click="confirmDelete"
+              class="flex items-center justify-center gap-2 w-full sm:w-auto"
+            >
+              <Trash2 class="w-4 h-4" />
+              Supprimer
+            </Button>
+            <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button 
+                type="button" 
+                variant="outline" 
+                @click="showEditModal = false"
+                class="w-full sm:w-auto"
+              >
+                Annuler
+              </Button>
+              <Button 
+                type="submit" 
+                :disabled="updating"
+                class="w-full sm:w-auto"
+              >
+                <Loader2 v-if="updating" class="w-4 h-4 mr-2 animate-spin" />
+                {{ updating ? 'Mise à jour...' : 'Enregistrer' }}
+              </Button>
+            </div>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog :open="showDeleteModal" @update:open="showDeleteModal = $event">
+      <DialogContent class="sm:max-w-md w-[95vw]">
+        <DialogHeader>
+          <DialogTitle>Supprimer la série</DialogTitle>
+          <DialogDescription>
+            Êtes-vous sûr de vouloir supprimer cette série ? Cette action est irréversible.
+          </DialogDescription>
+        </DialogHeader>
+        <div class="flex flex-col sm:flex-row justify-end gap-3 mt-4">
+          <Button 
+            variant="outline" 
+            @click="showDeleteModal = false"
+            class="w-full sm:w-auto"
+          >
+            Annuler
+          </Button>
+          <Button 
+            variant="destructive" 
+            @click="handleDelete"
+            :disabled="deleting"
+            class="w-full sm:w-auto"
+          >
+            <Loader2 v-if="deleting" class="w-4 h-4 mr-2 animate-spin" />
+            {{ deleting ? 'Suppression...' : 'Supprimer' }}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
     <div v-if="loading" class="flex justify-center items-center h-64">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
     </div>
@@ -216,10 +336,10 @@
               <Button 
                 variant="ghost" 
                 size="icon"
-                @click="deleteSet(set.id)"
-                class="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 w-8"
+                @click="openEditModal(set)"
+                class="text-gray-500 hover:text-primary hover:bg-primary/10 h-8 w-8"
               >
-                <Trash2 class="h-4 w-4" />
+                <Pencil class="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -279,6 +399,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Pencil } from 'lucide-vue-next'
 
 import { 
   Trash2, 
@@ -326,6 +447,15 @@ const newSet = ref({
 const showRestModal = ref(false)
 const restTimeRemaining = ref(0)
 const restTimer = ref(null)
+
+// Variables pour la modale d'édition
+const showEditModal = ref(false)
+const editingSet = ref(null)
+const updating = ref(false)
+
+// Variables pour la modale de suppression
+const showDeleteModal = ref(false)
+const deleting = ref(false)
 
 // Format date for display
 const formatDate = (dateString) => {
@@ -657,6 +787,109 @@ const handleReturn = () => {
   isLeavingPage.value = true
   // Utiliser router.push au lieu de navigateTo pour éviter les problèmes de navigation
   router.push(`/seances/${route.params.id}/start`)
+}
+
+// Fonction pour ouvrir la modale d'édition
+const openEditModal = (set) => {
+  editingSet.value = { ...set }
+  showEditModal.value = true
+}
+
+// Fonction pour mettre à jour une série
+const handleUpdateSet = async () => {
+  try {
+    updating.value = true
+    
+    const { data: updatedSet, error: updateError } = await supabase
+      .from('exerciseset')
+      .update({
+        weight_kg: parseFloat(editingSet.value.weight_kg),
+        reps: parseInt(editingSet.value.reps),
+        rest_seconds: parseInt(editingSet.value.rest_seconds),
+        rpe: editingSet.value.rpe ? parseFloat(editingSet.value.rpe) : null,
+        note: editingSet.value.note || null
+      })
+      .eq('id', editingSet.value.id)
+      .select()
+      .single()
+
+    if (updateError) throw updateError
+
+    // Mettre à jour la liste locale
+    const index = localExerciseSets.value.findIndex(set => set.id === editingSet.value.id)
+    if (index !== -1) {
+      localExerciseSets.value[index] = updatedSet
+    }
+
+    // Vérifier si c'est un nouveau record
+    if (isBetterSet(updatedSet, bestSet.value)) {
+      bestSet.value = updatedSet
+      toast.success('Félicitations ! 🏆', {
+        description: `Vous avez battu votre ancien record avec ${updatedSet.weight_kg}kg x ${updatedSet.reps} répétitions`
+      })
+    } else {
+      toast.success('Série mise à jour avec succès!')
+    }
+
+    showEditModal.value = false
+  } catch (e) {
+    console.error('Erreur lors de la mise à jour de la série:', e)
+    toast.error('Erreur', {
+      description: `Impossible de mettre à jour la série: ${e.message}`
+    })
+  } finally {
+    updating.value = false
+  }
+}
+
+// Fonction pour confirmer la suppression
+const confirmDelete = () => {
+  showDeleteModal.value = true
+}
+
+// Nouvelle fonction pour gérer la suppression
+const handleDelete = async () => {
+  try {
+    deleting.value = true
+    
+    const { error: deleteError } = await supabase
+      .from('exerciseset')
+      .delete()
+      .eq('id', editingSet.value.id)
+
+    if (deleteError) throw deleteError
+
+    // Mettre à jour la liste locale
+    localExerciseSets.value = localExerciseSets.value.filter(set => set.id !== editingSet.value.id)
+    
+    // Mettre à jour la liste des tempSessionSets dans le localStorage
+    if (typeof window !== 'undefined') {
+      const storedSets = localStorage.getItem('tempSessionSets')
+      if (storedSets) {
+        const tempSets = JSON.parse(storedSets)
+        const updatedSets = tempSets.filter(id => id !== editingSet.value.id)
+        localStorage.setItem('tempSessionSets', JSON.stringify(updatedSets))
+      }
+    }
+
+    // Recharger le meilleur set si nécessaire
+    if (bestSet.value && bestSet.value.id === editingSet.value.id) {
+      await loadBestSet()
+    }
+
+    // Fermer les deux modales
+    showDeleteModal.value = false
+    showEditModal.value = false
+    
+    toast.success('Série supprimée avec succès')
+  } catch (e) {
+    console.error('Erreur lors de la suppression de la série:', e)
+    toast.error('Erreur', {
+      description: `Impossible de supprimer la série: ${e.message}`
+    })
+  } finally {
+    deleting.value = false
+  }
 }
 
 onMounted(() => {
