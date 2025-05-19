@@ -330,6 +330,43 @@ const routeLeaveGuard = (to, from, next) => {
   }
 }
 
+const loadBestSet = async () => {
+  try {
+    // Vérifier que les données de l'exercice sont disponibles
+    if (!exercise.value || !exercise.value.exercise || !exercise.value.exercise.id) {
+      console.warn('Impossible de charger le meilleur set: données de l\'exercice non disponibles')
+      return
+    }
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    
+    // Récupérer le set avec le poids le plus élevé pour cet exercice
+    const { data, error: bestSetError } = await supabase
+      .from('exerciseset')
+      .select('*')
+      .eq('exercise_id', exercise.value.exercise.id)
+      .eq('user_id', user.id)
+      .order('weight_kg', { ascending: false })
+      .order('reps', { ascending: false })
+      .limit(1)
+
+    if (bestSetError) throw bestSetError
+    bestSet.value = data && data.length > 0 ? data[0] : null
+    console.log('Meilleur set chargé:', bestSet.value)
+  } catch (e) {
+    console.error('Erreur lors du chargement du meilleur set:', e.message)
+  }
+}
+
+// Fonction pour comparer deux sets et déterminer si le nouveau est meilleur
+const isBetterSet = (newSet, currentBest) => {
+  if (!currentBest) return true
+  if (newSet.weight_kg > currentBest.weight_kg) return true
+  if (newSet.weight_kg === currentBest.weight_kg && newSet.reps > currentBest.reps) return true
+  return false
+}
+
 const handleAddSet = async () => {
   try {
     // Créer la donnée de la série à envoyer à la base de données
@@ -374,12 +411,13 @@ const handleAddSet = async () => {
       localStorage.setItem('tempSessionSets', JSON.stringify(tempSets))
     }
     
-    // Vérifier si c'est un meilleur set
-    if (!bestSet.value || (addedSet && addedSet.weight_kg > bestSet.value.weight_kg)) {
+    // Vérifier si c'est un meilleur set en utilisant la nouvelle fonction de comparaison
+    if (isBetterSet(addedSet, bestSet.value)) {
       bestSet.value = addedSet
       console.log('Nouveau record personnel!')
-      toast.success('Nouveau record personnel! 🏆', {
-        description: `${addedSet.weight_kg}kg x ${addedSet.reps} répétitions`
+      
+      toast.success('Félicitations ! 🏆', {
+        description: `Vous avez battu votre ancien record avec ${addedSet.weight_kg}kg x ${addedSet.reps} répétitions`
       })
     } else {
       toast.success('Série ajoutée avec succès!', {
@@ -541,35 +579,6 @@ const handleReturn = () => {
   isLeavingPage.value = true
   // Utiliser router.push au lieu de navigateTo pour éviter les problèmes de navigation
   router.push(`/seances/${route.params.id}/start`)
-}
-
-// Charger le meilleur set de l'exercice (record personnel)
-const loadBestSet = async () => {
-  try {
-    // Vérifier que les données de l'exercice sont disponibles
-    if (!exercise.value || !exercise.value.exercise || !exercise.value.exercise.id) {
-      console.warn('Impossible de charger le meilleur set: données de l\'exercice non disponibles')
-      return
-    }
-    
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    
-    // Récupérer le set avec le poids le plus élevé pour cet exercice
-    const { data, error: bestSetError } = await supabase
-      .from('exerciseset')
-      .select('*')
-      .eq('exercise_id', exercise.value.exercise.id)
-      .eq('user_id', user.id)
-      .order('weight_kg', { ascending: false })
-      .limit(1)
-
-    if (bestSetError) throw bestSetError
-    bestSet.value = data && data.length > 0 ? data[0] : null
-    console.log('Meilleur set chargé:', bestSet.value)
-  } catch (e) {
-    console.error('Erreur lors du chargement du meilleur set:', e.message)
-  }
 }
 
 onMounted(() => {
