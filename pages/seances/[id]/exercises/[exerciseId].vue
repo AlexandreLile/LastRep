@@ -1,6 +1,29 @@
 <template>
   <div class="space-y-6">
     <Toaster />
+    <Dialog :open="showRestModal" @update:open="showRestModal = $event">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Temps de repos</DialogTitle>
+          <DialogDescription>
+            Reposez-vous avant votre prochaine série
+          </DialogDescription>
+        </DialogHeader>
+        <div class="flex flex-col items-center justify-center py-6">
+          <div class="text-4xl font-bold text-primary mb-4">{{ formatTime(restTimeRemaining) }}</div>
+          <div class="text-sm text-muted-foreground mb-6">Temps restant</div>
+          <div class="flex gap-4">
+            <Button variant="outline" @click="cancelRest">
+              Annuler
+            </Button>
+            <Button variant="default" @click="skipRest">
+              Passer
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
     <div v-if="loading" class="flex justify-center items-center h-64">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
     </div>
@@ -249,6 +272,13 @@ import { usePerformedSession } from '~/composables/usePerformedSession'
 import { useExerciseSet } from '~/composables/useExerciseSet'
 import { toast } from 'vue-sonner'
 import { Toaster } from '@/components/ui/sonner'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 import { 
   Trash2, 
@@ -291,6 +321,11 @@ const newSet = ref({
   rpe: '',
   note: ''
 })
+
+// Variables pour la modale de repos
+const showRestModal = ref(false)
+const restTimeRemaining = ref(0)
+const restTimer = ref(null)
 
 // Format date for display
 const formatDate = (dateString) => {
@@ -367,6 +402,46 @@ const isBetterSet = (newSet, currentBest) => {
   return false
 }
 
+// Fonction pour formater le temps en minutes:secondes
+const formatTime = (seconds) => {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+}
+
+// Fonction pour démarrer le timer de repos
+const startRestTimer = (seconds) => {
+  restTimeRemaining.value = seconds
+  showRestModal.value = true
+  
+  restTimer.value = setInterval(() => {
+    if (restTimeRemaining.value > 0) {
+      restTimeRemaining.value--
+    } else {
+      clearInterval(restTimer.value)
+      showRestModal.value = false
+      toast.success('Temps de repos terminé !', {
+        description: 'Vous pouvez commencer votre prochaine série'
+      })
+    }
+  }, 1000)
+}
+
+// Fonction pour annuler le repos
+const cancelRest = () => {
+  clearInterval(restTimer.value)
+  showRestModal.value = false
+  restTimeRemaining.value = 0
+}
+
+// Fonction pour passer le repos
+const skipRest = () => {
+  clearInterval(restTimer.value)
+  showRestModal.value = false
+  restTimeRemaining.value = 0
+  toast.info('Temps de repos ignoré')
+}
+
 const handleAddSet = async () => {
   try {
     // Créer la donnée de la série à envoyer à la base de données
@@ -435,6 +510,9 @@ const handleAddSet = async () => {
         note: addedSet.note || ''
       }
     }
+
+    // Démarrer le timer de repos
+    startRestTimer(parseInt(newSet.value.restTime))
   } catch (e) {
     error.value = e.message
     console.error('Erreur lors de l\'ajout d\'une série:', e)
@@ -608,6 +686,13 @@ watch(localExerciseSets, (newSets, oldSets) => {
     'Contenu:', newSets
   )
 }, { deep: true })
+
+// Nettoyer le timer lors du démontage du composant
+onBeforeUnmount(() => {
+  if (restTimer.value) {
+    clearInterval(restTimer.value)
+  }
+})
 </script>
 
 <style scoped>
