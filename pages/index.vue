@@ -25,7 +25,7 @@
             </div>
             <h3 class="text-sm font-medium text-muted-foreground">Séances complétées</h3>
           </div>
-          <SessionCount class="mt-auto" />
+          <SessionCountSupabase class="mt-auto" />
         </div>
       </div>
       <div class="bg-white rounded-xl p-6 border border-gray-100">
@@ -36,7 +36,7 @@
             </div>
             <h3 class="text-sm font-medium text-muted-foreground">Poids total soulevé</h3>
           </div>
-          <TotalWeightLifted class="mt-auto" />
+          <TotalWeightLiftedSupabase class="mt-auto" />
         </div>
       </div>
       <div class="bg-white rounded-xl p-6 border border-gray-100">
@@ -47,7 +47,7 @@
             </div>
             <h3 class="text-sm font-medium text-muted-foreground">Temps d'entraînement</h3>
           </div>
-          <TotalTrainingTime class="mt-auto" />
+          <TotalTrainingTimeSupabase class="mt-auto" />
         </div>
       </div>
     </div>
@@ -108,9 +108,9 @@ import { ref, onMounted } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { useRouter } from 'vue-router'
 import { LayoutDashboard, Timer, Target, LogOut, Calendar, Dumbbell, Weight, Clock as ClockIcon } from 'lucide-vue-next'
-import SessionCount from '~/components/stats/SessionCount.vue'
-import TotalWeightLifted from '~/components/stats/TotalWeightLifted.vue'
-import TotalTrainingTime from '~/components/stats/TotalTrainingTime.vue'
+import SessionCountSupabase from '~/components/stats/SessionCountSupabase.vue'
+import TotalWeightLiftedSupabase from '~/components/stats/TotalWeightLiftedSupabase.vue'
+import TotalTrainingTimeSupabase from '~/components/stats/TotalTrainingTimeSupabase.vue'
 import TrainingCalendar from '~/components/calendar/TrainingCalendar.vue'
 import MonthlyGoals from '~/components/goals/MonthlyGoals.vue'
 import LastSessionStats from '~/components/stats/LastSessionStats.vue'
