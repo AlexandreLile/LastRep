@@ -1,15 +1,50 @@
-export default defineNuxtRouteMiddleware((to, from) => {
+export default defineNuxtRouteMiddleware(async (to, from) => {
   // Ce middleware ne fait rien de spécial, mais force le rendu côté client
   // car le middleware s'exécute uniquement côté client lorsque SSR est désactivé
   
-  // Forcer l'initialisation des données côté client
-  const user = useSupabaseUser();
+  // Liste des routes publiques
+  const publicRoutes = [
+    '/login',
+    '/register',
+    '/reset-password',
+    '/update-password',
+    '/check-email',
+    '/auth/callback'
+  ];
   
-  // Si on est sur une page qui nécessite une authentification mais que l'utilisateur n'est pas connecté
-  if (!user.value && !to.path.includes('/login') && !to.path.includes('/register') && 
-      !to.path.includes('/reset-password') && !to.path.includes('/update-password') &&
-      !to.path.includes('/check-email') && !to.path.includes('/auth/callback')) {
-    // Rediriger vers la page de connexion
-    return navigateTo('/login');
+  // Si la route est publique, on laisse passer
+  if (publicRoutes.some(route => to.path.includes(route))) {
+    return;
+  }
+  
+  // Attendre que la session soit restaurée depuis le localStorage
+  if (process.client) {
+    const supabase = useSupabaseClient();
+    
+    // Vérifier d'abord si on a déjà une session
+    let { data: sessionData } = await supabase.auth.getSession();
+    
+    // Si pas de session, attendre un peu et réessayer (pour laisser le temps aux plugins de restaurer)
+    if (!sessionData?.session) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      sessionData = (await supabase.auth.getSession()).data;
+    }
+    
+    // Si toujours pas de session, essayer de rafraîchir
+    if (!sessionData?.session) {
+      try {
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        if (refreshData?.session) {
+          sessionData = refreshData;
+        }
+      } catch (e) {
+        // Ignorer les erreurs de refresh
+      }
+    }
+    
+    // Si toujours pas de session après toutes les tentatives, rediriger
+    if (!sessionData?.session) {
+      return navigateTo('/login');
+    }
   }
 }); 

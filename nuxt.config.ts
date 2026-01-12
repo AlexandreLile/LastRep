@@ -26,6 +26,7 @@ export default defineNuxtConfig({
   },
 
   supabase: {
+    redirect: false, // Désactiver les redirections automatiques du module, on gère ça manuellement
     redirectOptions: {
       login: "/login",
       callback: "/auth/callback",
@@ -34,6 +35,7 @@ export default defineNuxtConfig({
         "/update-password",
         "/register",
         "/check-email",
+        "/auth/callback",
       ],
     },
     useSsrCookies: false,

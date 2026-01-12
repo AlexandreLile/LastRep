@@ -7,17 +7,9 @@ export default defineNuxtPlugin({
     
     const supabase = useSupabaseClient();
     
-    // Attendre que le navigateur soit prêt
-    await new Promise(resolve => {
-      if (document.readyState === 'complete') {
-        resolve();
-      } else {
-        window.addEventListener('load', resolve);
-      }
-    });
-    
-    // Petit délai supplémentaire pour laisser Supabase s'initialiser
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Ne pas attendre le load complet, restaurer immédiatement
+    // Le module Supabase s'initialise déjà rapidement
+    await new Promise(resolve => setTimeout(resolve, 50));
     
     try {
       // Vérifier d'abord si Supabase a déjà une session
