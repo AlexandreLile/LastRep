@@ -16,13 +16,19 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     
     router.beforeEach(async (to, from, next) => {
       // Attendre que le DOM soit prêt
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise(resolve => setTimeout(resolve, 50));
       
       // Vérifier si la page est publique
       const isPublicPage = publicPages.some(page => to.path.startsWith(page));
       
       try {
         const supabase = useSupabaseClient();
+        
+        // Si on vient de la page de callback, attendre un peu plus pour laisser la session s'établir
+        if (from.path === '/auth/callback') {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        
         const { data, error } = await supabase.auth.getSession();
         
         // Utilisateur non authentifié tentant d'accéder à une page protégée
@@ -35,7 +41,8 @@ export default defineNuxtPlugin(async (nuxtApp) => {
         }
         
         // Utilisateur authentifié tentant d'accéder à une page d'authentification
-        if (data.session && isPublicPage && to.path !== '/auth/callback') {
+        // Ne pas rediriger si on vient de se connecter (pour éviter une boucle)
+        if (data.session && isPublicPage && to.path !== '/auth/callback' && from.path !== '/auth/callback') {
           console.log('Redirection vers accueil: utilisateur authentifié sur page publique');
           return next('/');
         }
@@ -46,7 +53,8 @@ export default defineNuxtPlugin(async (nuxtApp) => {
         console.error('Erreur lors de la vérification d\'authentification:', err);
         
         // En cas d'erreur sur une page protégée, rediriger vers login
-        if (!isPublicPage) {
+        // Sauf si on est sur le callback ou qu'on vient du callback
+        if (!isPublicPage && to.path !== '/auth/callback' && from.path !== '/auth/callback') {
           return next('/login');
         }
         

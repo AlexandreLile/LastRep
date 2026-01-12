@@ -24,7 +24,7 @@ export const useAuth = () => {
     errorMessage.value = "";
     loading.value = true;
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email.value,
         password: password.value,
         options: {
@@ -32,15 +32,68 @@ export const useAuth = () => {
           persistSession: true
         }
       });
+      
       if (error) {
         errorMessage.value = translateError(error.message);
+        loading.value = false;
         return;
       }
-      router.push("/");
+
+      // Attendre que la session soit confirmée
+      if (data.session) {
+        // Attendre un court instant pour s'assurer que la session est bien établie
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Vérifier à nouveau la session pour confirmer
+        const { data: { session: confirmedSession } } = await supabase.auth.getSession();
+        
+        if (confirmedSession) {
+          // Utiliser navigateTo au lieu de router.push pour une meilleure intégration avec Nuxt
+          await navigateTo("/");
+          loading.value = false;
+        } else {
+          // Si la session n'est pas confirmée, écouter l'événement SIGNED_IN comme fallback
+          const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+              subscription.unsubscribe();
+              navigateTo("/").then(() => {
+                loading.value = false;
+              });
+            }
+          });
+          
+          // Timeout après 3 secondes si la session n'arrive pas
+          setTimeout(() => {
+            subscription.unsubscribe();
+            if (loading.value) {
+              errorMessage.value = "La session n'a pas pu être établie. Veuillez réessayer.";
+              loading.value = false;
+            }
+          }, 3000);
+        }
+      } else {
+        // Si pas de session immédiate, écouter l'événement SIGNED_IN
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_IN' && session) {
+            subscription.unsubscribe();
+            navigateTo("/").then(() => {
+              loading.value = false;
+            });
+          }
+        });
+        
+        // Timeout après 3 secondes si la session n'arrive pas
+        setTimeout(() => {
+          subscription.unsubscribe();
+          if (loading.value) {
+            errorMessage.value = "La session n'a pas pu être établie. Veuillez réessayer.";
+            loading.value = false;
+          }
+        }, 3000);
+      }
     } catch (error) {
       errorMessage.value = "Une erreur inattendue est survenue.";
       console.error("Erreur de connexion:", error);
-    } finally {
       loading.value = false;
     }
   };

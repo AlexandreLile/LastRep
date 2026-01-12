@@ -16,58 +16,71 @@ const router = useRouter();
 
 onMounted(async () => {
   try {
-    // Attendre que Supabase termine le processus d'authentification
+    // Écouter les changements d'état d'authentification pour détecter la connexion
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // Attendre un court instant pour s'assurer que la session est bien établie
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Vérifier à nouveau la session
+        const { data: { session: confirmedSession } } = await supabase.auth.getSession();
+        
+        if (confirmedSession) {
+          subscription.unsubscribe();
+          await navigateTo('/');
+        } else {
+          console.error('La session n\'a pas pu être confirmée');
+          subscription.unsubscribe();
+          await navigateTo('/login');
+        }
+      }
+    });
+    
+    // Essayer de récupérer la session immédiatement
     const { data: { session }, error } = await supabase.auth.getSession();
     
     if (error) {
       console.error('Erreur lors de la récupération de la session:', error);
-      router.push('/login');
+      // Attendre un peu au cas où la session arrive via l'événement
+      setTimeout(async () => {
+        const { data: { session: retrySession } } = await supabase.auth.getSession();
+        if (retrySession) {
+          await navigateTo('/');
+        } else {
+          await navigateTo('/login');
+        }
+      }, 2000);
       return;
     }
     
     if (session) {
-      // Forcer la persistance de la session
-      await supabase.auth.setSession({
-        access_token: session.access_token,
-        refresh_token: session.refresh_token
-      });
-      
       // Attendre un peu pour s'assurer que la session est bien établie
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Vérifier à nouveau la session
       const { data: { session: finalSession } } = await supabase.auth.getSession();
       
       if (finalSession) {
-        router.push('/');
+        subscription.unsubscribe();
+        await navigateTo('/');
       } else {
-        console.error('La session n\'a pas pu être établie');
-        router.push('/login');
+        // Attendre un peu plus au cas où la session arrive via l'événement
+        setTimeout(() => {
+          subscription.unsubscribe();
+          navigateTo('/login');
+        }, 2000);
       }
     } else {
-      // Si pas de session, essayer de récupérer la session depuis l'URL
-      const { data: { session: urlSession }, error: urlError } = await supabase.auth.getSession();
-      
-      if (urlError) {
-        console.error('Erreur lors de la récupération de la session depuis l\'URL:', urlError);
-        router.push('/login');
-        return;
-      }
-      
-      if (urlSession) {
-        // Forcer la persistance de la session
-        await supabase.auth.setSession({
-          access_token: urlSession.access_token,
-          refresh_token: urlSession.refresh_token
-        });
-        router.push('/');
-      } else {
-        router.push('/login');
-      }
+      // Si pas de session immédiate, attendre l'événement SIGNED_IN
+      // Timeout après 5 secondes
+      setTimeout(() => {
+        subscription.unsubscribe();
+        navigateTo('/login');
+      }, 5000);
     }
   } catch (error) {
     console.error('Erreur inattendue:', error);
-    router.push('/login');
+    await navigateTo('/login');
   }
 });
 </script> 
