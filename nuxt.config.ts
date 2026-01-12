@@ -49,8 +49,9 @@ export default defineNuxtConfig({
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-        storageKey: 'sb-auth-token',
+        // Ne pas spécifier storage explicitement - laisser Supabase utiliser localStorage par défaut
+        // storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        // storageKey: 'sb-auth-token', // Laisser la clé par défaut
         flowType: 'pkce'
       }
     },
