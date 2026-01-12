@@ -1,0 +1,2 @@
+# Ce dossier contient les migrations SQL versionnées
+# Les fichiers de migration sont créés automatiquement avec la commande: npm run db:new
