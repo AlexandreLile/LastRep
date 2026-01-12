@@ -20,81 +20,26 @@ export default defineNuxtPlugin({
         return;
       }
       
-      // Essayer de restaurer depuis le localStorage
-      const storedSession = localStorage.getItem('supabase.auth.session');
-      
-      if (storedSession) {
+      // Ne pas essayer de restaurer depuis notre stockage manuel
+      // Supabase gère automatiquement le stockage dans 'sb-auth-token'
+      // Juste forcer une vérification de session qui déclenchera la restauration automatique
+      if (!existingSession?.session) {
+        // Essayer de rafraîchir - Supabase restaurera automatiquement depuis son propre stockage
         try {
-          const sessionData = JSON.parse(storedSession);
-          
-          // Vérifier si la session n'est pas expirée
-          if (sessionData.expires_at && sessionData.expires_at < Date.now()) {
-            console.log('Session stockée expirée, nettoyage');
-            localStorage.removeItem('supabase.auth.session');
-            return;
-          }
-          
-          // Essayer de restaurer la session avec le refresh token
-          if (sessionData.refresh_token) {
-            console.log('Tentative de restauration de session depuis localStorage');
-            
-            const { data, error } = await supabase.auth.refreshSession({
-              refresh_token: sessionData.refresh_token
-            });
-            
-            if (error) {
-              console.warn('Erreur lors de la restauration de session:', error);
-              // Si le refresh token est invalide, nettoyer
-              if (error.message?.includes('refresh_token') || error.message?.includes('invalid')) {
-                localStorage.removeItem('supabase.auth.session');
-                localStorage.removeItem('supabase.auth.persistence');
-              }
-            } else if (data.session) {
-              console.log('Session restaurée avec succès');
-              // Mettre à jour la session stockée
-              localStorage.setItem('supabase.auth.session', JSON.stringify(data.session));
-            }
-          } else if (sessionData.access_token && sessionData.refresh_token) {
-            // Essayer de restaurer avec setSession
-            console.log('Tentative de restauration avec setSession');
-            const { data, error } = await supabase.auth.setSession({
-              access_token: sessionData.access_token,
-              refresh_token: sessionData.refresh_token
-            });
-            
-            if (error) {
-              console.warn('Erreur lors de setSession:', error);
-            } else if (data.session) {
-              console.log('Session restaurée avec setSession');
-            }
-          }
-        } catch (parseError) {
-          console.error('Erreur lors du parsing de la session stockée:', parseError);
-          localStorage.removeItem('supabase.auth.session');
-        }
-      }
-      
-      // Vérifier aussi le format standard de Supabase (sb-auth-token)
-      // Supabase stocke la session dans localStorage avec une clé spécifique
-      const supabaseStorageKey = 'sb-auth-token';
-      const supabaseStorage = localStorage.getItem(supabaseStorageKey);
-      
-      if (supabaseStorage && !existingSession?.session) {
-        try {
-          const parsed = JSON.parse(supabaseStorage);
-          if (parsed && parsed.length > 0) {
-            const sessionItem = parsed.find(item => item && item.access_token);
-            if (sessionItem) {
-              console.log('Session trouvée dans le stockage Supabase standard');
-              // La session devrait être automatiquement récupérée par Supabase
-              // Mais on peut forcer une vérification
-              await supabase.auth.getSession();
-            }
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError && !refreshError.message?.includes('session_not_found')) {
+            console.warn('Erreur lors du rafraîchissement:', refreshError);
+          } else if (refreshData?.session) {
+            console.log('Session restaurée automatiquement par Supabase');
           }
         } catch (e) {
-          console.warn('Erreur lors de la lecture du stockage Supabase:', e);
+          // Ignorer silencieusement
         }
       }
+      
+      // Nettoyer les anciennes données de stockage manuel qui causent des problèmes
+      localStorage.removeItem('supabase.auth.session');
+      localStorage.removeItem('supabase.auth.persistence');
     } catch (error) {
       console.error('Erreur lors de la restauration de session:', error);
     }

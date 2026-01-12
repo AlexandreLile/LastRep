@@ -12,26 +12,9 @@ export default defineNuxtPlugin(async (nuxtApp) => {
       const { data, error } = await supabase.auth.getSession();
       
       if (data?.session) {
-        console.log('Session exists, enhancing persistence');
-        
-        // Stocker explicitement le refresh token dans le localStorage avec une date d'expiration longue
-        if (data.session.refresh_token) {
-          const persistData = {
-            refresh_token: data.session.refresh_token,
-            expires_at: new Date().getTime() + (30 * 24 * 60 * 60 * 1000) // 30 jours
-          };
-          localStorage.setItem('supabase.auth.persistence', JSON.stringify(persistData));
-          
-          // Stocker également la session complète dans le localStorage comme backup
-          localStorage.setItem('supabase.auth.session', JSON.stringify(data.session));
-        }
-        
-        // Définir un cookie de sauvegarde pour assurer la persistance multi-onglets
-        try {
-          document.cookie = `supabase-auth-token=${data.session.access_token};path=/;max-age=${60 * 60 * 24 * 30};SameSite=Lax`;
-        } catch (err) {
-          console.warn('Could not set backup cookie:', err);
-        }
+        console.log('Session exists, persistence handled by Supabase');
+        // Ne pas stocker manuellement - Supabase gère déjà le stockage automatiquement
+        // Le stockage manuel cause des problèmes avec oauth_client_id
       }
     } catch (err) {
       console.error('Error setting up persistence:', err);
@@ -46,18 +29,16 @@ export default defineNuxtPlugin(async (nuxtApp) => {
       
       if (event === 'TOKEN_REFRESHED') {
         console.log('Token refreshed successfully');
-        if (session) {
-          // Mettre à jour la session stockée lors d'un rafraîchissement de token
-          localStorage.setItem('supabase.auth.session', JSON.stringify(session));
-        }
+        // Supabase gère automatiquement le stockage, pas besoin de stocker manuellement
       } else if (event === 'SIGNED_IN') {
-        console.log('User signed in, setting up persistence');
+        console.log('User signed in, persistence handled by Supabase');
         setupPersistence();
       } else if (event === 'SIGNED_OUT') {
         console.log('User signed out');
-        // Nettoyer les données locales
-        localStorage.removeItem('supabase.auth.session');
-        document.cookie = 'supabase-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+        // Nettoyer uniquement nos données personnalisées, pas celles de Supabase
+        localStorage.removeItem('supabase.auth.persistence');
+        localStorage.removeItem('supabase.auth.session.active');
+        localStorage.removeItem('supabase.auth.session.timestamp');
       }
     });
 
@@ -77,8 +58,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
           await recoverSession();
         } else if (data.session) {
           console.log('Session refreshed on schedule');
-          // Mettre à jour la session stockée
-          localStorage.setItem('supabase.auth.session', JSON.stringify(data.session));
+          // Supabase gère automatiquement le stockage
         }
       } catch (err) {
         console.error('Error during scheduled refresh:', err);
@@ -91,35 +71,30 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     });
   };
 
-  // Récupérer une session à partir du localStorage si disponible
+  // Récupérer une session - laisser Supabase gérer le stockage automatiquement
   const recoverSession = async () => {
     try {
-      const storedSession = localStorage.getItem('supabase.auth.session');
+      // Ne pas essayer de récupérer depuis notre stockage manuel
+      // Laisser Supabase utiliser son propre mécanisme (sb-auth-token)
+      // Juste essayer de rafraîchir la session si elle existe
+      const { data, error } = await supabase.auth.refreshSession();
       
-      if (storedSession) {
-        console.log('Attempting to recover session from localStorage');
-        const sessionData = JSON.parse(storedSession);
-        
-        if (sessionData.refresh_token) {
-          console.log('Found refresh token, attempting to refresh session');
-          const { data, error } = await supabase.auth.refreshSession({
-            refresh_token: sessionData.refresh_token
-          });
-          
-          if (error) {
-            console.error('Error recovering session:', error);
-            return false;
-          }
-          
-          if (data.session) {
-            console.log('Session recovered successfully');
-            return true;
-          }
+      if (error) {
+        // Pas d'erreur si pas de session, c'est normal
+        if (!error.message?.includes('session_not_found')) {
+          console.warn('Error refreshing session:', error);
         }
+        return false;
       }
+      
+      if (data.session) {
+        console.log('Session refreshed successfully');
+        return true;
+      }
+      
       return false;
     } catch (err) {
-      console.error('Error in session recovery:', err);
+      // Ignorer les erreurs silencieusement
       return false;
     }
   };
@@ -137,8 +112,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
             await recoverSession();
           } else if (data.session) {
             console.log('Session refreshed on visibility change');
-            // Mettre à jour la session stockée
-            localStorage.setItem('supabase.auth.session', JSON.stringify(data.session));
+            // Supabase gère automatiquement le stockage
           }
         } catch (err) {
           console.error('Error refreshing on visibility change:', err);
@@ -158,11 +132,9 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   // Configurer un listener pour les événements beforeunload
   const setupBeforeUnloadListener = () => {
     const handleBeforeUnload = async () => {
-      // Sauvegarder l'état d'authentification actuel juste avant de quitter
-      const { data } = await supabase.auth.getSession();
-      if (data?.session) {
-        localStorage.setItem('supabase.auth.session', JSON.stringify(data.session));
-      }
+      // Supabase gère automatiquement la sauvegarde, pas besoin de stocker manuellement
+      // Juste s'assurer que la session est à jour
+      await supabase.auth.getSession();
     };
     
     window.addEventListener('beforeunload', handleBeforeUnload);

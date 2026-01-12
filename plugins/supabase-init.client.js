@@ -55,12 +55,11 @@ export default defineNuxtPlugin({
           }
         }
         
-        // Stocker les infos de session dans le localStorage pour plus de robustesse
+        // Ne pas stocker manuellement - Supabase gère déjà le stockage automatiquement
+        // Le stockage manuel cause des problèmes avec oauth_client_id
         if (process.client && window.localStorage) {
           localStorage.setItem('supabase.auth.session.active', 'true');
           localStorage.setItem('supabase.auth.session.timestamp', Date.now().toString());
-          // Sauvegarder aussi la session complète
-          localStorage.setItem('supabase.auth.session', JSON.stringify(data.session));
         }
       } else {
         console.log('Pas de session active au démarrage');
@@ -72,11 +71,10 @@ export default defineNuxtPlugin({
           
           if (!refreshError && refreshData?.session) {
             console.log('Session récupérée via refreshSession');
-            // Stocker les infos de session dans le localStorage
+            // Ne pas stocker manuellement - Supabase gère déjà le stockage
             if (process.client && window.localStorage) {
               localStorage.setItem('supabase.auth.session.active', 'true');
               localStorage.setItem('supabase.auth.session.timestamp', Date.now().toString());
-              localStorage.setItem('supabase.auth.session', JSON.stringify(refreshData.session));
             }
           } else {
             // Nettoyer les flags si la session n'est plus valide
