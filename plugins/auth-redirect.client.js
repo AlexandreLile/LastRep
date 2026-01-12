@@ -19,7 +19,8 @@ export default defineNuxtPlugin({
     
     router.beforeEach(async (to, from, next) => {
       // Attendre que le DOM soit prêt et que Supabase soit initialisé
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Attendre plus longtemps pour laisser les plugins de restauration de session s'exécuter
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       // Vérifier si la page est publique
       const isPublicPage = publicPages.some(page => to.path.startsWith(page));

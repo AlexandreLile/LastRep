@@ -14,8 +14,8 @@ export default defineNuxtPlugin({
 
     // Récupérer la session au démarrage côté client uniquement
     try {
-      // Attendre un peu plus pour laisser Supabase initialiser complètement
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Attendre que le plugin de restauration ait fini (s'il existe)
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       // Vérifier si nous avons une session active
       let { data, error } = await supabase.auth.getSession();
@@ -28,6 +28,7 @@ export default defineNuxtPlugin({
           if (!refreshResult.error && refreshResult.data.session) {
             data = refreshResult.data;
             error = null;
+            console.log('Session récupérée après erreur initiale');
           }
         } catch (refreshErr) {
           console.warn('Impossible de rafraîchir la session:', refreshErr);
@@ -37,20 +38,32 @@ export default defineNuxtPlugin({
       if (data?.session) {
         console.log('Session active détectée au démarrage');
         
-        // Si on a une session, tenter de la rafraîchir pour s'assurer qu'elle est valide
-        try {
-          await supabase.auth.refreshSession();
-        } catch (refreshErr) {
-          console.warn('Erreur lors du rafraîchissement de la session:', refreshErr);
+        // Vérifier que la session n'est pas expirée
+        const expiresAt = data.session.expires_at;
+        if (expiresAt && expiresAt * 1000 < Date.now()) {
+          console.log('Session expirée, tentative de rafraîchissement');
+          try {
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+            if (!refreshError && refreshData?.session) {
+              data = refreshData;
+              console.log('Session rafraîchie avec succès');
+            } else {
+              console.warn('Impossible de rafraîchir la session expirée');
+            }
+          } catch (refreshErr) {
+            console.warn('Erreur lors du rafraîchissement de la session expirée:', refreshErr);
+          }
         }
         
         // Stocker les infos de session dans le localStorage pour plus de robustesse
         if (process.client && window.localStorage) {
           localStorage.setItem('supabase.auth.session.active', 'true');
           localStorage.setItem('supabase.auth.session.timestamp', Date.now().toString());
+          // Sauvegarder aussi la session complète
+          localStorage.setItem('supabase.auth.session', JSON.stringify(data.session));
         }
       } else {
-        console.log('Pas de session active au démarrage, tentative de récupération');
+        console.log('Pas de session active au démarrage');
         
         // Essayer de rafraîchir la session même si getSession ne retourne rien
         // Cela peut récupérer une session depuis le localStorage
@@ -63,15 +76,15 @@ export default defineNuxtPlugin({
             if (process.client && window.localStorage) {
               localStorage.setItem('supabase.auth.session.active', 'true');
               localStorage.setItem('supabase.auth.session.timestamp', Date.now().toString());
+              localStorage.setItem('supabase.auth.session', JSON.stringify(refreshData.session));
             }
           } else {
-            // Vérifier si nous avons des données de session stockées dans le localStorage
+            // Nettoyer les flags si la session n'est plus valide
             if (process.client && window.localStorage) {
               const hasStoredSession = localStorage.getItem('supabase.auth.session.active') === 'true';
               
               if (hasStoredSession) {
                 console.log('Session détectée dans le localStorage, mais refreshSession a échoué');
-                // Nettoyer le flag si la session n'est plus valide
                 localStorage.removeItem('supabase.auth.session.active');
                 localStorage.removeItem('supabase.auth.session.timestamp');
               }

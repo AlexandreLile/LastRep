@@ -47,8 +47,9 @@ export default defineNuxtConfig({
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        storageKey: 'supabase-auth-token',
-        flowType: 'implicit'
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        storageKey: 'sb-auth-token',
+        flowType: 'pkce'
       }
     },
     serviceKey: process.env.SUPABASE_SERVICE_KEY,
