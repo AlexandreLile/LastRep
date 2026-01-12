@@ -22,18 +22,21 @@ export default defineNuxtPlugin({
       
       // Ne pas essayer de restaurer depuis notre stockage manuel
       // Supabase gère automatiquement le stockage dans 'sb-auth-token'
-      // Juste forcer une vérification de session qui déclenchera la restauration automatique
+      // Vérifier si le stockage Supabase existe et s'il est corrompu
       if (!existingSession?.session) {
-        // Essayer de rafraîchir - Supabase restaurera automatiquement depuis son propre stockage
-        try {
-          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-          if (refreshError && !refreshError.message?.includes('session_not_found')) {
-            console.warn('Erreur lors du rafraîchissement:', refreshError);
-          } else if (refreshData?.session) {
-            console.log('Session restaurée automatiquement par Supabase');
+        const supabaseStorage = localStorage.getItem('sb-auth-token');
+        if (supabaseStorage) {
+          try {
+            // Vérifier si le stockage est valide
+            const parsed = JSON.parse(supabaseStorage);
+            // Si le stockage existe mais pas de session, il est peut-être corrompu
+            // Ne pas essayer de rafraîchir car cela causerait l'erreur oauth_client_id
+            console.log('Stockage Supabase présent mais pas de session active - laisser Supabase gérer');
+          } catch (e) {
+            // Stockage corrompu, nettoyer
+            console.log('Stockage Supabase corrompu, nettoyage');
+            localStorage.removeItem('sb-auth-token');
           }
-        } catch (e) {
-          // Ignorer silencieusement
         }
       }
       

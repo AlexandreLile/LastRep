@@ -22,17 +22,18 @@ export default defineNuxtPlugin({
       
       if (error) {
         console.error('Erreur lors de la récupération de la session initiale:', error);
-        // Essayer de rafraîchir même en cas d'erreur
-        try {
-          const refreshResult = await supabase.auth.refreshSession();
-          if (!refreshResult.error && refreshResult.data.session) {
-            data = refreshResult.data;
-            error = null;
-            console.log('Session récupérée après erreur initiale');
+        // Si erreur avec oauth_client_id, nettoyer le localStorage corrompu
+        if (error.message?.includes('oauth_client_id')) {
+          console.log('Nettoyage de la session corrompue');
+          if (process.client && window.localStorage) {
+            localStorage.removeItem('sb-auth-token');
           }
-        } catch (refreshErr) {
-          console.warn('Impossible de rafraîchir la session:', refreshErr);
+          // Forcer une déconnexion pour nettoyer
+          await supabase.auth.signOut();
+          return;
         }
+        // Pour les autres erreurs, ne pas essayer de rafraîchir si pas de session
+        return;
       }
       
       if (data?.session) {
@@ -64,32 +65,14 @@ export default defineNuxtPlugin({
       } else {
         console.log('Pas de session active au démarrage');
         
-        // Essayer de rafraîchir la session même si getSession ne retourne rien
-        // Cela peut récupérer une session depuis le localStorage
-        try {
-          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-          
-          if (!refreshError && refreshData?.session) {
-            console.log('Session récupérée via refreshSession');
-            // Ne pas stocker manuellement - Supabase gère déjà le stockage
-            if (process.client && window.localStorage) {
-              localStorage.setItem('supabase.auth.session.active', 'true');
-              localStorage.setItem('supabase.auth.session.timestamp', Date.now().toString());
-            }
-          } else {
-            // Nettoyer les flags si la session n'est plus valide
-            if (process.client && window.localStorage) {
-              const hasStoredSession = localStorage.getItem('supabase.auth.session.active') === 'true';
-              
-              if (hasStoredSession) {
-                console.log('Session détectée dans le localStorage, mais refreshSession a échoué');
-                localStorage.removeItem('supabase.auth.session.active');
-                localStorage.removeItem('supabase.auth.session.timestamp');
-              }
-            }
-          }
-        } catch (refreshErr) {
-          console.warn('Erreur lors de la tentative de récupération de session:', refreshErr);
+        // Ne pas essayer de rafraîchir si pas de session - cela causerait une erreur
+        // Supabase restaurera automatiquement la session depuis son stockage si elle existe
+        console.log('Pas de session active, Supabase la restaurera automatiquement si disponible');
+        
+        // Nettoyer les flags si la session n'est plus valide
+        if (process.client && window.localStorage) {
+          localStorage.removeItem('supabase.auth.session.active');
+          localStorage.removeItem('supabase.auth.session.timestamp');
         }
       }
     } catch (err) {

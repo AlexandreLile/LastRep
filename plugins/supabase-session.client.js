@@ -51,14 +51,24 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     // Rafraîchir la session périodiquement (toutes les 4 heures au lieu de 12)
     const refreshInterval = setInterval(async () => {
       try {
+        // Vérifier d'abord si une session existe
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData?.session) {
+          return; // Pas de session, ne pas essayer de rafraîchir
+        }
+        
         const { data, error } = await supabase.auth.refreshSession();
         if (error) {
-          console.error('Scheduled refresh error:', error);
-          // Tenter une récupération via la session stockée
-          await recoverSession();
+          // Si erreur avec oauth_client_id, nettoyer
+          if (error.message?.includes('oauth_client_id')) {
+            console.log('Cleaning corrupted session on scheduled refresh');
+            localStorage.removeItem('sb-auth-token');
+            await supabase.auth.signOut();
+          } else {
+            console.warn('Scheduled refresh error:', error);
+          }
         } else if (data.session) {
           console.log('Session refreshed on schedule');
-          // Supabase gère automatiquement le stockage
         }
       } catch (err) {
         console.error('Error during scheduled refresh:', err);
@@ -71,18 +81,36 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     });
   };
 
-  // Récupérer une session - laisser Supabase gérer le stockage automatiquement
+  // Récupérer une session - vérifier d'abord si elle existe avant de rafraîchir
   const recoverSession = async () => {
     try {
-      // Ne pas essayer de récupérer depuis notre stockage manuel
-      // Laisser Supabase utiliser son propre mécanisme (sb-auth-token)
-      // Juste essayer de rafraîchir la session si elle existe
+      // Vérifier d'abord si une session existe
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        // Si erreur avec oauth_client_id, nettoyer le localStorage
+        if (sessionError.message?.includes('oauth_client_id')) {
+          console.log('Cleaning corrupted session');
+          localStorage.removeItem('sb-auth-token');
+          return false;
+        }
+        return false;
+      }
+      
+      // Si pas de session, ne pas essayer de rafraîchir
+      if (!sessionData?.session) {
+        return false;
+      }
+      
+      // Si session existe, essayer de la rafraîchir
       const { data, error } = await supabase.auth.refreshSession();
       
       if (error) {
-        // Pas d'erreur si pas de session, c'est normal
-        if (!error.message?.includes('session_not_found')) {
-          console.warn('Error refreshing session:', error);
+        // Si erreur avec oauth_client_id, nettoyer
+        if (error.message?.includes('oauth_client_id')) {
+          console.log('Cleaning corrupted session after refresh attempt');
+          localStorage.removeItem('sb-auth-token');
+          await supabase.auth.signOut();
         }
         return false;
       }
@@ -103,16 +131,25 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   const setupVisibilityListener = () => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
-        console.log('Page became visible, refreshing session');
         try {
+          // Vérifier d'abord si une session existe
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (!sessionData?.session) {
+            return; // Pas de session, ne pas essayer de rafraîchir
+          }
+          
           const { data, error } = await supabase.auth.refreshSession();
           if (error) {
-            console.warn('Error refreshing on visibility change:', error);
-            // Tenter une récupération via la session stockée
-            await recoverSession();
+            // Si erreur avec oauth_client_id, nettoyer
+            if (error.message?.includes('oauth_client_id')) {
+              console.log('Cleaning corrupted session on visibility change');
+              localStorage.removeItem('sb-auth-token');
+              await supabase.auth.signOut();
+            } else {
+              console.warn('Error refreshing on visibility change:', error);
+            }
           } else if (data.session) {
             console.log('Session refreshed on visibility change');
-            // Supabase gère automatiquement le stockage
           }
         } catch (err) {
           console.error('Error refreshing on visibility change:', err);
@@ -144,33 +181,30 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     });
   };
 
-  // Essayer de rafraîchir la session initiale et configurer la persistance
-  if (user.value) {
-    console.log('User is authenticated, enhancing session persistence');
+  // Vérifier la session initiale et nettoyer si corrompue
+  try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     
-    // Rafraîchir la session actuelle
-    try {
-      const { data, error } = await supabase.auth.refreshSession();
-      if (error) {
-        console.error('Initial session refresh error:', error);
-        // Tenter une récupération via la session stockée
-        const recovered = await recoverSession();
-        if (!recovered) {
-          console.warn('Could not recover session, will try to set up persistence anyway');
-        }
-      } else if (data.session) {
-        console.log('Initial session refreshed successfully');
+    if (sessionError) {
+      console.warn('Session error detected, cleaning up:', sessionError);
+      // Nettoyer le localStorage de Supabase si la session est corrompue
+      if (process.client && sessionError.message?.includes('oauth_client_id')) {
+        console.log('Cleaning corrupted session from localStorage');
+        localStorage.removeItem('sb-auth-token');
+        // Forcer une déconnexion
+        await supabase.auth.signOut();
       }
-      
-      // Configurer la persistance de session dans tous les cas
-      await setupPersistence();
-    } catch (err) {
-      console.error('Error refreshing initial session:', err);
+      return;
     }
-  } else {
-    // Si pas d'utilisateur actif, tenter une récupération de session
-    console.log('No active user, attempting session recovery');
-    await recoverSession();
+    
+    if (sessionData?.session) {
+      console.log('User is authenticated, session is valid');
+      await setupPersistence();
+    } else {
+      console.log('No active session');
+    }
+  } catch (err) {
+    console.error('Error checking initial session:', err);
   }
 
   // Configurer les écouteurs même si l'utilisateur n'est pas encore connecté
@@ -179,12 +213,16 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   setupBeforeUnloadListener();
 
   // Forcer la persistance même si l'utilisateur se connecte après le chargement de l'application
-  nuxtApp.hook('app:mounted', () => {
+  nuxtApp.hook('app:mounted', async () => {
     if (user.value) {
       setupPersistence();
     } else {
-      // Tenter une récupération de session au montage de l'application
-      recoverSession();
+      // Vérifier si une session existe avant d'essayer de récupérer
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session) {
+        // Session existe, on peut essayer de récupérer
+        await recoverSession();
+      }
     }
   });
   
@@ -200,11 +238,25 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     }
     
     if (!user.value) {
-      await recoverSession();
+      // Vérifier d'abord si une session existe
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session) {
+        await recoverSession();
+      }
     } else {
       try {
-        await supabase.auth.refreshSession();
-        await setupPersistence();
+        // Vérifier d'abord si une session existe avant de rafraîchir
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session) {
+          const { error } = await supabase.auth.refreshSession();
+          if (error && error.message?.includes('oauth_client_id')) {
+            console.log('Cleaning corrupted session during stability check');
+            localStorage.removeItem('sb-auth-token');
+            await supabase.auth.signOut();
+          } else {
+            await setupPersistence();
+          }
+        }
       } catch (err) {
         console.warn('Error during stability check:', err);
       }
@@ -219,12 +271,15 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   // Gérer les événements de chargement de page
   window.addEventListener('load', async () => {
     // Vérifier si l'utilisateur est connecté après le chargement de la page
-    const { data } = await supabase.auth.getSession();
-    if (data?.session) {
+    const { data, error } = await supabase.auth.getSession();
+    if (error && error.message?.includes('oauth_client_id')) {
+      console.log('Cleaning corrupted session on page load');
+      localStorage.removeItem('sb-auth-token');
+      await supabase.auth.signOut();
+    } else if (data?.session) {
       await setupPersistence();
-    } else {
-      await recoverSession();
     }
+    // Ne pas essayer de récupérer si pas de session - cela causerait une erreur
   });
 
   // Tentative de récupération immédiate avant le montage complet
