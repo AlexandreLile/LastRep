@@ -57,13 +57,17 @@ Vous devez ajouter ces enregistrements DNS **chez votre registrar** (OVH, Cloudf
 
 **Type** : `TXT`  
 **Nom** : `_dmarc` ← **C'est ce qui vient AVANT .lastrep.fr**  
-**Valeur** : `v=DMARC1; p=none;`  
+**Valeur** : `v=DMARC1; p=none; rua=mailto:dmarc@lastrep.fr;`  
 **TTL** : Auto (ou 3600)
 
 **Explication** :
 - Le **Nom** est : `_dmarc`
 - Le nom complet sera automatiquement : `_dmarc.lastrep.fr`
 - Améliore la réputation de votre domaine et réduit les risques de spam.
+- `p=none` : Mode monitoring (recommandé au début)
+- `rua=mailto:dmarc@lastrep.fr` : Reçoit les rapports de délivrabilité (optionnel mais utile)
+
+**💡 Note** : Si vous n'avez pas encore configuré `dmarc@lastrep.fr`, vous pouvez utiliser votre email personnel temporairement, ou simplement utiliser `v=DMARC1; p=none;` pour commencer.
 
 ---
 
