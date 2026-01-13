@@ -8,13 +8,21 @@ export const useAuth = () => {
   const loading = ref(false);
 
   const translateError = (message) => {
+    if (!message) return "Une erreur est survenue. Veuillez réessayer.";
+    
+    const msgLower = message.toLowerCase();
+    
     // Vérifier les erreurs d'email déjà utilisé (plusieurs variantes possibles)
     if (
-      message.includes("User already registered") ||
-      message.includes("already been registered") ||
-      message.includes("already exists") ||
-      message.includes("email address has already been registered") ||
-      message === "User already registered"
+      msgLower.includes("user already registered") ||
+      msgLower.includes("already been registered") ||
+      msgLower.includes("already exists") ||
+      msgLower.includes("email address has already been registered") ||
+      msgLower.includes("email already registered") ||
+      msgLower.includes("user already exists") ||
+      msgLower.includes("duplicate") ||
+      message === "User already registered" ||
+      message === "Email already registered"
     ) {
       return "email_exists";
     }
@@ -27,6 +35,10 @@ export const useAuth = () => {
       case "User not found":
         return "Utilisateur non trouvé.";
       default:
+        // Si le message contient des indices d'email déjà utilisé, le détecter
+        if (msgLower.includes("already") && (msgLower.includes("email") || msgLower.includes("user"))) {
+          return "email_exists";
+        }
         return "Une erreur est survenue. Veuillez réessayer.";
     }
   };
@@ -113,17 +125,43 @@ export const useAuth = () => {
     errorMessage.value = "";
     loading.value = true;
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.value,
         password: password.value,
       });
 
       if (error) {
-        errorMessage.value = translateError(error.message);
+        // Vérifier toutes les variantes d'erreurs d'email déjà utilisé
+        const errorMsg = error.message || error.toString() || '';
+        errorMessage.value = translateError(errorMsg);
+        
+        // Si c'est une erreur d'email déjà utilisé, ne pas rediriger
+        if (errorMessage.value === 'email_exists') {
+          loading.value = false;
+          return;
+        }
+        
+        loading.value = false;
         return;
       }
 
-      router.push("/check-email");
+      // Vérifier si l'utilisateur a été créé
+      // Si data.user est null et qu'il n'y a pas d'erreur, 
+      // c'est peut-être que l'email existe déjà (comportement de sécurité de Supabase)
+      if (!data?.user && !error) {
+        // Dans ce cas, Supabase a peut-être simplement ne pas créé l'utilisateur
+        // mais n'a pas retourné d'erreur pour des raisons de sécurité
+        // On redirige quand même vers check-email car l'email pourrait être envoyé
+        router.push("/check-email");
+        loading.value = false;
+        return;
+      }
+
+      // Inscription réussie - passer l'email en paramètre
+      router.push({
+        path: "/check-email",
+        query: { email: email.value }
+      });
     } catch (error) {
       errorMessage.value = "Une erreur inattendue est survenue.";
       console.error("Erreur d'inscription:", error);
