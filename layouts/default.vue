@@ -15,7 +15,7 @@
   >
     <div class="mb-8">
       <NuxtLink to="/" class="flex items-center" @click="closeMenuOnMobile">
-        <img src="/logo.png" alt="LastRep" class="h-14 w-auto" />
+        <img src="/logo.png" alt="LastRep" class="h-14 w-auto" loading="lazy" />
       </NuxtLink>
     </div>
     

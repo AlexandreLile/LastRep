@@ -17,7 +17,7 @@ export const useSessionHistory = () => {
         throw new Error('Utilisateur non authentifié')
       }
       
-      // Récupérer les séances avec le compte des exercices
+      // Récupérer les séances avec le compte des exercices (OPTIMISÉ : une seule requête)
       const { data: sessionData, error: sessionError } = await supabase
         .from('performedsession')
         .select(`
@@ -35,27 +35,29 @@ export const useSessionHistory = () => {
       
       if (sessionError) throw sessionError
       
-      // Pour chaque session, récupérer le nombre d'exercices distincts
-      const sessionsWithExerciseCount = await Promise.all(
-        sessionData.map(async (session) => {
-          const { data: distinctExercises, error: countError } = await supabase
-            .from('exerciseset')
-            .select('exercise_id', { count: 'exact', head: false })
-            .eq('performed_session_id', session.id)
-            .eq('user_id', user.id)
-          
-          // Compter le nombre d'exercices distincts (valeurs uniques de exercise_id)
-          const uniqueExerciseIds = distinctExercises ? 
-            [...new Set(distinctExercises.map(set => set.exercise_id))] : 
-            [];
-
-          return {
-            ...session,
-            title: session.workoutsession?.title || 'Séance sans titre',
-            exercise_count: uniqueExerciseIds.length
-          }
+      // Récupérer tous les comptes d'exercices en une seule requête (OPTIMISATION N+1)
+      const { data: exerciseCounts, error: countError } = await supabase
+        .rpc('get_session_exercise_counts', { user_uuid: user.id })
+      
+      if (countError) {
+        console.warn('Erreur lors de la récupération des comptes d\'exercices:', countError)
+        // Fallback : continuer sans les comptes
+      }
+      
+      // Créer un map pour accès rapide O(1)
+      const exerciseCountMap = new Map()
+      if (exerciseCounts) {
+        exerciseCounts.forEach(item => {
+          exerciseCountMap.set(item.session_id, item.exercise_count)
         })
-      )
+      }
+      
+      // Combiner les données
+      const sessionsWithExerciseCount = sessionData.map(session => ({
+        ...session,
+        title: session.workoutsession?.title || 'Séance sans titre',
+        exercise_count: exerciseCountMap.get(session.id) || 0
+      }))
       
       sessions.value = sessionsWithExerciseCount
     } catch (e) {

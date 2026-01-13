@@ -18,8 +18,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useSupabaseClient } from '#imports'
+import { useUserStats } from '~/composables/useUserStats'
 
 const supabase = useSupabaseClient()
+const { getTotalWeight, getSessionCount } = useUserStats()
 const totalWeight = ref(0)
 const sessionCount = ref(0)
 const loading = ref(true)
@@ -46,35 +48,16 @@ const loadData = async () => {
       throw new Error('Utilisateur non authentifié')
     }
 
-    console.log('User ID:', user.id)
+    // Utiliser le cache pour améliorer les performances
+    const [weightData, sessionCountData] = await Promise.all([
+      getTotalWeight(user.id),
+      getSessionCount(user.id)
+    ])
 
-    // Utiliser la fonction SQL pour obtenir le poids total
-    const { data: weightData, error: weightError } = await supabase
-      .rpc('get_total_weight', { user_uuid: user.id })
-
-    console.log('Weight Data:', weightData)
-    console.log('Weight Error:', weightError)
-
-    if (weightError) throw weightError
-
-    totalWeight.value = weightData[0]?.total_weight || 0
-    console.log('Total Weight:', totalWeight.value)
-
-    // Récupérer le nombre de séances
-    const { data: sessionData, error: sessionError } = await supabase
-      .from('performedsession')
-      .select('id', { count: 'exact' })
-      .eq('user_id', user.id)
-
-    console.log('Session Data:', sessionData)
-    console.log('Session Error:', sessionError)
-
-    if (sessionError) throw sessionError
-    
-    sessionCount.value = sessionData.length || 1 // Éviter la division par zéro
-    console.log('Session Count:', sessionCount.value)
+    totalWeight.value = weightData.totalWeight || 0
+    sessionCount.value = sessionCountData.count || 1 // Éviter la division par zéro
   } catch (e) {
-    console.error('Erreur lors du chargement des données:', e)
+    // Erreur silencieuse pour ne pas perturber l'UX
   } finally {
     loading.value = false
   }

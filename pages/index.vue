@@ -104,18 +104,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, defineAsyncComponent } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { useRouter } from 'vue-router'
 import { LayoutDashboard, Timer, Target, LogOut, Calendar, Dumbbell, Weight, Clock as ClockIcon } from 'lucide-vue-next'
 import SessionCountSupabase from '~/components/stats/SessionCountSupabase.vue'
 import TotalWeightLiftedSupabase from '~/components/stats/TotalWeightLiftedSupabase.vue'
 import TotalTrainingTimeSupabase from '~/components/stats/TotalTrainingTimeSupabase.vue'
-import TrainingCalendar from '~/components/calendar/TrainingCalendar.vue'
-import MonthlyGoals from '~/components/goals/MonthlyGoals.vue'
-import LastSessionStats from '~/components/stats/LastSessionStats.vue'
 import { Button } from '@/components/ui/button'
 import { useAuthentication } from '~/composables/useAuthentication'
+
+// Code splitting : charger les composants lourds de manière asynchrone
+const TrainingCalendar = defineAsyncComponent(() => import('~/components/calendar/TrainingCalendar.vue'))
+const MonthlyGoals = defineAsyncComponent(() => import('~/components/goals/MonthlyGoals.vue'))
+const LastSessionStats = defineAsyncComponent(() => import('~/components/stats/LastSessionStats.vue'))
 
 // Définir la configuration de la page
 definePageMeta({

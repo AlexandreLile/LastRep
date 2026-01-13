@@ -3,7 +3,7 @@
     <div class="max-w-md w-full mx-auto">
       <!-- Logo et en-tête -->
       <div class="text-center mb-8">
-        <img src="/logo.png" alt="LastRep" class="h-16 w-auto mx-auto mb-4" />
+        <img src="/logo.png" alt="LastRep" class="h-16 w-auto mx-auto mb-4" loading="eager" />
         <p class="text-sm text-muted-foreground">Connectez-vous pour accéder à votre espace d'entraînement</p>
       </div>
 

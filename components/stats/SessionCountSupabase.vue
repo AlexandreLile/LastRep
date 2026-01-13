@@ -20,8 +20,10 @@
 import { ref, onMounted, computed } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { Dumbbell } from 'lucide-vue-next'
+import { useUserStats } from '~/composables/useUserStats'
 
 const supabase = useSupabaseClient()
+const { getSessionStats } = useUserStats()
 const sessionCount = ref(0)
 const weeklyAverage = ref(0)
 const loading = ref(true)
@@ -41,17 +43,14 @@ const loadSessionStats = async () => {
       throw new Error('Utilisateur non authentifié')
     }
 
-    // Utiliser la fonction SQL pour obtenir les statistiques
-    const { data: statsData, error: statsError } = await supabase
-      .rpc('get_session_stats', { user_uuid: user.id })
+    // Utiliser le cache pour améliorer les performances
+    const stats = await getSessionStats(user.id)
 
-    if (statsError) throw statsError
-
-    sessionCount.value = statsData[0]?.total_sessions || 0
-    weeklyAverage.value = statsData[0]?.weekly_average || 0
+    sessionCount.value = stats.totalSessions || 0
+    weeklyAverage.value = stats.weeklyAverage || 0
     
   } catch (e) {
-    console.error('Erreur lors du chargement des statistiques de séances:', e)
+    // Erreur silencieuse pour ne pas perturber l'UX
   } finally {
     loading.value = false
   }

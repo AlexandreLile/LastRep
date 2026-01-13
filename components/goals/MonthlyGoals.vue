@@ -156,7 +156,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { Target, Trophy, Award, Medal } from 'lucide-vue-next'
-
+import { logger } from '~/utils/logger'
 
 const supabase = useSupabaseClient()
 
@@ -181,12 +181,12 @@ const loadMonthlyStats = async () => {
     // Récupérer l'utilisateur connecté
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      console.log('Aucun utilisateur connecté')
+      logger.log('Aucun utilisateur connecté')
       return
     }
-    console.log('MonthlyGoals: Utilisateur connecté:', user.id)
-    console.log('MonthlyGoals: ID attendu pour les données de seed:', '9af8cb22-9196-4616-bea9-5fafc0b48af7')
-    console.log('MonthlyGoals: IDs correspondent?', user.id === '9af8cb22-9196-4616-bea9-5fafc0b48af7')
+    logger.log('MonthlyGoals: Utilisateur connecté:', user.id)
+    logger.log('MonthlyGoals: ID attendu pour les données de seed:', '9af8cb22-9196-4616-bea9-5fafc0b48af7')
+    logger.log('MonthlyGoals: IDs correspondent?', user.id === '9af8cb22-9196-4616-bea9-5fafc0b48af7')
 
     // Définir le mois en cours
     const now = new Date()
@@ -199,7 +199,7 @@ const loadMonthlyStats = async () => {
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
     endOfMonth.setHours(23, 59, 59, 999)
 
-    console.log('MonthlyGoals: Dates de recherche:', {
+    logger.log('MonthlyGoals: Dates de recherche:', {
       moisActuel: currentMonth.value,
       anneeActuelle: now.getFullYear(),
       moisActuelNumero: now.getMonth() + 1, // 1-12
@@ -222,7 +222,7 @@ const loadMonthlyStats = async () => {
       return
     }
 
-    console.log('MonthlyGoals: Toutes les séances récupérées:', allSessions?.length || 0, allSessions)
+    logger.log('MonthlyGoals: Toutes les séances récupérées:', allSessions?.length || 0, allSessions)
 
     // Filtrer les séances du mois en cours en utilisant started_at
     const sessionsThisMonth = (allSessions || []).filter(session => {
@@ -238,7 +238,7 @@ const loadMonthlyStats = async () => {
       const isInMonth = sessionYear === targetYear && sessionMonth === targetMonth
       
       if (isInMonth) {
-        console.log('MonthlyGoals: Séance trouvée dans le mois:', {
+        logger.log('MonthlyGoals: Séance trouvée dans le mois:', {
           date: session.started_at,
           sessionDate: sessionDate.toISOString(),
           sessionYear,
@@ -249,7 +249,7 @@ const loadMonthlyStats = async () => {
           endOfMonth: endOfMonth.toISOString()
         })
       } else {
-        console.log('MonthlyGoals: Séance hors du mois:', {
+        logger.log('MonthlyGoals: Séance hors du mois:', {
           date: session.started_at,
           sessionYear,
           sessionMonth: sessionMonth + 1,
@@ -260,7 +260,7 @@ const loadMonthlyStats = async () => {
       return isInMonth
     })
 
-    console.log('MonthlyGoals: Séances du mois en cours:', sessionsThisMonth.length, sessionsThisMonth)
+    logger.log('MonthlyGoals: Séances du mois en cours:', sessionsThisMonth.length, sessionsThisMonth)
     sessionsCount.value = sessionsThisMonth.length
 
     // Mettre à jour l'objectif en fonction des paliers atteints
@@ -276,7 +276,7 @@ const loadMonthlyStats = async () => {
       targetSessions.value = 12
     }
   } catch (error) {
-    console.error('Erreur lors du chargement des statistiques:', error)
+    logger.error('Erreur lors du chargement des statistiques:', error)
   }
 }
 

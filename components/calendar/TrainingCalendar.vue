@@ -109,6 +109,7 @@
 
 <script setup>
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-vue-next'
+import { logger } from '~/utils/logger'
 
 const supabase = useSupabaseClient()
 const currentDate = ref(new Date())
@@ -182,11 +183,11 @@ const loadTrainingSessions = async () => {
   try {
     const user = (await supabase.auth.getUser()).data.user
     if (!user) {
-      console.log('Calendrier: Aucun utilisateur connecté')
+      logger.log('Calendrier: Aucun utilisateur connecté')
       return
     }
 
-    console.log('Calendrier: Chargement des séances pour l\'utilisateur:', user.id)
+    logger.log('Calendrier: Chargement des séances pour l\'utilisateur:', user.id)
 
     // D'abord, vérifier si les workoutsession existent
     const { data: workouts, error: workoutError } = await supabase
@@ -194,7 +195,7 @@ const loadTrainingSessions = async () => {
       .select('id, title')
       .eq('user_id', user.id)
     
-    console.log('Calendrier: Workoutsession trouvées:', workouts?.length || 0, workouts)
+    logger.log('Calendrier: Workoutsession trouvées:', workouts?.length || 0, workouts)
 
     const { data, error } = await supabase
       .from('performedsession')
@@ -212,16 +213,16 @@ const loadTrainingSessions = async () => {
       .order('started_at', { ascending: false })
 
     if (error) {
-      console.error('Calendrier: Erreur lors de la récupération des séances:', error)
+      logger.error('Calendrier: Erreur lors de la récupération des séances:', error)
       throw error
     }
 
-    console.log('Calendrier: Séances récupérées:', data?.length || 0, data)
+    logger.log('Calendrier: Séances récupérées:', data?.length || 0, data)
     
     // Afficher les détails de chaque séance pour déboguer
     if (data && data.length > 0) {
       data.forEach((session, index) => {
-        console.log(`Calendrier: Séance ${index + 1}:`, {
+        logger.log(`Calendrier: Séance ${index + 1}:`, {
           id: session.id,
           started_at: session.started_at,
           ended_at: session.ended_at,
@@ -236,7 +237,7 @@ const loadTrainingSessions = async () => {
         // Garder les séances qui ont un workout OU qui ont un workout_session_id valide
         const hasWorkout = session.workout && session.workout.title
         if (!hasWorkout && session.workout_session_id) {
-          console.warn('Calendrier: Séance sans workout mais avec workout_session_id:', session.id, session.workout_session_id)
+          logger.warn('Calendrier: Séance sans workout mais avec workout_session_id:', session.id, session.workout_session_id)
         }
         return hasWorkout
       })
@@ -249,9 +250,9 @@ const loadTrainingSessions = async () => {
         name: session.workout?.title || 'Séance sans titre'
       }))
 
-    console.log('Calendrier: Séances filtrées et mappées:', trainingSessions.value.length, trainingSessions.value)
+    logger.log('Calendrier: Séances filtrées et mappées:', trainingSessions.value.length, trainingSessions.value)
   } catch (e) {
-    console.error('Calendrier: Erreur lors du chargement des séances:', e)
+    logger.error('Calendrier: Erreur lors du chargement des séances:', e)
   }
 }
 

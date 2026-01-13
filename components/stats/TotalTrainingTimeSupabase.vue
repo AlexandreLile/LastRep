@@ -21,8 +21,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useSupabaseClient } from '#imports'
+import { useUserStats } from '~/composables/useUserStats'
 
 const supabase = useSupabaseClient()
+const { getTotalTrainingTime, getSessionCount } = useUserStats()
 const totalDuration = ref(0)
 const sessionsCount = ref(0)
 const loading = ref(true)
@@ -56,26 +58,16 @@ const loadTotalDuration = async () => {
       throw new Error('Utilisateur non authentifié')
     }
 
-    // Utiliser la fonction SQL pour obtenir la durée totale
-    const { data: durationData, error: durationError } = await supabase
-      .rpc('get_total_training_time', { user_uuid: user.id })
+    // Utiliser le cache pour améliorer les performances
+    const [trainingTime, sessionCountData] = await Promise.all([
+      getTotalTrainingTime(user.id),
+      getSessionCount(user.id)
+    ])
 
-    if (durationError) throw durationError
-
-    totalDuration.value = durationData[0]?.total_minutes || 0
-
-    // Récupérer le nombre de séances
-    const { data: sessionData, error: sessionError } = await supabase
-      .from('performedsession')
-      .select('id', { count: 'exact' })
-      .eq('user_id', user.id)
-
-    if (sessionError) throw sessionError
-    
-    sessionsCount.value = sessionData.length || 1 // Éviter la division par zéro
+    totalDuration.value = trainingTime.totalMinutes || 0
+    sessionsCount.value = sessionCountData.count || 1 // Éviter la division par zéro
 
   } catch (e) {
-    console.error('Erreur lors du chargement de la durée totale:', e)
     error.value = 'Erreur lors du chargement des données'
   } finally {
     loading.value = false
