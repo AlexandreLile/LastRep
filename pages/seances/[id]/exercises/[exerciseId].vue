@@ -230,58 +230,11 @@
         </div>
 
         <form @submit.prevent="handleAddSet" class="space-y-6">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div class="space-y-2">
-              <Label class="font-medium">Poids (kg)</Label>
-              <Input 
-                v-model="newSet.weight" 
-                type="number" 
-                step="0.5"
-                class="focus:border-primary focus:ring-primary"
-                required
-              />
-            </div>
-            <div class="space-y-2">
-              <Label class="font-medium">Répétitions</Label>
-              <Input 
-                v-model="newSet.reps" 
-                type="number"
-                class="focus:border-primary focus:ring-primary"
-                required
-              />
-            </div>
-            <div class="space-y-2">
-              <Label class="font-medium">Temps de repos (secondes)</Label>
-              <Input 
-                v-model="newSet.restTime" 
-                type="number"
-                class="focus:border-primary focus:ring-primary"
-                required
-              />
-            </div>
-            <div class="space-y-2">
-              <Label class="font-medium">RPE (1-10)</Label>
-              <Input 
-                v-model="newSet.rpe" 
-                type="number" 
-                min="1" 
-                max="10"
-                class="focus:border-primary focus:ring-primary"
-              />
-              <div class="text-xs text-muted-foreground">
-                Rate of Perceived Exertion - Intensité ressentie
-              </div>
-            </div>
-          </div>
-          <div class="space-y-2">
-            <Label class="font-medium">Note</Label>
-            <Textarea 
-              v-model="newSet.note" 
-              rows="2"
-              placeholder="Ajouter une note (optionnel)"
-              class="focus:border-primary focus:ring-primary"
-            />
-          </div>
+          <AdaptSetInput
+            v-if="exercise && exercise.exercise"
+            :exercise="exercise.exercise"
+            v-model="newSet"
+          />
           <Button type="submit" :disabled="exerciseSetLoading" class="w-full sm:w-auto">
             <Loader2 v-if="exerciseSetLoading" class="w-4 h-4 mr-2 animate-spin" />
             {{ exerciseSetLoading ? 'Ajout en cours...' : 'Ajouter la série' }}
@@ -310,17 +263,61 @@
             :class="{'animate-fade-in': true}"
           >
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div class="space-y-1">
-                <span class="text-xs text-muted-foreground uppercase">Poids</span>
-                <p class="font-medium text-primary">{{ set.weight_kg }} kg</p>
-              </div>
-              <div class="space-y-1">
-                <span class="text-xs text-muted-foreground uppercase">Répétitions</span>
-                <p class="font-medium">{{ set.reps }}</p>
-              </div>
+              <!-- Affichage adaptatif selon le type d'exercice -->
+              <template v-if="exercise && exercise.exercise && exercise.exercise.measurement_type === 'weight_reps'">
+                <div class="space-y-1">
+                  <span class="text-xs text-muted-foreground uppercase">Poids</span>
+                  <p class="font-medium text-primary">{{ set.weight_kg || 0 }} kg</p>
+                </div>
+                <div class="space-y-1">
+                  <span class="text-xs text-muted-foreground uppercase">Répétitions</span>
+                  <p class="font-medium">{{ set.reps }}</p>
+                </div>
+              </template>
+              <template v-else-if="exercise && exercise.exercise && exercise.exercise.measurement_type === 'reps'">
+                <div class="space-y-1">
+                  <span class="text-xs text-muted-foreground uppercase">Répétitions</span>
+                  <p class="font-medium">{{ set.reps }}</p>
+                  <p v-if="set.weight_kg && parseFloat(set.weight_kg) > 0" class="text-xs text-primary">
+                    (lesté +{{ set.weight_kg }}kg)
+                  </p>
+                </div>
+              </template>
+              <template v-else-if="exercise && exercise.exercise && exercise.exercise.measurement_type === 'time'">
+                <div class="space-y-1">
+                  <span class="text-xs text-muted-foreground uppercase">Durée</span>
+                  <p class="font-medium">{{ formatDuration(set.duration_seconds) }}</p>
+                </div>
+                <div v-if="set.reps" class="space-y-1">
+                  <span class="text-xs text-muted-foreground uppercase">Séries</span>
+                  <p class="font-medium">{{ set.reps }}</p>
+                </div>
+              </template>
+              <template v-else-if="exercise && exercise.exercise && exercise.exercise.measurement_type === 'time_distance'">
+                <div class="space-y-1">
+                  <span class="text-xs text-muted-foreground uppercase">Durée</span>
+                  <p class="font-medium">{{ formatDuration(set.duration_seconds) }}</p>
+                </div>
+                <div class="space-y-1">
+                  <span class="text-xs text-muted-foreground uppercase">Distance</span>
+                  <p class="font-medium">{{ (set.distance_meters / 1000).toFixed(2) }} km</p>
+                </div>
+              </template>
+              <template v-else-if="exercise && exercise.exercise && exercise.exercise.measurement_type === 'distance'">
+                <div class="space-y-1">
+                  <span class="text-xs text-muted-foreground uppercase">Distance</span>
+                  <p class="font-medium">{{ (set.distance_meters / 1000).toFixed(2) }} km</p>
+                </div>
+              </template>
+              <template v-else-if="exercise && exercise.exercise && exercise.exercise.measurement_type === 'weight_only'">
+                <div class="space-y-1">
+                  <span class="text-xs text-muted-foreground uppercase">Poids</span>
+                  <p class="font-medium text-primary">{{ set.weight_kg }} kg</p>
+                </div>
+              </template>
               <div class="space-y-1">
                 <span class="text-xs text-muted-foreground uppercase">Repos</span>
-                <p class="font-medium">{{ set.rest_seconds }}s</p>
+                <p class="font-medium">{{ set.rest_seconds || '-' }}s</p>
               </div>
               <div class="space-y-1">
                 <span class="text-xs text-muted-foreground uppercase">RPE</span>
@@ -390,6 +387,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useWorkoutExercise } from '~/composables/useWorkoutExercise'
 import { usePerformedSession } from '~/composables/usePerformedSession'
 import { useExerciseSet } from '~/composables/useExerciseSet'
+import AdaptSetInput from '~/components/exercises/AdaptSetInput.vue'
 import { toast } from 'vue-sonner'
 import { Toaster } from '@/components/ui/sonner'
 import {
@@ -436,11 +434,13 @@ const bestSet = ref(null)
 const localExerciseSets = ref([])
 
 const newSet = ref({
-  weight: '',
-  reps: '',
-  restTime: '',
-  rpe: '',
-  note: ''
+  weight_kg: null,
+  reps: null,
+  duration_seconds: null,
+  distance_meters: null,
+  rest_seconds: null,
+  rpe: null,
+  note: null
 })
 
 // Variables pour la modale de repos
@@ -539,6 +539,17 @@ const formatTime = (seconds) => {
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 
+// Fonction pour formater la durée
+const formatDuration = (seconds) => {
+  if (!seconds) return ''
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  if (mins > 0) {
+    return `${mins}min ${secs}s`
+  }
+  return `${secs}s`
+}
+
 // Fonction pour démarrer le timer de repos
 const startRestTimer = (seconds) => {
   restTimeRemaining.value = seconds
@@ -577,9 +588,11 @@ const handleAddSet = async () => {
     // Créer la donnée de la série à envoyer à la base de données
     const setData = {
       exercise_id: exercise.value.exercise.id,
-      weight_kg: parseFloat(newSet.value.weight),
-      reps: parseInt(newSet.value.reps),
-      rest_seconds: parseInt(newSet.value.restTime),
+      weight_kg: newSet.value.weight_kg ? parseFloat(newSet.value.weight_kg) : null,
+      reps: newSet.value.reps ? parseInt(newSet.value.reps) : null,
+      duration_seconds: newSet.value.duration_seconds ? parseInt(newSet.value.duration_seconds) : null,
+      distance_meters: newSet.value.distance_meters ? parseFloat(newSet.value.distance_meters) : null,
+      rest_seconds: newSet.value.rest_seconds ? parseInt(newSet.value.rest_seconds) : null,
       rpe: newSet.value.rpe ? parseFloat(newSet.value.rpe) : null,
       note: newSet.value.note || null
     }
@@ -633,11 +646,13 @@ const handleAddSet = async () => {
     // Préremplir le formulaire avec la dernière série (celle qu'on vient d'ajouter)
     if (addedSet) {
       newSet.value = {
-        weight: addedSet.weight_kg,
+        weight_kg: addedSet.weight_kg,
         reps: addedSet.reps,
-        restTime: addedSet.rest_seconds,
-        rpe: addedSet.rpe || '',
-        note: addedSet.note || ''
+        duration_seconds: addedSet.duration_seconds,
+        distance_meters: addedSet.distance_meters,
+        rest_seconds: addedSet.rest_seconds,
+        rpe: addedSet.rpe || null,
+        note: addedSet.note || null
       }
     }
 
@@ -723,11 +738,13 @@ const loadExercise = async () => {
       if (localExerciseSets.value && localExerciseSets.value.length > 0) {
         const lastSet = localExerciseSets.value[0]
         newSet.value = {
-          weight: lastSet.weight_kg,
+          weight_kg: lastSet.weight_kg,
           reps: lastSet.reps,
-          restTime: lastSet.rest_seconds,
-          rpe: lastSet.rpe || '',
-          note: lastSet.note || ''
+          duration_seconds: lastSet.duration_seconds,
+          distance_meters: lastSet.distance_meters,
+          rest_seconds: lastSet.rest_seconds,
+          rpe: lastSet.rpe || null,
+          note: lastSet.note || null
         }
       }
     }

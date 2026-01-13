@@ -3,6 +3,19 @@
     <CardContent class="p-0">
       <!-- Formulaire de recherche mobile-first -->
       <form ref="searchForm" class="space-y-4 px-2 pb-2">
+        <!-- Bouton créer exercice personnalisé -->
+        <div class="flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            @click="$emit('create-custom')"
+            class="flex items-center gap-2"
+          >
+            <Plus class="h-4 w-4" />
+            Créer un exercice
+          </Button>
+        </div>
         <FormField name="search">
           <Label for="search">Rechercher un exercice</Label>
           <div class="relative">
@@ -122,7 +135,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['add-exercise']);
+const emit = defineEmits(['add-exercise', 'create-custom']);
 
 const searchForm = ref(null);
 const searchInput = ref(null);

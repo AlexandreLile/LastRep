@@ -14,8 +14,16 @@
         :exercises="exercises"
         :added-exercises="currentExercises"
         @add-exercise="handleAddExercise"
+        @create-custom="showCreateDialog = true"
       />
     </div>
+
+    <!-- Dialog de création d'exercice personnalisé -->
+    <CreateCustomExercise
+      :open="showCreateDialog"
+      @update:open="showCreateDialog = $event"
+      @created="handleExerciseCreated"
+    />
     
     <!-- Bouton de fermeture optimisé pour mobile -->
     <div class="sticky bottom-0 bg-white border-t border-gray-200 p-3 shadow-md">
@@ -34,6 +42,7 @@
 import { ref, onMounted, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import ExerciseSearch from './ExerciseSearch.vue';
+import CreateCustomExercise from './CreateCustomExercise.vue';
 import { useWorkoutExercise } from '@/composables/useWorkoutExercise';
 import { useExercise } from '@/composables/useExercise';
 
@@ -56,6 +65,7 @@ const {
 
 const { exercises, getAllExercises } = useExercise();
 const isMobile = ref(false);
+const showCreateDialog = ref(false);
 
 // Charger les exercices de la séance et tous les exercices disponibles
 onMounted(async () => {
