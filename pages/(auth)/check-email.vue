@@ -1,12 +1,12 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+  <div class="min-h-screen flex items-center justify-center bg-background p-4">
     <div class="max-w-md w-full text-center">
-      <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+      <div class="bg-card rounded-xl p-8 shadow-sm border border-border">
         <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
           <Mail class="w-8 h-8 text-primary" />
         </div>
-        <h1 class="text-2xl font-bold mb-4 text-gray-900">Vérifiez votre boîte mail ✉️</h1>
-        <p class="text-gray-600 mb-6">
+        <h1 class="text-2xl font-bold mb-4 text-foreground">Vérifiez votre boîte mail ✉️</h1>
+        <p class="text-muted-foreground mb-6">
           Un lien de confirmation a été envoyé à votre adresse email.<br />
           Merci de cliquer dessus pour activer votre compte !
         </p>

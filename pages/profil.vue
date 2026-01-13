@@ -1,19 +1,19 @@
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-8 bg-white rounded-xl p-6">
+    <div class="mb-8 bg-card rounded-xl p-6">
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
           <User class="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h2 class="text-2xl font-bold text-gray-900">Profil</h2>
+          <h2 class="text-2xl font-bold text-foreground">Profil</h2>
           <p class="text-sm text-muted-foreground">Gérez vos informations personnelles et vos préférences</p>
         </div>
       </div>
     </div>
 
-    <div class="bg-white rounded-xl p-6 max-w-lg hover:shadow-md transition-all duration-300">
+    <div class="bg-card rounded-xl p-6 max-w-lg hover:shadow-md transition-all duration-300">
       <div class="flex items-center gap-3 mb-6">
         <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
           <UserCog class="w-5 h-5 text-primary" />
@@ -34,7 +34,7 @@
         </div>
         <div>
           <Label class="block mb-1 font-medium">Email</Label>
-          <Input v-model="profile.email" type="email" disabled class="w-full bg-gray-50" />
+          <Input v-model="profile.email" type="email" disabled class="w-full bg-muted" />
         </div>
         <div class="pt-2">
           <Button type="submit" :disabled="loading" class="flex items-center gap-2">
@@ -53,12 +53,83 @@
         </div>
       </form>
     </div>
+
+    <!-- Zone de danger - Suppression de compte -->
+    <div class="bg-card rounded-xl p-6 max-w-lg mt-6 border border-destructive/20">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 bg-destructive/10 rounded-full flex items-center justify-center">
+          <AlertTriangle class="w-5 h-5 text-destructive" />
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold text-destructive">Zone de danger</h3>
+          <p class="text-sm text-muted-foreground">Actions irréversibles sur votre compte</p>
+        </div>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <p class="text-sm text-muted-foreground mb-2">
+            La suppression de votre compte entraînera la suppression définitive de toutes vos données :
+          </p>
+          <ul class="text-xs text-muted-foreground list-disc list-inside space-y-1 mb-4">
+            <li>Toutes vos séances d'entraînement</li>
+            <li>Toutes vos séries et performances</li>
+            <li>Tous vos exercices personnalisés</li>
+            <li>Toutes vos statistiques</li>
+            <li>Votre compte et toutes vos données personnelles</li>
+          </ul>
+          <p class="text-xs text-destructive font-medium mb-4">
+            ⚠️ Cette action est irréversible et ne peut pas être annulée.
+          </p>
+        </div>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" class="w-full">
+              <Trash2 class="h-4 w-4 mr-2" />
+              Supprimer mon compte
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmer la suppression du compte</AlertDialogTitle>
+              <AlertDialogDescription>
+                Êtes-vous absolument sûr de vouloir supprimer votre compte ? Cette action supprimera définitivement :
+                <ul class="list-disc list-inside mt-2 space-y-1 text-sm">
+                  <li>Toutes vos séances d'entraînement</li>
+                  <li>Toutes vos séries et performances</li>
+                  <li>Tous vos exercices personnalisés</li>
+                  <li>Toutes vos statistiques</li>
+                  <li>Votre compte et toutes vos données personnelles</li>
+                </ul>
+                <p class="mt-3 font-semibold text-destructive">
+                  Cette action est irréversible et ne peut pas être annulée.
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction 
+                @click="deleteAccount" 
+                :disabled="deleting"
+                class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                <Trash2 v-if="!deleting" class="h-4 w-4 mr-2" />
+                <Loader2 v-else class="h-4 w-4 mr-2 animate-spin" />
+                {{ deleting ? 'Suppression en cours...' : 'Oui, supprimer mon compte' }}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useSupabaseClient } from '#imports'
+import { useRouter } from 'vue-router'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -68,8 +139,20 @@ import {
   Save, 
   Loader2, 
   CheckCircle, 
-  AlertTriangle 
+  AlertTriangle,
+  Trash2
 } from 'lucide-vue-next'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 const supabase = useSupabaseClient()
 const profile = ref({
@@ -80,6 +163,8 @@ const profile = ref({
 const loading = ref(false)
 const success = ref(false)
 const error = ref('')
+const deleting = ref(false)
+const router = useRouter()
 
 const loadProfile = async () => {
   loading.value = true
@@ -119,6 +204,41 @@ const updateProfile = async () => {
   } finally {
     loading.value = false
     setTimeout(() => { success.value = false }, 3000)
+  }
+}
+
+const deleteAccount = async () => {
+  deleting.value = true
+  error.value = ''
+  
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Utilisateur non connecté')
+    
+    const userId = user.id
+    
+    // Appeler la fonction SQL qui supprime toutes les données en cascade
+    const { error: deleteError } = await supabase.rpc('delete_user_account', {
+      user_uuid: userId
+    })
+    
+    if (deleteError) {
+      throw new Error(deleteError.message || 'Erreur lors de la suppression des données')
+    }
+    
+    // Déconnexion de l'utilisateur
+    await supabase.auth.signOut()
+    
+    // Redirection vers la page de login avec un message
+    router.push({
+      path: '/login',
+      query: { deleted: 'true' }
+    })
+    
+  } catch (e) {
+    console.error('Erreur lors de la suppression du compte:', e)
+    error.value = e.message || 'Une erreur est survenue lors de la suppression de votre compte. Veuillez réessayer ou contacter le support.'
+    deleting.value = false
   }
 }
 

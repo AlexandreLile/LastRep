@@ -3,13 +3,13 @@
    
 
     <!-- Header amélioré -->
-    <div class="mb-8 bg-white rounded-xl p-6">
+    <div class="mb-8 bg-card rounded-xl p-6">
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
           <LayoutDashboard class="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h2 class="text-2xl font-bold text-gray-900">Vue d'ensemble</h2>
+          <h2 class="text-2xl font-bold text-foreground">Vue d'ensemble</h2>
           <p class="text-sm text-muted-foreground">Suivez vos progrès et vos performances</p>
         </div>
       </div>
@@ -17,7 +17,7 @@
 
     <!-- Stats Grid avec styles améliorés -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
-      <div class="bg-white rounded-xl p-6 border border-gray-100">
+      <div class="bg-card rounded-xl p-6 border border-border">
         <div class="flex flex-col h-full">
           <div class="mb-3 flex items-center gap-3">
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
@@ -28,7 +28,7 @@
           <SessionCountSupabase class="mt-auto" />
         </div>
       </div>
-      <div class="bg-white rounded-xl p-6 border border-gray-100">
+      <div class="bg-card rounded-xl p-6 border border-border">
         <div class="flex flex-col h-full">
           <div class="mb-3 flex items-center gap-3">
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
@@ -39,13 +39,13 @@
           <TotalWeightLiftedSupabase class="mt-auto" />
         </div>
       </div>
-      <div class="bg-white rounded-xl p-6 border border-gray-100">
+      <div class="bg-card rounded-xl p-6 border border-border">
         <div class="flex flex-col h-full">
           <div class="mb-3 flex items-center gap-3">
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
               <ClockIcon class="w-5 h-5 text-primary" />
             </div>
-            <h3 class="text-sm font-medium text-muted-foreground">Temps d'entraînement</h3>
+            <h3 class="text-sm font-medium text-foreground">Temps d'entraînement</h3>
           </div>
           <TotalTrainingTimeSupabase class="mt-auto" />
         </div>
@@ -57,7 +57,7 @@
       <!-- Left Column -->
       <div class="flex flex-col gap-6">
         <!-- Monthly Goals -->
-        <div class="bg-white rounded-xl p-6">
+        <div class="bg-card rounded-xl p-6">
           <div class="flex items-center gap-3 mb-4">
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
               <Target class="w-5 h-5 text-primary" />
@@ -68,7 +68,7 @@
         </div>
         
         <!-- Last Session -->
-        <div class="bg-white rounded-xl p-6">
+        <div class="bg-card rounded-xl p-6">
           <div class="flex items-center gap-3 mb-4">
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
               <Timer class="w-5 h-5 text-primary" />
@@ -80,7 +80,7 @@
       </div>
 
       <!-- Right Column - Calendar -->
-      <div class="bg-white rounded-xl p-6 self-start">
+      <div class="bg-card rounded-xl p-6 self-start">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <Calendar class="w-5 h-5 text-primary" />

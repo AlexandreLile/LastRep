@@ -1,17 +1,17 @@
 <template>
-  <div class="h-screen flex items-center justify-center bg-gray-50 p-4">
+  <div class="h-screen flex items-center justify-center bg-background p-4">
     <div class="text-center max-w-md w-full">
       <div v-if="loading" class="space-y-4">
         <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
         <h1 class="text-2xl font-bold mb-2">Connexion en cours...</h1>
-        <p class="text-gray-600">Veuillez patienter pendant que nous vous connectons.</p>
+        <p class="text-muted-foreground">Veuillez patienter pendant que nous vous connectons.</p>
       </div>
       
       <div v-else-if="error" class="space-y-4">
         <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
           <AlertTriangle class="w-8 h-8 text-red-600" />
         </div>
-        <h1 class="text-2xl font-bold mb-2 text-gray-900">Erreur de connexion</h1>
+        <h1 class="text-2xl font-bold mb-2 text-foreground">Erreur de connexion</h1>
         <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-left">
           <p class="text-red-800 font-medium mb-2">{{ errorTitle }}</p>
           <p class="text-sm text-red-700 mb-4">{{ errorMessage }}</p>

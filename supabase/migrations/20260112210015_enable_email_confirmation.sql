@@ -1,0 +1,15 @@
+-- ============================================
+-- VALIDATION EMAIL - SÉCURITÉ IMPORTANTE
+-- ============================================
+-- Cette migration documente la nécessité d'activer la validation email
+-- 
+-- IMPORTANT: La validation email doit être activée dans le Dashboard Supabase :
+-- 1. Allez dans Authentication > Settings
+-- 2. Activez "Enable email confirmations"
+-- 3. Configurez les templates d'email si nécessaire
+--
+-- Cette migration ne fait rien car la configuration se fait dans le dashboard,
+-- mais elle sert de rappel et de documentation pour l'équipe.
+
+-- Note: La validation email empêche la création de comptes avec des emails invalides
+-- et améliore la sécurité globale de l'application.

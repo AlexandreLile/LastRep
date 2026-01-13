@@ -1,13 +1,13 @@
 <template>
   <div class="relative">
     <!-- Header amélioré -->
-    <div class="mb-8 bg-white rounded-xl p-6">
+    <div class="mb-8 bg-card rounded-xl p-6">
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
           <Dumbbell class="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h2 class="text-2xl font-bold text-gray-900">Séances d'entraînement</h2>
+          <h2 class="text-2xl font-bold text-foreground">Séances d'entraînement</h2>
           <p class="text-sm text-muted-foreground">Créez et gérez vos programmes d'entraînement</p>
         </div>
       </div>
@@ -18,7 +18,7 @@
       <!-- Left Column - Add Session and List -->
       <div class="lg:col-span-2 space-y-6">
         <!-- Add Session Card -->
-        <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+        <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
           <div class="flex items-start gap-4">
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
               <Plus class="w-5 h-5 text-primary" />
@@ -47,7 +47,7 @@
         </div>
 
         <!-- Sessions List -->
-        <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+        <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
           <div class="flex items-center gap-3 mb-4">
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
               <ListOrdered class="w-5 h-5 text-primary" />
@@ -60,7 +60,7 @@
 
       <!-- Right Column - Stats -->
       <div class="space-y-6">
-        <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+        <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
           <div class="flex items-center gap-3 mb-4">
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
               <PieChart class="w-5 h-5 text-primary" />
@@ -76,11 +76,11 @@
             <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
               <Lightbulb class="w-5 h-5 text-primary" />
             </div>
-            <h3 class="text-lg font-semibold text-gray-900">Conseils</h3>
+            <h3 class="text-lg font-semibold text-foreground">Conseils</h3>
           </div>
           <div class="space-y-4">
-            <p class="text-sm text-gray-600">Pour une routine optimale, variez vos types d'exercices et alternez les groupes musculaires.</p>
-            <div class="bg-white p-4 rounded-lg">
+            <p class="text-sm text-muted-foreground">Pour une routine optimale, variez vos types d'exercices et alternez les groupes musculaires.</p>
+            <div class="bg-card p-4 rounded-lg">
               <h4 class="font-medium text-sm mb-2">Programme idéal</h4>
               <ul class="text-xs text-muted-foreground space-y-1.5">
                 <li class="flex items-center">

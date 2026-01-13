@@ -4,21 +4,21 @@
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
     </div>
 
-    <div v-else-if="error" class="text-red-500 text-center py-8 bg-white rounded-xl p-6">
+    <div v-else-if="error" class="text-red-500 text-center py-8 bg-card rounded-xl p-6">
       <AlertTriangle class="h-12 w-12 mx-auto mb-4 text-red-500" />
       {{ error }}
     </div>
 
     <div v-else-if="session">
       <!-- Header amélioré -->
-      <div class="mb-8 bg-white rounded-xl p-6">
+      <div class="mb-8 bg-card rounded-xl p-6">
         <div class="flex flex-col sm:flex-row gap-6">
           <div class="flex items-start gap-4">
             <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
               <Dumbbell class="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h2 class="text-2xl font-bold text-gray-900">{{ session.title }}</h2>
+              <h2 class="text-2xl font-bold text-foreground">{{ session.title }}</h2>
               <div v-if="session.notes" class="mt-2 text-sm text-muted-foreground">
                 {{ session.notes }}
               </div>
@@ -31,7 +31,7 @@
               class="relative overflow-hidden group"
               :class="[
                 exercises.length === 0 
-                  ? 'bg-gray-400 cursor-not-allowed' 
+                  ? 'bg-muted cursor-not-allowed' 
                   : 'bg-primary hover:bg-primary/90',
                 'text-white px-6 py-3 rounded-lg transition-all duration-300'
               ]"
@@ -57,7 +57,7 @@
       <!-- Main Content -->
       <div class="space-y-6">
         <!-- Exercises List -->
-        <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+        <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
           <div class="flex items-center gap-3 mb-4">
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
               <ListChecks class="w-5 h-5 text-primary" />
@@ -68,7 +68,7 @@
             </div>
           </div>
 
-          <div v-if="exercises.length === 0" class="flex flex-col items-center justify-center py-12 px-4 space-y-4 bg-gray-50/70 rounded-lg">
+          <div v-if="exercises.length === 0" class="flex flex-col items-center justify-center py-12 px-4 space-y-4 bg-muted/70 rounded-lg">
             <FolderPlus class="w-16 h-16 text-muted-foreground/30" />
             <p class="text-base text-muted-foreground text-center">
               Aucun exercice pour cette séance
@@ -86,14 +86,14 @@
             <div 
               v-for="exercise in exercises" 
               :key="exercise.id"
-              class="bg-white rounded-xl p-6 cursor-pointer relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group"
+              class="bg-card rounded-xl p-6 cursor-pointer relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group"
               @click="router.push(`/exercices/${exercise.exercise_id}`)"
             >
               <!-- Effet de bordure néon -->
               <div class="absolute inset-0 rounded-xl bg-primary/20 blur-md transition-all duration-300 group-hover:bg-primary/30 group-hover:blur-lg"></div>
               <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/50 via-primary/30 to-primary/50 animate-[pulse_2s_ease-in-out_infinite] group-hover:from-primary/60 group-hover:via-primary/40 group-hover:to-primary/60"></div>
               <div class="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/40 to-transparent animate-[glow_3s_ease-in-out_infinite] group-hover:from-primary/50 group-hover:to-transparent"></div>
-              <div class="absolute inset-[1px] rounded-xl bg-white"></div>
+              <div class="absolute inset-[1px] rounded-xl bg-card"></div>
 
               <!-- Contenu -->
               <div class="relative flex flex-col h-full">
@@ -103,7 +103,7 @@
                       <Dumbbell class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
                     </div>
                     <div>
-                      <h3 class="text-lg font-medium text-gray-900 transition-colors duration-300 group-hover:text-primary">{{ exercise.exercise?.name }}</h3>
+                      <h3 class="text-lg font-medium text-foreground transition-colors duration-300 group-hover:text-primary">{{ exercise.exercise?.name }}</h3>
                       <span class="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-primary/10 group-hover:text-primary">
                         {{ exercise.exercise?.primary_muscle }}
                       </span>
@@ -111,7 +111,7 @@
                   </div>
                   <div class="flex items-center">
                     <div class="text-sm font-medium text-primary transition-all duration-300 group-hover:scale-105">
-                      <div class="text-sm text-muted-foreground transition-colors duration-300 group-hover:text-gray-700">
+                      <div class="text-sm text-muted-foreground transition-colors duration-300 group-hover:text-foreground">
                         1 RM estimé
                       </div>
                       <div class="text-right">
@@ -126,7 +126,7 @@
         </div>
 
         <!-- Stats -->
-        <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+        <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
           <div class="flex items-center gap-3 mb-4">
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
               <BarChart class="w-5 h-5 text-primary" />
@@ -145,7 +145,7 @@
             <Button 
               @click="startSession" 
               variant="outline"
-              class="bg-white text-primary hover:bg-white/90 border-white"
+              class="bg-card text-primary hover:bg-card/90 border-white"
             >
               <Play class="mr-2 h-4 w-4" />
               Démarrer la séance

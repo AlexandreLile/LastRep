@@ -4,21 +4,21 @@
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
     </div>
 
-    <div v-else-if="error" class="text-red-500 text-center py-8 bg-white rounded-xl p-6">
+    <div v-else-if="error" class="text-red-500 text-center py-8 bg-card rounded-xl p-6">
       <AlertTriangle class="h-12 w-12 mx-auto mb-4 text-red-500" />
       {{ error }}
     </div>
 
     <div v-else class="space-y-6">
       <!-- En-tête amélioré -->
-      <div class="mb-8 bg-white rounded-xl p-6">
+      <div class="mb-8 bg-card rounded-xl p-6">
         <div class="flex items-center justify-between gap-4">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
               <Dumbbell class="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h2 class="text-2xl font-bold text-gray-900">Mes Exercices</h2>
+              <h2 class="text-2xl font-bold text-foreground">Mes Exercices</h2>
               <p class="text-sm text-muted-foreground">Suivez votre progression sur chaque exercice</p>
             </div>
           </div>
@@ -44,7 +44,7 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Liste des exercices - Colonne principale -->
         <div class="lg:col-span-2">
-          <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+          <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
             <div class="flex items-center gap-3 mb-4">
               <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                 <ListChecks class="w-5 h-5 text-primary" />
@@ -80,14 +80,14 @@
                   <div 
                     v-for="stat in exerciseStats" 
                     :key="stat.exercise_id" 
-                    class="relative bg-white rounded-xl p-4 cursor-pointer group overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+                    class="relative bg-card rounded-xl p-4 cursor-pointer group overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
                     @click="navigateTo(`/exercices/${stat.exercise_id}`)"
                   >
                     <!-- Effet de bordure néon -->
                     <div class="absolute inset-0 rounded-xl bg-primary/20 blur-md transition-all duration-300 group-hover:bg-primary/30 group-hover:blur-lg"></div>
                     <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/50 via-primary/30 to-primary/50 animate-[pulse_2s_ease-in-out_infinite] group-hover:from-primary/60 group-hover:via-primary/40 group-hover:to-primary/60"></div>
                     <div class="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/40 to-transparent animate-[glow_3s_ease-in-out_infinite] group-hover:from-primary/50 group-hover:to-transparent"></div>
-                    <div class="absolute inset-[1px] rounded-xl bg-white"></div>
+                    <div class="absolute inset-[1px] rounded-xl bg-card"></div>
 
                     <div class="relative flex items-center justify-between">
                       <div class="flex items-center gap-3">
@@ -95,7 +95,7 @@
                           <Dumbbell class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
                         </div>
                         <div>
-                          <h4 class="text-base font-medium text-gray-900 transition-colors duration-300 group-hover:text-primary">{{ stat.exercise.name }}</h4>
+                          <h4 class="text-base font-medium text-foreground transition-colors duration-300 group-hover:text-primary">{{ stat.exercise.name }}</h4>
                           <span class="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-primary/10 group-hover:text-primary">
                             {{ stat.exercise.primary_muscle }}
                           </span>
@@ -105,7 +105,7 @@
                     </div>
                   </div>
                 </div>
-                <div v-else class="flex flex-col items-center justify-center py-12 px-4 space-y-4 bg-gray-50/70 rounded-lg">
+                <div v-else class="flex flex-col items-center justify-center py-12 px-4 space-y-4 bg-muted/70 rounded-lg">
                   <ActivitySquare class="w-16 h-16 text-muted-foreground/30" />
                   <p class="text-base text-muted-foreground text-center">
                     Aucun exercice avec des séries enregistrées
@@ -123,14 +123,14 @@
                   <div 
                     v-for="stat in exercises" 
                     :key="stat.exercise_id" 
-                    class="relative bg-white rounded-xl p-4 cursor-pointer group overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+                    class="relative bg-card rounded-xl p-4 cursor-pointer group overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
                     @click="navigateTo(`/exercices/${stat.exercise_id}`)"
                   >
                     <!-- Effet de bordure néon -->
                     <div class="absolute inset-0 rounded-xl bg-primary/20 blur-md transition-all duration-300 group-hover:bg-primary/30 group-hover:blur-lg"></div>
                     <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/50 via-primary/30 to-primary/50 animate-[pulse_2s_ease-in-out_infinite] group-hover:from-primary/60 group-hover:via-primary/40 group-hover:to-primary/60"></div>
                     <div class="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/40 to-transparent animate-[glow_3s_ease-in-out_infinite] group-hover:from-primary/50 group-hover:to-transparent"></div>
-                    <div class="absolute inset-[1px] rounded-xl bg-white"></div>
+                    <div class="absolute inset-[1px] rounded-xl bg-card"></div>
 
                     <div class="relative flex items-center justify-between">
                       <div class="flex items-center gap-3">
@@ -138,7 +138,7 @@
                           <Dumbbell class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
                         </div>
                         <div>
-                          <h4 class="text-base font-medium text-gray-900 transition-colors duration-300 group-hover:text-primary">{{ stat.exercise.name }}</h4>
+                          <h4 class="text-base font-medium text-foreground transition-colors duration-300 group-hover:text-primary">{{ stat.exercise.name }}</h4>
                           <span class="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-primary/10 group-hover:text-primary">
                             {{ stat.exercise.primary_muscle }}
                           </span>
@@ -156,7 +156,7 @@
         <!-- Colonne secondaire -->
         <div class="space-y-6">
           <!-- Statistiques rapides -->
-          <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+          <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
             <div class="flex items-center gap-3 mb-4">
               <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                 <BarChart class="w-5 h-5 text-primary" />
@@ -165,7 +165,7 @@
             </div>
 
             <div class="space-y-4">
-              <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+              <div class="flex justify-between items-center p-4 bg-muted rounded-lg">
                 <div class="flex items-center gap-3">
                   <div class="p-2 rounded-full bg-primary/10">
                     <Weight class="h-4 w-4 text-primary" />
@@ -175,7 +175,7 @@
                 <span class="text-xl font-bold text-primary">{{ exerciseStats.length }}</span>
               </div>
 
-              <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg" v-if="Object.keys(groupedExercises).length > 0">
+              <div class="flex justify-between items-center p-4 bg-muted rounded-lg" v-if="Object.keys(groupedExercises).length > 0">
                 <div class="flex items-center gap-3">
                   <div class="p-2 rounded-full bg-primary/10">
                     <ActivitySquare class="h-4 w-4 text-primary" />
@@ -193,11 +193,11 @@
               <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
                 <Lightbulb class="w-5 h-5 text-primary" />
               </div>
-              <h3 class="text-lg font-semibold text-gray-900">Conseils</h3>
+              <h3 class="text-lg font-semibold text-foreground">Conseils</h3>
             </div>
             <div class="space-y-4">
-              <p class="text-sm text-gray-600">Variez vos exercices pour cibler différents muscles et éviter les plateaux.</p>
-              <div class="bg-white p-4 rounded-lg">
+              <p class="text-sm text-muted-foreground">Variez vos exercices pour cibler différents muscles et éviter les plateaux.</p>
+              <div class="bg-card p-4 rounded-lg">
                 <h4 class="font-medium text-sm mb-2">Pour progresser</h4>
                 <ul class="text-xs text-muted-foreground space-y-1.5">
                   <li class="flex items-center">

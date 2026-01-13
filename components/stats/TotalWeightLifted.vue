@@ -4,7 +4,7 @@
       <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
     </div>
     <div v-else class="flex flex-col">
-      <p class="text-3xl font-bold text-gray-900">{{ formatWeight(totalWeight) }}</p>
+      <p class="text-3xl font-bold text-foreground">{{ formatWeight(totalWeight) }}</p>
       <div class="flex items-center mt-1">
         <p class="text-sm text-muted-foreground">poids total soulevé</p>
         <div class="ml-auto bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">

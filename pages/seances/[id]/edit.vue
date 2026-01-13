@@ -6,7 +6,7 @@
     </div>
 
     <!-- Erreur -->
-    <div v-else-if="error" class="bg-white rounded-xl p-6 text-center">
+    <div v-else-if="error" class="bg-card rounded-xl p-6 text-center">
       <div class="w-12 h-12 flex-shrink-0 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
         <AlertTriangle class="h-6 w-6 text-red-500" />
       </div>
@@ -17,20 +17,20 @@
     <!-- Contenu principal -->
     <div v-else-if="session" class="space-y-6">
       <!-- Header amélioré -->
-      <div class="mb-6 bg-white rounded-xl p-4 sm:p-6">
+      <div class="mb-6 bg-card rounded-xl p-4 sm:p-6">
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
             <Edit class="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h2 class="text-2xl font-bold text-gray-900">Modifier la séance</h2>
+            <h2 class="text-2xl font-bold text-foreground">Modifier la séance</h2>
             <p class="text-sm text-muted-foreground">Personnalisez et réorganisez votre programme d'entraînement</p>
           </div>
         </div>
       </div>
 
       <!-- Formulaire d'édition -->
-      <div class="bg-white rounded-xl p-3 sm:p-6 shadow-sm border border-gray-100">
+      <div class="bg-card rounded-xl p-3 sm:p-6 shadow-sm border border-border100">
         <form @submit.prevent="handleSubmit" class="space-y-5">
           <div class="space-y-4">
             <div class="flex items-center gap-3 mb-3">
@@ -114,7 +114,7 @@
                 handle=".drag-handle"
               >
                 <template #item="{ element, index }">
-                  <div class="relative bg-white rounded-xl p-3 sm:p-4 group overflow-hidden border border-gray-200 hover:shadow-lg transition-all duration-300 transform-gpu will-change-transform"
+                  <div class="relative bg-card rounded-xl p-3 sm:p-4 group overflow-hidden border border-border200 hover:shadow-lg transition-all duration-300 transform-gpu will-change-transform"
                     :class="{'scale-[0.99] z-10': isDragging && draggedItemId === element.id, 'hover:translate-y-[-2px]': !isDragging}">
                     <!-- Effet de bordure néon -->
                     <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary/70 rounded-l-xl group-hover:bg-primary transition-all duration-300"></div>
@@ -131,7 +131,7 @@
                           <GripVertical class="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
                         </div>
                         <div class="flex-1">
-                          <h4 class="text-base font-semibold text-gray-900 transition-colors duration-300 group-hover:text-primary">{{ element.exercise?.name }}</h4>
+                          <h4 class="text-base font-semibold text-foreground transition-colors duration-300 group-hover:text-primary">{{ element.exercise?.name }}</h4>
                           <div class="flex items-center justify-between mt-2">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                               {{ element.exercise?.primary_muscle }}
@@ -157,16 +157,16 @@
                 </template>
               </draggable>
             </div>
-            <div v-else class="flex flex-col items-center justify-center p-6 sm:p-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-              <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <Dumbbell class="h-8 w-8 text-gray-400" />
+            <div v-else class="flex flex-col items-center justify-center p-6 sm:p-8 bg-muted rounded-xl border border-dashed border-border">
+              <div class="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                <Dumbbell class="h-8 w-8 text-muted-foreground" />
               </div>
               <p class="text-muted-foreground text-center">Aucun exercice n'a été ajouté à cette séance</p>
             </div>
           </div>
 
           <!-- Boutons d'action -->
-          <div class="bg-gray-50 -mx-3 sm:-mx-6 -mb-3 sm:-mb-6 p-4 sm:p-6 rounded-b-xl border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-3 mt-6">
+          <div class="bg-muted -mx-3 sm:-mx-6 -mb-3 sm:-mb-6 p-4 sm:p-6 rounded-b-xl border-t border-border flex flex-col sm:flex-row justify-between items-center gap-3 mt-6">
             <!-- Bouton Supprimer à gauche et visible en premier sur mobile -->
             <div class="w-full sm:w-auto order-1 sm:order-1">
               <AlertDialog>

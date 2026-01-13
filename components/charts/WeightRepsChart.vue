@@ -116,8 +116,8 @@ const loadData = async () => {
       datasets: [{
         label: 'Répétitions max',
         data: sortedWeights.map(weight => maxRepsByWeight[weight]),
-        backgroundColor: 'oklch(51.1% 0.262 276.966)',
-        borderColor: 'oklch(51.1% 0.262 276.966)',
+        backgroundColor: '#FE751C',
+        borderColor: '#FE751C',
         borderWidth: 1
       }]
     }

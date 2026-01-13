@@ -4,10 +4,10 @@
       <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
     </div>
     <div v-else class="flex flex-col">
-      <p class="text-3xl font-bold text-gray-900">{{ sessionCount }}</p>
-      <div class="flex items-center mt-1">
+      <p class="text-3xl font-bold text-foreground">{{ sessionCount }}</p>
+      <div class="flex flex-wrap items-center justify-between gap-2 mt-1">
         <p class="text-sm text-muted-foreground">séances complétées</p>
-        <div class="ml-auto bg-primary/10 text-primary text-xs px-2 py-1 rounded-full flex items-center gap-1">
+        <div class="bg-primary/10 text-primary text-xs font-medium px-3 py-1.5 rounded-full border border-primary/20 shadow-sm flex items-center gap-1.5">
           <Dumbbell class="h-3 w-3" />
           <span>{{ formatWeeklyAverage }}/semaine</span>
         </div>

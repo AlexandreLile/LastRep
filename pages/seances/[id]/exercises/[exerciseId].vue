@@ -153,22 +153,22 @@
     </div>
     <div v-else class="space-y-6 mt-24 md:mt-0">
       <!-- En-tête de l'exercice -->
-      <div class="bg-white rounded-xl p-6">
+      <div class="bg-card rounded-xl p-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex items-start gap-4">
             <div class="p-3 rounded-full bg-primary/10 flex-shrink-0">
               <Dumbbell class="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h2 class="text-2xl font-bold text-gray-900">{{ exercise.exercise?.name }}</h2>
+              <h2 class="text-2xl font-bold text-foreground">{{ exercise.exercise?.name }}</h2>
               <div class="flex items-center mt-1.5">
-                <span class="text-xs font-medium bg-gray-100 text-gray-700 px-2 py-1 rounded-full">{{ exercise.exercise?.primary_muscle }}</span>
+                <span class="text-xs font-medium bg-muted text-foreground px-2 py-1 rounded-full">{{ exercise.exercise?.primary_muscle }}</span>
               </div>
             </div>
           </div>
           
           <div class="flex items-center gap-3">
-            <div class="text-sm text-muted-foreground bg-gray-50/70 px-3 py-1.5 rounded-md">
+            <div class="text-sm text-muted-foreground bg-muted/70 px-3 py-1.5 rounded-md">
               <span v-if="localExerciseSets.length === 0">Aucune série</span>
               <span v-else>{{ localExerciseSets.length }} série{{ localExerciseSets.length > 1 ? 's' : '' }}</span>
             </div>
@@ -181,7 +181,7 @@
       </div>
 
       <!-- Record personnel -->
-      <div class="bg-white rounded-xl p-6 border-2 border-primary/20">
+      <div class="bg-card rounded-xl p-6 border-2 border-primary/20">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <Trophy class="w-5 h-5 text-primary" />
@@ -209,7 +209,7 @@
           </div>
         </div>
         
-        <div v-else class="flex flex-col items-center justify-center py-6 px-4 space-y-2 bg-gray-50/70 rounded-lg">
+        <div v-else class="flex flex-col items-center justify-center py-6 px-4 space-y-2 bg-muted/70 rounded-lg">
           <Trophy class="w-8 h-8 text-muted-foreground/30" />
           <p class="text-sm text-muted-foreground text-center">
             Pas encore de record sur cet exercice
@@ -218,7 +218,7 @@
       </div>
 
       <!-- Formulaire d'ajout de série -->
-      <div class="bg-white rounded-xl p-6">
+      <div class="bg-card rounded-xl p-6">
         <div class="flex items-center gap-3 mb-6">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <Plus class="w-5 h-5 text-primary" />
@@ -249,7 +249,7 @@
       </div>
 
       <!-- Liste des séries -->
-      <div class="bg-white rounded-xl p-6">
+      <div class="bg-card rounded-xl p-6">
         <div class="flex items-center gap-3 mb-6">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <ListOrdered class="w-5 h-5 text-primary" />
@@ -264,7 +264,7 @@
           <div 
             v-for="(set, index) in localExerciseSets" 
             :key="set.id" 
-            class="bg-gray-50/70 rounded-lg p-4 space-y-4 transition-all duration-300 hover:bg-gray-50"
+            class="bg-muted/70 rounded-lg p-4 space-y-4 transition-all duration-300 hover:bg-muted"
             :style="{animationDelay: `${index * 0.1}s`}"
             :class="{'animate-fade-in': true}"
           >
@@ -331,7 +331,7 @@
               </div>
             </div>
             
-            <div v-if="set.note" class="p-2 bg-gray-100/70 rounded text-sm text-muted-foreground italic">
+            <div v-if="set.note" class="p-2 bg-muted/70 rounded text-sm text-muted-foreground italic">
               {{ set.note }}
             </div>
 
@@ -340,7 +340,7 @@
                 variant="ghost" 
                 size="icon"
                 @click="openEditModal(set)"
-                class="text-gray-500 hover:text-primary hover:bg-primary/10 h-8 w-8"
+                class="text-muted-foreground hover:text-primary hover:bg-primary/10 h-8 w-8"
               >
                 <Pencil class="h-4 w-4" />
               </Button>
@@ -348,7 +348,7 @@
           </div>
         </div>
         
-        <div v-else class="flex flex-col items-center justify-center py-12 px-4 space-y-4 bg-gray-50/70 rounded-lg">
+        <div v-else class="flex flex-col items-center justify-center py-12 px-4 space-y-4 bg-muted/70 rounded-lg">
           <ListX class="w-12 h-12 text-muted-foreground/30" />
           <p class="text-base text-muted-foreground text-center">
             Aucune série effectuée pour le moment
@@ -357,7 +357,7 @@
       </div>
       
       <!-- Conseils d'exercice -->
-      <div class="bg-white rounded-xl p-6">
+      <div class="bg-card rounded-xl p-6">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <Lightbulb class="w-5 h-5 text-primary" />
@@ -368,7 +368,7 @@
           </div>
         </div>
         
-        <div class="bg-gray-50/70 rounded-lg p-4">
+        <div class="bg-muted/70 rounded-lg p-4">
           <div class="flex items-start gap-3">
             <CheckSquare class="w-5 h-5 text-primary mt-0.5" />
             <p class="text-sm">Maintenez une bonne posture et contrôlez votre mouvement tout au long de l'exercice.</p>

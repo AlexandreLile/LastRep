@@ -2,7 +2,7 @@
   <!-- Mobile Menu Button -->
   <button 
     @click="isMenuOpen = !isMenuOpen"
-    class="fixed top-4 right-4 z-50 p-2 rounded-lg bg-white shadow-sm border border-gray-200 md:hidden"
+    class="fixed top-4 right-4 z-50 p-2 rounded-lg bg-card shadow-sm border border-border md:hidden"
   >
     <Menu v-if="!isMenuOpen" class="w-6 h-6" />
     <X v-else class="w-6 h-6" />
@@ -10,19 +10,19 @@
 
   <!-- Sidebar -->
   <div 
-    class="fixed left-0 top-0 h-full w-64 bg-white/80 backdrop-blur-sm p-6 border-r border-gray-200 shadow-sm z-40 transition-transform duration-300 md:translate-x-0 flex flex-col"
+    class="fixed left-0 top-0 h-full w-64 bg-card/80 backdrop-blur-sm p-6 border-r border-border shadow-sm z-40 transition-transform duration-300 md:translate-x-0 flex flex-col"
     :class="[isMenuOpen ? 'translate-x-0' : '-translate-x-full']"
   >
     <div class="mb-8">
-      <h1 class="text-2xl font-bold text-gray-900">
-        Last<strong class="text-primary">Rep</strong>
-      </h1>
+      <NuxtLink to="/" class="flex items-center" @click="closeMenuOnMobile">
+        <img src="/logo.png" alt="LastRep" class="h-14 w-auto" />
+      </NuxtLink>
     </div>
     
     <nav class="space-y-4 flex-1">
       <NuxtLink 
         to="/" 
-        class="flex items-center space-x-3 text-gray-600 hover:text-gray-900"
+        class="flex items-center space-x-3 text-muted-foreground hover:text-foreground"
         :class="{ 'text-primary font-medium': currentPath === '/' }"
         @click="closeMenuOnMobile"
       >
@@ -32,7 +32,7 @@
 
       <NuxtLink 
         to="/seances" 
-        class="flex items-center space-x-3 text-gray-600 hover:text-gray-900"
+        class="flex items-center space-x-3 text-muted-foreground hover:text-foreground"
         :class="{ 'text-primary font-medium': currentPath === '/seances' }"
         @click="closeMenuOnMobile"
       >
@@ -42,7 +42,7 @@
 
       <NuxtLink 
         to="/exercices" 
-        class="flex items-center space-x-3 text-gray-600 hover:text-gray-900"
+        class="flex items-center space-x-3 text-muted-foreground hover:text-foreground"
         :class="{ 'text-primary font-medium': currentPath === '/exercices' }"
         @click="closeMenuOnMobile"
       >
@@ -52,7 +52,7 @@
 
       <NuxtLink 
         to="/historique" 
-        class="flex items-center space-x-3 text-gray-600 hover:text-gray-900"
+        class="flex items-center space-x-3 text-muted-foreground hover:text-foreground"
         :class="{ 'text-primary font-medium': currentPath === '/historique' }"
         @click="closeMenuOnMobile"
       >
@@ -62,7 +62,7 @@
 
       <NuxtLink 
         to="/profil" 
-        class="flex items-center space-x-3 text-gray-600 hover:text-gray-900"
+        class="flex items-center space-x-3 text-muted-foreground hover:text-foreground"
         :class="{ 'text-primary font-medium': currentPath === '/profil' }"
         @click="closeMenuOnMobile"
       >
@@ -73,7 +73,7 @@
 
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="ghost" class="w-full justify-start text-gray-600 hover:text-gray-900">
+        <Button variant="ghost" class="w-full justify-start text-muted-foreground hover:text-foreground">
           <LogOut class="w-5 h-5 mr-3" />
           Déconnexion
         </Button>
@@ -100,7 +100,7 @@
     @click="isMenuOpen = false"
   ></div>
 
-  <main class="min-h-screen bg-gray-50 p-4 md:p-8 md:pl-72">
+  <main class="min-h-screen bg-background p-4 md:p-8 md:pl-72">
     <slot />
   </main>
 </template>

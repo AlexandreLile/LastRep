@@ -26,7 +26,7 @@
     />
     
     <!-- Bouton de fermeture optimisé pour mobile -->
-    <div class="sticky bottom-0 bg-white border-t border-gray-200 p-3 shadow-md">
+    <div class="sticky bottom-0 bg-card border-t border-border p-3 shadow-md">
       <Button 
         variant="default" 
         class="w-full h-12 text-base"

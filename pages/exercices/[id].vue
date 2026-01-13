@@ -4,21 +4,21 @@
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
     </div>
 
-    <div v-else-if="error" class="text-red-500 text-center py-8 bg-white rounded-xl p-6">
+    <div v-else-if="error" class="text-red-500 text-center py-8 bg-card rounded-xl p-6">
       <AlertTriangle class="h-12 w-12 mx-auto mb-4 text-red-500" />
       {{ error }}
     </div>
 
     <div v-else class="space-y-6">
       <!-- En-tête amélioré -->
-      <div class="mb-8 bg-white rounded-xl p-6">
+      <div class="mb-8 bg-card rounded-xl p-6">
         <div class="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
           <div class="flex items-start gap-4">
             <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
               <Dumbbell class="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h2 class="text-2xl font-bold text-gray-900">{{ exercise.name }}</h2>
+              <h2 class="text-2xl font-bold text-foreground">{{ exercise.name }}</h2>
               <div class="mt-2">
                 <span class="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
                   {{ exercise.primary_muscle }}
@@ -39,7 +39,7 @@
 
       <!-- Stats Grid avec styles améliorés -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6">
-        <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+        <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
           <div class="flex items-center gap-3 mb-3">
             <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
               <Trophy class="h-5 w-5 text-primary" />
@@ -48,7 +48,7 @@
           </div>
           <LastSetRMStats :exercise-id="route.params.id" />
         </div>
-        <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+        <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
           <div class="flex items-center gap-3 mb-3">
             <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
               <Calendar class="h-5 w-5 text-primary" />
@@ -57,7 +57,7 @@
           </div>
           <LastExerciseSessionStats :exercise-id="route.params.id" />
         </div>
-        <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+        <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
           <div class="flex items-center gap-3 mb-3">
             <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
               <Weight class="h-5 w-5 text-primary" />
@@ -70,7 +70,7 @@
 
       <!-- Graphiques avec en-têtes améliorés -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
+        <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
           <div class="flex items-center gap-3 mb-4">
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
               <BarChart class="w-5 h-5 text-primary" />
@@ -84,7 +84,7 @@
             <WeightRepsChart :exercise-id="route.params.id" />
           </div>
         </div>
-        <div class="bg-white rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
+        <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
           <div class="flex items-center gap-3 mb-4">
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
               <LineChart class="w-5 h-5 text-primary" />
@@ -101,7 +101,7 @@
       </div>
 
       <!-- 1RM estimé -->
-      <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+      <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <Target class="w-5 h-5 text-primary" />
@@ -117,7 +117,7 @@
       </div>
 
       <!-- Historique des séries -->
-      <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+      <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <History class="w-5 h-5 text-primary" />
@@ -157,7 +157,7 @@
               <div 
                 v-for="set in filteredSets(period)" 
                 :key="set.id"
-                class="relative bg-white border border-primary/30 rounded-xl p-4 hover:shadow-md hover:border-primary transition-all duration-200 group"
+                class="relative bg-card border border-primary/30 rounded-xl p-4 hover:shadow-md hover:border-primary transition-all duration-200 group"
               >
                 <div class="flex justify-between items-start">
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
@@ -201,7 +201,7 @@
                 </div>
               </div>
             </div>
-            <div v-else class="flex flex-col items-center justify-center py-12 px-4 space-y-4 bg-gray-50/70 rounded-lg">
+            <div v-else class="flex flex-col items-center justify-center py-12 px-4 space-y-4 bg-muted/70 rounded-lg">
               <History class="w-16 h-16 text-muted-foreground/30" />
               <p class="text-base text-muted-foreground text-center">
                 Aucune série enregistrée pour cette période

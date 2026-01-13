@@ -1,16 +1,13 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center w-full bg-gray-50 p-4 sm:p-6 md:p-10">
+  <div class="min-h-screen flex items-center justify-center w-full bg-background p-4 sm:p-6 md:p-10">
     <div class="max-w-md w-full mx-auto">
       <!-- Logo et en-tête -->
       <div class="text-center mb-8">
-        <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-          <LockKeyhole class="h-8 w-8 text-primary" />
-        </div>
-        <h1 class="text-2xl font-bold text-gray-900">LastRep</h1>
-        <p class="text-sm text-muted-foreground mt-2">Connectez-vous pour accéder à votre espace d'entraînement</p>
+        <img src="/logo.png" alt="LastRep" class="h-16 w-auto mx-auto mb-4" />
+        <p class="text-sm text-muted-foreground">Connectez-vous pour accéder à votre espace d'entraînement</p>
       </div>
 
-      <Card class="border border-gray-200 shadow-sm">
+      <Card class="border border-border shadow-sm">
         <form @submit.prevent="onSubmit">
           <CardHeader class="pb-2">
             <CardTitle class="text-xl font-semibold">Connexion</CardTitle>
@@ -60,10 +57,10 @@
               
               <div class="relative my-2">
                 <div class="absolute inset-0 flex items-center">
-                  <span class="w-full border-t border-gray-200"></span>
+                  <span class="w-full border-t border-border"></span>
                 </div>
                 <div class="relative flex justify-center text-xs">
-                  <span class="bg-white px-2 text-muted-foreground">ou continuer avec</span>
+                  <span class="bg-card px-2 text-muted-foreground">ou continuer avec</span>
                 </div>
               </div>
               
@@ -79,6 +76,19 @@
                 <div class="flex items-center">
                   <AlertTriangle class="h-4 w-4 mr-2 text-red-500" />
                   {{ errorMessage }}
+                </div>
+              </div>
+
+              <div
+                v-if="route.query.deleted === 'true'"
+                class="text-green-600 text-sm p-3 rounded-md bg-green-50 border border-green-200 mt-4"
+              >
+                <div class="flex items-center">
+                  <CheckCircle class="h-4 w-4 mr-2 text-green-600" />
+                  <div>
+                    <p class="font-medium">Compte supprimé avec succès</p>
+                    <p class="text-xs mt-1">Toutes vos données ont été supprimées définitivement.</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -105,9 +115,11 @@ definePageMeta({
   middleware: ["auth"]
 });
 import { useAuth } from "@/composables/useAuth";
-import { LogIn, LockKeyhole, Loader2, AlertTriangle } from 'lucide-vue-next';
+import { LogIn, LockKeyhole, Loader2, AlertTriangle, CheckCircle } from 'lucide-vue-next';
+import { useRoute } from 'vue-router';
 
 const { email, password, handleLogin, handleGoogleLogin, errorMessage, loading } = useAuth();
+const route = useRoute();
 
 const onSubmit = () => {
   handleLogin();

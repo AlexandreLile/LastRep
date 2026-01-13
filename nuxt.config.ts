@@ -1,5 +1,25 @@
 import tailwindcss from "@tailwindcss/vite";
 import { defineNuxtConfig } from 'nuxt/config'
+import { config } from 'dotenv'
+import { resolve } from 'path'
+
+// Charger explicitement le fichier .env.local
+config({ path: resolve(process.cwd(), '.env.local') })
+
+// Charger les variables d'environnement explicitement
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NUXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY || process.env.NUXT_PUBLIC_SUPABASE_KEY
+
+// Debug: vérifier que les variables sont chargées
+if (!supabaseUrl || !supabaseKey) {
+  console.warn('⚠️ Variables Supabase manquantes:', {
+    SUPABASE_URL: !!process.env.SUPABASE_URL,
+    SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY,
+    SUPABASE_KEY: !!process.env.SUPABASE_KEY,
+    NUXT_PUBLIC_SUPABASE_URL: !!process.env.NUXT_PUBLIC_SUPABASE_URL,
+    NUXT_PUBLIC_SUPABASE_KEY: !!process.env.NUXT_PUBLIC_SUPABASE_KEY,
+  })
+}
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -25,11 +45,25 @@ export default defineNuxtConfig({
     componentDir: "./components/ui",
   },
 
+  // Configuration runtime pour exposer les variables d'environnement
+  runtimeConfig: {
+    public: {
+      supabase: {
+        url: process.env.NUXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
+        key: process.env.NUXT_PUBLIC_SUPABASE_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY,
+      },
+      // Fallback pour compatibilité
+      supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
+      supabaseAnonKey: process.env.NUXT_PUBLIC_SUPABASE_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY,
+    }
+  },
+
   supabase: {
-    // Les variables d'environnement SUPABASE_URL et SUPABASE_KEY sont automatiquement utilisées
-    // par le module @nuxtjs/supabase
-    // En dev : utilise .env.local
-    // En prod : utilise les variables d'environnement de Vercel
+    // Forcer les variables d'environnement si elles ne sont pas chargées automatiquement
+    ...(supabaseUrl && supabaseKey ? {
+      url: supabaseUrl,
+      key: supabaseKey,
+    } : {}),
     redirect: false, // Désactiver les redirections automatiques du module, on gère ça manuellement
     redirectOptions: {
       login: "/login",
@@ -87,7 +121,8 @@ export default defineNuxtConfig({
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
       link: [
-        { rel: 'icon', type: 'image/svg+xml', href: '/Favicone.svg' }
+        { rel: 'icon', type: 'image/png', href: '/favicon.png' },
+        { rel: 'apple-touch-icon', href: '/favicon.png' }
       ]
     },
     pageTransition: false,

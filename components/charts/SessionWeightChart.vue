@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg">
+  <div class="bg-card rounded-lg">
     <div class="h-64">
       <Line
         v-if="chartData"
@@ -34,8 +34,8 @@ const chartData = computed(() => ({
   datasets: [{
     label: 'Volume total',
     data: volumes.value,
-    borderColor: 'oklch(51.1% 0.262 276.966)',
-    backgroundColor: 'oklch(51.1% 0.262 276.966)',
+    borderColor: '#FE751C',
+    backgroundColor: '#FE751C',
     tension: 0.4,
     pointRadius: 5,
     pointHoverRadius: 7,

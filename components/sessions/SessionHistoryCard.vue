@@ -1,10 +1,10 @@
 <template>
-  <div class="bg-white rounded-xl p-6 cursor-pointer relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group">
+  <div class="bg-card rounded-xl p-6 cursor-pointer relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group">
     <!-- Effet de bordure néon -->
     <div class="absolute inset-0 rounded-xl bg-primary/20 blur-md transition-all duration-300 group-hover:bg-primary/30 group-hover:blur-lg"></div>
     <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/50 via-primary/30 to-primary/50 animate-[pulse_2s_ease-in-out_infinite] group-hover:from-primary/60 group-hover:via-primary/40 group-hover:to-primary/60"></div>
     <div class="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/40 to-transparent animate-[glow_3s_ease-in-out_infinite] group-hover:from-primary/50 group-hover:to-transparent"></div>
-    <div class="absolute inset-[1px] rounded-xl bg-white"></div>
+    <div class="absolute inset-[1px] rounded-xl bg-card"></div>
 
     <div class="relative flex flex-col h-full">
       <div class="flex items-start justify-between mb-4">
@@ -13,7 +13,7 @@
             <Dumbbell class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
           </div>
           <div>
-            <h3 class="text-lg font-medium text-gray-900 transition-colors duration-300 group-hover:text-primary">{{ session.title }}</h3>
+            <h3 class="text-lg font-medium text-foreground transition-colors duration-300 group-hover:text-primary">{{ session.title }}</h3>
             <p class="text-xs text-muted-foreground">{{ formatDate(session.ended_at) }}</p>
           </div>
         </div>
@@ -47,11 +47,11 @@
       <div class="grid grid-cols-2 gap-4 mb-4">
         <div>
           <p class="text-sm text-muted-foreground">Durée</p>
-          <p class="text-base font-medium transition-colors duration-300 group-hover:text-gray-700">{{ formatDuration(session.started_at, session.ended_at) }}</p>
+          <p class="text-base font-medium transition-colors duration-300 group-hover:text-foreground">{{ formatDuration(session.started_at, session.ended_at) }}</p>
         </div>
         <div>
           <p class="text-sm text-muted-foreground">Exercices</p>
-          <p class="text-base font-medium transition-colors duration-300 group-hover:text-gray-700">{{ session.exercise_count || 0 }}</p>
+          <p class="text-base font-medium transition-colors duration-300 group-hover:text-foreground">{{ session.exercise_count || 0 }}</p>
         </div>
       </div>
     </div>

@@ -53,7 +53,7 @@
       <div
         v-if="exercises.length > 0"
         ref="exerciseList"
-        class="mt-2 bg-white border rounded-xl shadow-sm overflow-y-auto overflow-x-hidden transition-all duration-300 exercise-list"
+        class="mt-2 bg-card border rounded-xl shadow-sm overflow-y-auto overflow-x-hidden transition-all duration-300 exercise-list"
         :class="{ 'max-h-60': !isMobile, 'max-h-[60vh]': isMobile }"
       >
         <div 
@@ -81,9 +81,9 @@
             </div>
             
             <div class="flex-1 min-w-0">
-              <div class="font-medium text-gray-900 break-words pr-1">{{ exercise.name }}</div>
+              <div class="font-medium text-foreground break-words pr-1">{{ exercise.name }}</div>
               <div class="text-sm text-muted-foreground mt-1">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-muted/80 text-muted-foreground border border-border/50 shadow-sm">
                   {{ exercise.primary_muscle }}
                 </span>
               </div>

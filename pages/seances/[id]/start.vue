@@ -18,12 +18,12 @@
 
     <!-- Animation de célébration -->
     <div v-if="showCelebration" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 text-center">
+      <div class="bg-card rounded-xl p-8 max-w-md w-full mx-4 text-center">
         <div class="confetti-explosion">
           <div v-for="n in 20" :key="n" class="confetti"></div>
         </div>
         <div class="text-5xl mb-4">🏆</div>
-        <h3 class="text-2xl font-bold text-gray-900 mb-2">Félicitations !</h3>
+        <h3 class="text-2xl font-bold text-foreground mb-2">Félicitations !</h3>
         <p class="text-muted-foreground mb-6">Vous avez terminé votre séance avec succès !</p>
         <Button @click="showCelebration = false" class="w-full">
           Continuer
@@ -41,7 +41,7 @@
 
     <div v-else-if="session" class="space-y-8">
       <!-- En-tête amélioré -->
-      <div class="bg-white rounded-xl p-4 sm:p-6">
+      <div class="bg-card rounded-xl p-4 sm:p-6">
         <div class="flex flex-col gap-4 sm:gap-6">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-start gap-4">
@@ -49,7 +49,7 @@
                 <Dumbbell class="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h2 class="text-2xl font-bold text-gray-900">{{ session.title }}</h2>
+                <h2 class="text-2xl font-bold text-foreground">{{ session.title }}</h2>
                 <div v-if="currentSession" class="flex items-center mt-2">
                   <Calendar class="w-4 h-4 text-muted-foreground mr-1.5" />
                   <span class="text-sm text-muted-foreground">
@@ -60,7 +60,7 @@
             </div>
             
             <!-- Chronomètre -->
-            <div class="flex flex-col items-center bg-gray-50/70 rounded-lg p-3 mt-4 sm:mt-0">
+            <div class="flex flex-col items-center bg-muted/70 rounded-lg p-3 mt-4 sm:mt-0">
               <div class="text-xs text-muted-foreground mb-1">DURÉE DE LA SÉANCE</div>
               <div class="text-xl font-mono font-semibold tracking-wide">{{ formatElapsedTime }}</div>
             </div>
@@ -119,7 +119,7 @@
       </div>
 
       <!-- Liste des exercices -->
-      <div class="bg-white rounded-xl p-6">
+      <div class="bg-card rounded-xl p-6">
         <div class="flex items-center gap-3 mb-6">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <ListChecks class="w-5 h-5 text-primary" />
@@ -134,7 +134,7 @@
           <div 
             v-for="(exercise, index) in exercises" 
             :key="exercise.id" 
-            class="bg-white rounded-xl p-4 group transition-all duration-300 hover:scale-[1.02] border border-gray-100 hover:border-primary/20 relative"
+            class="bg-card rounded-xl p-4 group transition-all duration-300 hover:scale-[1.02] border border-border100 hover:border-primary/20 relative"
             :style="{animationDelay: `${index * 0.1}s`}"
             :class="{'animate-fade-in': true}"
           >
@@ -148,7 +148,7 @@
                   <div v-if="exercise.completionStatus" class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
                 </div>
                 <div class="flex-grow">
-                  <h4 class="text-base font-medium text-gray-900 transition-colors duration-300 group-hover:text-primary">{{ exercise.exercise?.name }}</h4>
+                  <h4 class="text-base font-medium text-foreground transition-colors duration-300 group-hover:text-primary">{{ exercise.exercise?.name }}</h4>
                 </div>
               </div>
               
@@ -163,7 +163,7 @@
                     class="text-xs px-2 py-0.5 rounded-full"
                     :class="{
                       'bg-green-50 text-green-600': exercise.completionStatus,
-                      'bg-gray-50 text-gray-500': !exercise.completionStatus
+                      'bg-muted text-muted-foreground': !exercise.completionStatus
                     }"
                   >
                     {{ exercise.completionStatus ? 'Complété' : 'À faire' }}
@@ -176,11 +176,11 @@
                       class="w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200"
                       :class="{
                         'bg-green-100 hover:bg-green-200': exercise.completionStatus,
-                        'bg-gray-100 hover:bg-gray-200': !exercise.completionStatus
+                        'bg-muted hover:bg-muted/80': !exercise.completionStatus
                       }"
                     >
                       <Check v-if="exercise.completionStatus" class="w-4 h-4 text-green-600" />
-                      <CircleSlash v-else class="w-4 h-4 text-gray-400" />
+                      <CircleSlash v-else class="w-4 h-4 text-muted-foreground" />
                     </button>
                     
                     <button 
@@ -202,7 +202,7 @@
           </div>
         </div>
 
-        <div v-else class="flex flex-col items-center justify-center py-12 px-4 space-y-4 bg-gray-50/70 rounded-lg">
+        <div v-else class="flex flex-col items-center justify-center py-12 px-4 space-y-4 bg-muted/70 rounded-lg">
           <Dumbbell class="w-16 h-16 text-muted-foreground/30" />
           <p class="text-base text-muted-foreground text-center">
             Aucun exercice pour cette séance
@@ -211,7 +211,7 @@
       </div>
 
       <!-- Carte progrès de la séance -->
-      <div class="bg-white rounded-xl p-6">
+      <div class="bg-card rounded-xl p-6">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <BarChart3 class="w-5 h-5 text-primary" />
@@ -223,19 +223,19 @@
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="bg-gray-50/70 rounded-xl p-4 flex flex-col items-center">
+          <div class="bg-muted/70 rounded-xl p-4 flex flex-col items-center">
             <div class="text-sm text-muted-foreground mb-1">Exercices</div>
             <div class="text-3xl font-bold text-primary">{{ exercises.length }}</div>
             <div class="text-xs text-muted-foreground">total</div>
           </div>
           
-          <div class="bg-gray-50/70 rounded-xl p-4 flex flex-col items-center">
+          <div class="bg-muted/70 rounded-xl p-4 flex flex-col items-center">
             <div class="text-sm text-muted-foreground mb-1">Complétés</div>
             <div class="text-3xl font-bold text-primary">{{ completedExercisesCount }}</div>
             <div class="text-xs text-muted-foreground">exercices</div>
           </div>
           
-          <div class="bg-gray-50/70 rounded-xl p-4 flex flex-col items-center">
+          <div class="bg-muted/70 rounded-xl p-4 flex flex-col items-center">
             <div class="text-sm text-muted-foreground mb-1">Séries</div>
             <div class="text-3xl font-bold text-primary">{{ totalSets }}</div>
             <div class="text-xs text-muted-foreground">total</div>
@@ -247,7 +247,7 @@
             <span class="text-sm font-medium">Progression</span>
             <span class="text-sm font-medium">{{ Math.round((completedExercisesCount / Math.max(exercises.length, 1)) * 100) }}%</span>
           </div>
-          <div class="w-full bg-gray-200 rounded-full h-2.5">
+          <div class="w-full bg-muted rounded-full h-2.5">
             <div class="bg-primary h-2.5 rounded-full" :style="{ width: `${Math.round((completedExercisesCount / Math.max(exercises.length, 1)) * 100)}%` }"></div>
           </div>
         </div>

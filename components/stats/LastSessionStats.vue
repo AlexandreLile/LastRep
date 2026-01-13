@@ -7,7 +7,7 @@
     <div v-else-if="lastSession" class="space-y-6">
       <!-- Titre de la séance -->
       <div class="space-y-2">
-        <h4 class="text-xl font-semibold text-gray-900">{{ lastSession.title }}</h4>
+        <h4 class="text-xl font-semibold text-foreground">{{ lastSession.title }}</h4>
         <div class="flex items-center space-x-3 text-sm text-muted-foreground">
           <div class="flex items-center space-x-1">
             <Calendar class="w-4 h-4" />

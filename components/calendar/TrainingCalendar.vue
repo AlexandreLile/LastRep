@@ -3,19 +3,19 @@
     <!-- Temps total hebdomadaire -->
     <div class="mb-8">
       <div class="mb-1 text-sm text-muted-foreground font-medium">Cette semaine</div>
-      <p class="text-3xl font-bold text-gray-900">{{ formatTotalDuration }}</p>
+      <p class="text-3xl font-bold text-primary">{{ formatTotalDuration }}</p>
       
       <!-- Barres de temps par jour -->
       <div class="grid grid-cols-7 gap-3 mt-6">
         <div v-for="(day, index) in weekDays" :key="index" class="flex flex-col items-center">
-          <div class="h-28 w-2 bg-gray-100 rounded-full relative mb-2">
+          <div class="h-28 w-2 bg-muted rounded-full relative mb-2">
             <div 
               class="absolute bottom-0 w-full rounded-full transition-all duration-300 bg-primary"
               :style="{ height: `${getHeightPercentage(day.duration)}%` }"
             ></div>
           </div>
-          <span class="text-xs font-medium text-gray-600">{{ day.label }}</span>
-          <span v-if="day.duration > 0" class="text-xs text-gray-500 mt-1">
+          <span class="text-xs font-medium text-foreground">{{ day.label }}</span>
+          <span v-if="day.duration > 0" class="text-xs text-primary mt-1">
             {{ formatShortDuration(day.duration) }}
           </span>
         </div>
@@ -23,23 +23,23 @@
     </div>
 
     <!-- Séparateur -->
-    <div class="h-px bg-gray-200 my-6"></div>
+    <div class="h-px bg-border my-6"></div>
 
     <!-- Calendrier -->
     <div>
       <div class="flex items-center justify-between mb-6">
         <button 
           @click="previousMonth" 
-          class="p-2 rounded-md hover:bg-gray-100 transition-colors"
+          class="p-2 rounded-md hover:bg-muted transition-colors"
         >
           <ChevronLeft class="h-5 w-5" />
         </button>
-        <h3 class="text-base font-semibold text-gray-900">
+        <h3 class="text-base font-semibold text-foreground">
           {{ formatMonthYear }}
         </h3>
         <button 
           @click="nextMonth" 
-          class="p-2 rounded-md hover:bg-gray-100 transition-colors"
+          class="p-2 rounded-md hover:bg-muted transition-colors"
         >
           <ChevronRight class="h-5 w-5" />
         </button>
@@ -50,7 +50,7 @@
         <div 
           v-for="day in ['L', 'M', 'M', 'J', 'V', 'S', 'D']" 
           :key="day"
-          class="text-center font-medium text-gray-500 text-sm py-2"
+          class="text-center font-medium text-foreground text-sm py-2"
         >
           {{ day }}
         </div>
@@ -64,16 +64,16 @@
           <div 
             class="w-full h-full flex items-center justify-center"
             :class="{
-              'cursor-pointer hover:bg-gray-50': day.hasTraining
+              'cursor-pointer hover:bg-muted': day.hasTraining
             }"
             @click="day.hasTraining ? selectDay(day) : null"
           >
             <span 
               class="w-8 h-8 flex items-center justify-center rounded-full text-sm"
               :class="{
-                'bg-primary text-white font-medium': day.hasTraining,
-                'text-gray-900': !day.hasTraining && day.isCurrentMonth,
-                'text-gray-400': !day.isCurrentMonth
+                'bg-primary text-primary-foreground font-medium': day.hasTraining,
+                'text-foreground': !day.hasTraining && day.isCurrentMonth,
+                'text-muted-foreground': !day.isCurrentMonth
               }"
             >
               {{ day.date.getDate() }}
@@ -96,7 +96,7 @@
           >
             <h4 class="font-medium">{{ session.name }}</h4>
             <div class="mt-2 space-y-1">
-              <p class="text-sm text-gray-500">
+              <p class="text-sm text-muted-foreground">
                 Durée : {{ formatDuration(session.duration) }}
               </p>
             </div>
@@ -139,9 +139,15 @@ const monthDays = computed(() => {
   // Jours du mois courant
   for (let i = 1; i <= lastDay.getDate(); i++) {
     const date = new Date(year, month, i)
-    const sessions = trainingSessions.value.filter(s => 
-      new Date(s.created_at).toDateString() === date.toDateString()
-    )
+    // Normaliser la date pour la comparaison (ignorer les heures)
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
+    
+    const sessions = trainingSessions.value.filter(s => {
+      if (!s.created_at) return false
+      const sessionDate = new Date(s.created_at)
+      const sessionDateStr = `${sessionDate.getFullYear()}-${String(sessionDate.getMonth() + 1).padStart(2, '0')}-${String(sessionDate.getDate()).padStart(2, '0')}`
+      return sessionDateStr === dateStr
+    })
     
     days.push({
       date,
@@ -175,7 +181,20 @@ const formatMonthYear = computed(() => {
 const loadTrainingSessions = async () => {
   try {
     const user = (await supabase.auth.getUser()).data.user
-    if (!user) return
+    if (!user) {
+      console.log('Calendrier: Aucun utilisateur connecté')
+      return
+    }
+
+    console.log('Calendrier: Chargement des séances pour l\'utilisateur:', user.id)
+
+    // D'abord, vérifier si les workoutsession existent
+    const { data: workouts, error: workoutError } = await supabase
+      .from('workoutsession')
+      .select('id, title')
+      .eq('user_id', user.id)
+    
+    console.log('Calendrier: Workoutsession trouvées:', workouts?.length || 0, workouts)
 
     const { data, error } = await supabase
       .from('performedsession')
@@ -189,22 +208,50 @@ const loadTrainingSessions = async () => {
         )
       `)
       .eq('user_id', user.id)
+      .not('started_at', 'is', null)
       .order('started_at', { ascending: false })
 
-    if (error) throw error
+    if (error) {
+      console.error('Calendrier: Erreur lors de la récupération des séances:', error)
+      throw error
+    }
 
-    trainingSessions.value = data
-      .filter(session => session.workout) // Ne garder que les séances qui ont encore un workout
+    console.log('Calendrier: Séances récupérées:', data?.length || 0, data)
+    
+    // Afficher les détails de chaque séance pour déboguer
+    if (data && data.length > 0) {
+      data.forEach((session, index) => {
+        console.log(`Calendrier: Séance ${index + 1}:`, {
+          id: session.id,
+          started_at: session.started_at,
+          ended_at: session.ended_at,
+          workout_session_id: session.workout_session_id,
+          workout: session.workout
+        })
+      })
+    }
+
+    trainingSessions.value = (data || [])
+      .filter(session => {
+        // Garder les séances qui ont un workout OU qui ont un workout_session_id valide
+        const hasWorkout = session.workout && session.workout.title
+        if (!hasWorkout && session.workout_session_id) {
+          console.warn('Calendrier: Séance sans workout mais avec workout_session_id:', session.id, session.workout_session_id)
+        }
+        return hasWorkout
+      })
       .map(session => ({
         id: session.id,
         created_at: session.started_at,
         duration: session.ended_at ? 
           Math.round((new Date(session.ended_at) - new Date(session.started_at)) / 60000) : 
           0,
-        name: session.workout.title
+        name: session.workout?.title || 'Séance sans titre'
       }))
+
+    console.log('Calendrier: Séances filtrées et mappées:', trainingSessions.value.length, trainingSessions.value)
   } catch (e) {
-    console.error('Erreur lors du chargement des séances:', e)
+    console.error('Calendrier: Erreur lors du chargement des séances:', e)
   }
 }
 

@@ -1,13 +1,13 @@
 <template>
   <div class="relative">
     <!-- En-tête amélioré -->
-    <div class="mb-8 bg-white rounded-xl p-6">
+    <div class="mb-8 bg-card rounded-xl p-6">
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
           <History class="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h2 class="text-2xl font-bold text-gray-900">Historique</h2>
+          <h2 class="text-2xl font-bold text-foreground">Historique</h2>
           <p class="text-sm text-muted-foreground">Consultez l'historique de vos séances d'entraînement</p>
         </div>
       </div>
@@ -19,7 +19,7 @@
     </div>
 
     <!-- Message d'erreur -->
-    <div v-else-if="error" class="text-red-500 text-center py-8 bg-white rounded-xl p-6">
+    <div v-else-if="error" class="text-red-500 text-center py-8 bg-card rounded-xl p-6">
       <AlertTriangle class="h-12 w-12 mx-auto mb-4 text-red-500" />
       {{ error }}
     </div>
@@ -27,7 +27,7 @@
     <!-- Contenu principal quand il y a des sessions -->
     <div v-else class="space-y-6">
       <!-- Filtres de période -->
-      <div class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+      <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <Filter class="w-5 h-5 text-primary" />
@@ -71,7 +71,7 @@
       </div>
 
       <!-- Aucune session -->
-      <div v-if="filteredSessions.length === 0" class="flex flex-col items-center justify-center py-12 px-4 space-y-4 bg-white rounded-xl p-6">
+      <div v-if="filteredSessions.length === 0" class="flex flex-col items-center justify-center py-12 px-4 space-y-4 bg-card rounded-xl p-6">
         <Calendar class="w-16 h-16 text-muted-foreground/30" />
         <p class="text-center text-muted-foreground">
           Aucune séance d'entraînement pour cette période
@@ -94,7 +94,7 @@
       </div>
 
       <!-- Statistiques -->
-      <div v-if="filteredSessions.length > 0" class="bg-white rounded-xl p-6 hover:shadow-md transition-all duration-300">
+      <div v-if="filteredSessions.length > 0" class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <BarChart class="w-5 h-5 text-primary" />
@@ -106,7 +106,7 @@
         </div>
         
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div class="bg-gray-50 rounded-xl p-4">
+          <div class="bg-muted rounded-xl p-4">
             <div class="flex items-center gap-3 mb-2">
               <div class="p-2 rounded-full bg-primary/10">
                 <Calendar class="h-4 w-4 text-primary" />
@@ -116,7 +116,7 @@
             <p class="text-3xl font-bold text-primary">{{ filteredSessions.length }}</p>
           </div>
           
-          <div class="bg-gray-50 rounded-xl p-4">
+          <div class="bg-muted rounded-xl p-4">
             <div class="flex items-center gap-3 mb-2">
               <div class="p-2 rounded-full bg-primary/10">
                 <Clock class="h-4 w-4 text-primary" />
@@ -126,7 +126,7 @@
             <p class="text-3xl font-bold text-primary">{{ averageDuration }}</p>
           </div>
           
-          <div class="bg-gray-50 rounded-xl p-4">
+          <div class="bg-muted rounded-xl p-4">
             <div class="flex items-center gap-3 mb-2">
               <div class="p-2 rounded-full bg-primary/10">
                 <Dumbbell class="h-4 w-4 text-primary" />

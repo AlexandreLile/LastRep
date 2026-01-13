@@ -7,7 +7,7 @@
       {{ error }}
     </div>
     <div v-else class="flex flex-col">
-      <p class="text-3xl font-bold text-gray-900">{{ formatDuration(totalDuration) }}</p>
+      <p class="text-3xl font-bold text-foreground">{{ formatDuration(totalDuration) }}</p>
       <div class="flex items-center mt-1">
         <p class="text-sm text-muted-foreground">temps d'entraînement</p>
         <div class="ml-auto bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-full">

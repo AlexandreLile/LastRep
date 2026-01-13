@@ -113,8 +113,8 @@ const loadData = async () => {
       datasets: [{
         label: 'Poids max',
         data: weights,
-        borderColor: 'oklch(51.1% 0.262 276.966)',
-        backgroundColor: 'oklch(51.1% 0.262 276.966)',
+        borderColor: '#FE751C',
+        backgroundColor: '#FE751C',
         tension: 0.4,
         pointRadius: 5,
         pointHoverRadius: 7
