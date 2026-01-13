@@ -119,13 +119,28 @@ Votre DMARC actuel : `v=DMARC1; p=none;`
 
 ---
 
+## ⏱️ Temps de Propagation DNS
+
+**Oui, il faut attendre !** La propagation DNS prend du temps :
+
+- **Minimum** : 5 minutes
+- **Typique** : 15-30 minutes
+- **Parfois** : Jusqu'à 1-2 heures
+- **Maximum** : 48 heures (très rare)
+
+**Si vous venez juste d'ajouter les enregistrements DNS** :
+- ✅ Attendez **au moins 15-30 minutes**
+- ✅ Puis cliquez sur **"Verify"** ou **"Refresh"** dans Resend
+- ✅ Vérifiez à nouveau
+
+---
+
 ## 🎯 Action Immédiate
 
-1. **Dans Resend** : Identifiez quelle section affiche "DNS Record not found"
-2. **Dans votre DNS** : Vérifiez que cet enregistrement est bien présent
-3. **Si absent** : Ajoutez-le avec les valeurs exactes de Resend
-4. **Attendez 15-30 minutes**
-5. **Dans Resend** : Cliquez sur "Verify" ou "Refresh"
+1. **Vérifiez que les enregistrements sont bien dans votre DNS** (chez votre registrar)
+2. **Attendez 15-30 minutes** (propagation DNS)
+3. **Dans Resend** : Cliquez sur **"Verify"** ou **"Refresh"**
+4. Si toujours "not found", attendez encore 30 minutes et réessayez
 
 ---
 
