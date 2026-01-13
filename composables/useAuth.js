@@ -8,6 +8,17 @@ export const useAuth = () => {
   const loading = ref(false);
 
   const translateError = (message) => {
+    // Vérifier les erreurs d'email déjà utilisé (plusieurs variantes possibles)
+    if (
+      message.includes("User already registered") ||
+      message.includes("already been registered") ||
+      message.includes("already exists") ||
+      message.includes("email address has already been registered") ||
+      message === "User already registered"
+    ) {
+      return "email_exists";
+    }
+    
     switch (message) {
       case "Invalid login credentials":
         return "Email ou mot de passe incorrect.";
