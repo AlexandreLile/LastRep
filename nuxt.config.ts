@@ -26,6 +26,10 @@ export default defineNuxtConfig({
   },
 
   supabase: {
+    // Les variables d'environnement SUPABASE_URL et SUPABASE_KEY sont automatiquement utilisées
+    // par le module @nuxtjs/supabase
+    // En dev : utilise .env.local
+    // En prod : utilise les variables d'environnement de Vercel
     redirect: false, // Désactiver les redirections automatiques du module, on gère ça manuellement
     redirectOptions: {
       login: "/login",
