@@ -6,8 +6,15 @@
 
 1. Allez sur [Supabase Dashboard](https://app.supabase.com)
 2. **Sélectionnez votre projet de PRODUCTION** (pas le projet de dev)
-3. Dans le menu de gauche, cliquez sur **Authentication**
-4. Cliquez sur **URL Configuration** (dans le sous-menu)
+3. Dans le menu de gauche, cliquez sur **Authentication** (icône de cadenas 🔒)
+4. Dans le sous-menu qui apparaît sous "Authentication", cliquez sur **URL Configuration**
+
+**Chemin exact :**
+```
+Dashboard → Votre Projet → Authentication (menu gauche) → URL Configuration
+```
+
+**Note :** Si vous ne voyez pas "URL Configuration", cherchez dans les onglets en haut de la page Authentication. Il peut aussi s'appeler "Settings" ou être dans un onglet "Configuration".
 
 ### 2. Configurer le Site URL
 
@@ -86,31 +93,70 @@ Si vous voyez des erreurs CORS :
 1. Vérifiez que `https://app.lastrep.fr` est bien dans **Site URL**
 2. Vérifiez que les variables d'environnement sont correctes
 
-## 📸 Capture d'écran de Référence
+## 📍 Où trouver "Site URL" - Guide Visuel
 
-La page devrait ressembler à ça :
+### Option 1 : Dans le menu Authentication
+
+1. **Menu de gauche** → Cliquez sur **Authentication** (icône 🔒)
+2. Vous verrez un **sous-menu** qui s'ouvre avec :
+   - Users
+   - Policies
+   - Providers
+   - URL Configuration ← **CLIQUEZ ICI**
+   - Email Templates
+   - etc.
+
+3. Une fois dans **URL Configuration**, vous verrez :
+   - **Site URL** (en haut)
+   - **Redirect URLs** (en dessous)
+
+### Option 2 : Dans les Settings
+
+Si vous ne trouvez pas "URL Configuration" dans le menu :
+1. **Menu de gauche** → **Authentication**
+2. Regardez les **onglets en haut** de la page :
+   - Users
+   - Policies  
+   - Providers
+   - **Settings** ← Peut être ici
+   - URL Configuration
+
+### Option 3 : Recherche directe
+
+1. Dans le dashboard Supabase, utilisez la **barre de recherche** en haut
+2. Tapez "URL Configuration" ou "Site URL"
+3. Cliquez sur le résultat
+
+## 📸 À quoi ça ressemble
+
+Une fois dans **URL Configuration**, vous verrez :
 
 ```
 ┌─────────────────────────────────────────┐
-│ Authentication > URL Configuration      │
+│ 🔒 Authentication > URL Configuration   │
 ├─────────────────────────────────────────┤
 │                                         │
-│ Site URL                                │
+│ Site URL                                │ ← C'EST ICI !
 │ ┌─────────────────────────────────────┐ │
-│ │ https://app.lastrep.fr              │ │
+│ │ https://votre-ancien-domaine.com    │ │ ← Remplacez par app.lastrep.fr
 │ └─────────────────────────────────────┘ │
 │                                         │
 │ Redirect URLs                           │
 │ ┌─────────────────────────────────────┐ │
 │ │ http://localhost:3000/auth/callback│ │
-│ │ http://127.0.0.1:3000/auth/callback │ │
-│ │ https://app.lastrep.fr/auth/callback│ │
-│ │ https://app.lastrep.fr/**           │ │
+│ │ https://ancien-domaine.com/...      │ │
 │ └─────────────────────────────────────┘ │
 │                                         │
 │              [ Save ]                   │
 └─────────────────────────────────────────┘
 ```
+
+## 🔍 Si vous ne trouvez toujours pas
+
+1. **Vérifiez que vous êtes dans le bon projet** : Le nom du projet est en haut à gauche
+2. **Vérifiez vos permissions** : Vous devez être admin du projet
+3. **Essayez cette URL directe** : `https://app.supabase.com/project/[VOTRE-PROJECT-ID]/auth/url-configuration`
+   (Remplacez `[VOTRE-PROJECT-ID]` par l'ID de votre projet)
 
 ## ✅ Checklist
 
