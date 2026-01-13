@@ -640,13 +640,39 @@ const handleAddSet = async () => {
       bestSet.value = addedSet
       console.log('Nouveau record personnel!')
       
-      toast.success('Félicitations ! 🏆', {
-        description: `Vous avez battu votre ancien record avec ${addedSet.weight_kg}kg x ${addedSet.reps} répétitions`
-      })
+      // Message adaptatif selon le type d'exercice
+      let description = ''
+      if (exercise.value.exercise.measurement_type === 'weight_reps' || !exercise.value.exercise.measurement_type) {
+        description = `Vous avez battu votre ancien record avec ${addedSet.weight_kg || 0}kg x ${addedSet.reps || 0} répétitions`
+      } else if (exercise.value.exercise.measurement_type === 'reps') {
+        const weightText = addedSet.weight_kg && parseFloat(addedSet.weight_kg) > 0 ? ` (lesté +${addedSet.weight_kg}kg)` : ''
+        description = `Vous avez battu votre ancien record avec ${addedSet.reps || 0} répétitions${weightText}`
+      } else if (exercise.value.exercise.measurement_type === 'time') {
+        description = `Vous avez battu votre ancien record avec ${formatDuration(addedSet.duration_seconds || 0)}`
+      } else if (exercise.value.exercise.measurement_type === 'time_distance') {
+        description = `Vous avez battu votre ancien record avec ${formatDuration(addedSet.duration_seconds || 0)} sur ${((addedSet.distance_meters || 0) / 1000).toFixed(2)} km`
+      } else {
+        description = 'Nouveau record personnel !'
+      }
+      
+      toast.success('Félicitations ! 🏆', { description })
     } else {
-      toast.success('Série ajoutée avec succès!', {
-        description: `${addedSet.weight_kg}kg x ${addedSet.reps} répétitions`
-      })
+      // Message adaptatif selon le type d'exercice
+      let description = ''
+      if (exercise.value.exercise.measurement_type === 'weight_reps' || !exercise.value.exercise.measurement_type) {
+        description = `${addedSet.weight_kg || 0}kg x ${addedSet.reps || 0} répétitions`
+      } else if (exercise.value.exercise.measurement_type === 'reps') {
+        const weightText = addedSet.weight_kg && parseFloat(addedSet.weight_kg) > 0 ? ` (lesté +${addedSet.weight_kg}kg)` : ''
+        description = `${addedSet.reps || 0} répétitions${weightText}`
+      } else if (exercise.value.exercise.measurement_type === 'time') {
+        description = `${formatDuration(addedSet.duration_seconds || 0)}`
+      } else if (exercise.value.exercise.measurement_type === 'time_distance') {
+        description = `${formatDuration(addedSet.duration_seconds || 0)} sur ${((addedSet.distance_meters || 0) / 1000).toFixed(2)} km`
+      } else {
+        description = 'Série ajoutée'
+      }
+      
+      toast.success('Série ajoutée avec succès!', { description })
     }
     
     // Préremplir le formulaire avec la dernière série (celle qu'on vient d'ajouter)
@@ -663,7 +689,9 @@ const handleAddSet = async () => {
     }
 
     // Démarrer le timer de repos
-    startRestTimer(parseInt(newSet.value.restTime))
+    if (newSet.value.rest_seconds && parseInt(newSet.value.rest_seconds) > 0) {
+      startRestTimer(parseInt(newSet.value.rest_seconds))
+    }
   } catch (e) {
     error.value = e.message
     console.error('Erreur lors de l\'ajout d\'une série:', e)
