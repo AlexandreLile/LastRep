@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
-    <!-- Type: weight_reps -->
-    <div v-if="exercise.measurement_type === 'weight_reps'" class="grid grid-cols-2 gap-4">
+    <!-- Type: weight_reps (défaut si measurement_type n'est pas défini) -->
+    <div v-if="!exercise.measurement_type || exercise.measurement_type === 'weight_reps'" class="grid grid-cols-2 gap-4">
       <div class="space-y-2">
         <Label>Poids (kg) *</Label>
         <Input

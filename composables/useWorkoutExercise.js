@@ -18,7 +18,9 @@ export const useWorkoutExercise = () => {
           exercise:exercise_id (
             id,
             name,
-            primary_muscle
+            primary_muscle,
+            measurement_type,
+            is_custom
           )
         `)
         .eq('session_id', sessionId)
@@ -124,7 +126,9 @@ export const useWorkoutExercise = () => {
           exercise:exercise_id (
             id,
             name,
-            primary_muscle
+            primary_muscle,
+            measurement_type,
+            is_custom
           )
         `)
         .eq('id', exerciseId)

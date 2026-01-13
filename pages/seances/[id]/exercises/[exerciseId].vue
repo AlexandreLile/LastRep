@@ -231,10 +231,16 @@
 
         <form @submit.prevent="handleAddSet" class="space-y-6">
           <AdaptSetInput
-            v-if="exercise && exercise.exercise"
+            v-if="exercise && exercise.exercise && exercise.exercise.measurement_type"
             :exercise="exercise.exercise"
             v-model="newSet"
           />
+          <div v-else-if="exercise && exercise.exercise && !exercise.exercise.measurement_type" class="text-sm text-muted-foreground p-4 bg-yellow-50 rounded-lg">
+            ⚠️ Type de mesure non défini pour cet exercice. Utilisation du type par défaut (Poids + Répétitions).
+          </div>
+          <div v-else class="text-sm text-muted-foreground p-4">
+            Chargement de l'exercice...
+          </div>
           <Button type="submit" :disabled="exerciseSetLoading" class="w-full sm:w-auto">
             <Loader2 v-if="exerciseSetLoading" class="w-4 h-4 mr-2 animate-spin" />
             {{ exerciseSetLoading ? 'Ajout en cours...' : 'Ajouter la série' }}
