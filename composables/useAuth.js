@@ -146,18 +146,28 @@ export const useAuth = () => {
       }
 
       // Vérifier si l'utilisateur a été créé
-      // Si data.user est null et qu'il n'y a pas d'erreur, 
-      // c'est peut-être que l'email existe déjà (comportement de sécurité de Supabase)
-      if (!data?.user && !error) {
-        // Dans ce cas, Supabase a peut-être simplement ne pas créé l'utilisateur
-        // mais n'a pas retourné d'erreur pour des raisons de sécurité
-        // On redirige quand même vers check-email car l'email pourrait être envoyé
-        router.push("/check-email");
+      // Si data.user est null, c'est probablement que l'email existe déjà
+      // (comportement de sécurité de Supabase - il ne révèle pas si un email existe)
+      if (!data?.user) {
+        // Si aucun utilisateur n'a été créé, c'est probablement que :
+        // 1. L'email existe déjà avec un autre provider (Google, etc.)
+        // 2. Ou l'email existe déjà mais n'est pas confirmé
+        // Dans ce cas, on affiche un message d'erreur
+        errorMessage.value = 'email_exists';
         loading.value = false;
         return;
       }
 
-      // Inscription réussie - passer l'email en paramètre
+      // Vérifier si l'utilisateur créé a un email confirmé
+      // Si l'email n'est pas confirmé et qu'on ne peut pas envoyer d'email,
+      // c'est peut-être que le compte existe déjà avec un autre provider
+      if (data.user && !data.user.email_confirmed_at) {
+        // L'utilisateur a été créé mais l'email n'est pas confirmé
+        // C'est normal pour une nouvelle inscription
+        // On redirige vers check-email
+      }
+
+      // Inscription réussie - l'utilisateur a été créé
       router.push({
         path: "/check-email",
         query: { email: email.value }

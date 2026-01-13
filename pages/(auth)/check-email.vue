@@ -20,6 +20,22 @@
           </ul>
         </div>
 
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left">
+          <p class="text-sm text-amber-800 font-medium mb-2">⚠️ Si l'email n'arrive pas :</p>
+          <p class="text-xs text-amber-700 mb-2">
+            Si vous avez déjà un compte avec cette adresse email (par exemple via Google), 
+            vous pouvez vous connecter directement :
+          </p>
+          <Button 
+            @click="goToLogin" 
+            variant="outline" 
+            size="sm"
+            class="w-full text-xs"
+          >
+            Se connecter avec votre compte existant
+          </Button>
+        </div>
+
         <div class="space-y-3">
           <Button @click="resendEmail" :disabled="loading || resendCooldown > 0" variant="outline" class="w-full">
             <Mail class="w-4 h-4 mr-2" />
@@ -124,6 +140,10 @@ const resendEmail = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const goToLogin = () => {
+  navigateTo('/login');
 };
 
 onMounted(() => {
