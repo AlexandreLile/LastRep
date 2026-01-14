@@ -1,5 +1,16 @@
 <template>
   <div class="space-y-6">
+    <!-- Bouton retour fixe en haut à gauche -->
+    <Button 
+      variant="default" 
+      size="sm" 
+      @click="handleReturn" 
+      class="fixed top-4 left-4 z-50 flex items-center gap-2 shadow-lg bg-primary hover:bg-primary/90 backdrop-blur-sm"
+    >
+      <ArrowLeft class="w-4 h-4" />
+      Retour
+    </Button>
+    
     <Toaster />
     <Dialog :open="showRestModal" @update:open="showRestModal = $event">
       <DialogContent class="sm:max-w-md">
@@ -144,6 +155,40 @@
       </DialogContent>
     </Dialog>
 
+    <Dialog :open="showMissingFieldsModal" @update:open="showMissingFieldsModal = $event">
+      <DialogContent class="sm:max-w-md w-[95vw]">
+        <DialogHeader>
+          <DialogTitle>Champs manquants</DialogTitle>
+          <DialogDescription>
+            Attention, vous n'avez pas rempli certains champs importants :
+          </DialogDescription>
+        </DialogHeader>
+        <div class="py-4">
+          <ul class="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+            <li v-for="field in missingFields" :key="field" class="text-foreground">
+              {{ field }}
+            </li>
+          </ul>
+        </div>
+        <div class="flex flex-col sm:flex-row justify-end gap-3 mt-4">
+          <Button 
+            variant="outline" 
+            @click="showMissingFieldsModal = false"
+            class="w-full sm:w-auto"
+          >
+            Remplir
+          </Button>
+          <Button 
+            variant="default" 
+            @click="confirmAddSet"
+            class="w-full sm:w-auto"
+          >
+            Enregistrer quand même
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
     <div v-if="loading" class="flex justify-center items-center h-64">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
     </div>
@@ -151,7 +196,7 @@
     <div v-else-if="error" class="flex items-center justify-center p-4 text-sm text-red-500 bg-red-50 rounded-lg">
       {{ error }}
     </div>
-    <div v-else class="space-y-6 mt-24 md:mt-0">
+    <div v-else class="space-y-6 mt-16 md:mt-0">
       <!-- En-tête de l'exercice -->
       <div class="bg-card rounded-xl p-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -172,10 +217,6 @@
               <span v-if="localExerciseSets.length === 0">Aucune série</span>
               <span v-else>{{ localExerciseSets.length }} série{{ localExerciseSets.length > 1 ? 's' : '' }}</span>
             </div>
-            <Button variant="outline" size="sm" @click="handleReturn" class="flex items-center gap-2">
-              <ArrowLeft class="w-4 h-4" />
-              Retour
-            </Button>
           </div>
         </div>
       </div>
@@ -235,7 +276,7 @@
             :exercise="exercise.exercise"
             v-model="newSet"
           />
-          <div v-else-if="exercise && exercise.exercise && !exercise.exercise.measurement_type" class="text-sm text-muted-foreground p-4 bg-yellow-50 rounded-lg">
+          <div v-else-if="exercise && exercise.exercise && !exercise.exercise.measurement_type" class="text-sm text-muted-foreground p-4 bg-primary/10 border border-primary/20 rounded-lg">
             ⚠️ Type de mesure non défini pour cet exercice. Utilisation du type par défaut (Poids + Répétitions).
           </div>
           <div v-else class="text-sm text-muted-foreground p-4">
@@ -463,6 +504,11 @@ const updating = ref(false)
 const showDeleteModal = ref(false)
 const deleting = ref(false)
 
+// Variables pour la modale de champs manquants
+const showMissingFieldsModal = ref(false)
+const missingFields = ref([])
+const pendingSetData = ref(null)
+
 // Format date for display
 const formatDate = (dateString) => {
   if (!dateString) return '';
@@ -589,10 +635,69 @@ const skipRest = () => {
   toast.info('Temps de repos ignoré')
 }
 
-const handleAddSet = async () => {
+// Fonction pour vérifier les champs manquants
+const checkMissingFields = () => {
+  const missing = []
+  const measurementType = exercise.value?.exercise?.measurement_type || 'weight_reps'
+  
+  // Vérifier selon le type d'exercice
+  if (measurementType === 'weight_reps' || !measurementType) {
+    if (!newSet.value.weight_kg || parseFloat(newSet.value.weight_kg) <= 0) {
+      missing.push('Poids')
+    }
+    if (!newSet.value.reps || parseInt(newSet.value.reps) <= 0) {
+      missing.push('Répétitions')
+    }
+  } else if (measurementType === 'reps') {
+    if (!newSet.value.reps || parseInt(newSet.value.reps) <= 0) {
+      missing.push('Répétitions')
+    }
+  } else if (measurementType === 'time') {
+    if (!newSet.value.duration_seconds || parseInt(newSet.value.duration_seconds) <= 0) {
+      missing.push('Durée')
+    }
+  } else if (measurementType === 'time_reps') {
+    if (!newSet.value.duration_seconds || parseInt(newSet.value.duration_seconds) <= 0) {
+      missing.push('Durée')
+    }
+    if (!newSet.value.reps || parseInt(newSet.value.reps) <= 0) {
+      missing.push('Répétitions')
+    }
+  } else if (measurementType === 'time_distance') {
+    if (!newSet.value.duration_seconds || parseInt(newSet.value.duration_seconds) <= 0) {
+      missing.push('Durée')
+    }
+    if (!newSet.value.distance_meters || parseFloat(newSet.value.distance_meters) <= 0) {
+      missing.push('Distance')
+    }
+  } else if (measurementType === 'distance') {
+    if (!newSet.value.distance_meters || parseFloat(newSet.value.distance_meters) <= 0) {
+      missing.push('Distance')
+    }
+  } else if (measurementType === 'weight_only') {
+    if (!newSet.value.weight_kg || parseFloat(newSet.value.weight_kg) <= 0) {
+      missing.push('Poids')
+    }
+  }
+  
+  // Toujours vérifier le repos
+  if (!newSet.value.rest_seconds || parseInt(newSet.value.rest_seconds) <= 0) {
+    missing.push('Repos')
+  }
+  
+  return missing
+}
+
+// Fonction pour enregistrer réellement la série
+const confirmAddSet = async () => {
+  showMissingFieldsModal.value = false
+  await actuallyAddSet()
+}
+
+// Fonction qui fait réellement l'enregistrement
+const actuallyAddSet = async () => {
   try {
-    // Créer la donnée de la série à envoyer à la base de données
-    const setData = {
+    const setData = pendingSetData.value || {
       exercise_id: exercise.value.exercise.id,
       weight_kg: newSet.value.weight_kg ? parseFloat(newSet.value.weight_kg) : null,
       reps: newSet.value.reps ? parseInt(newSet.value.reps) : null,
@@ -692,6 +797,47 @@ const handleAddSet = async () => {
     if (newSet.value.rest_seconds && parseInt(newSet.value.rest_seconds) > 0) {
       startRestTimer(parseInt(newSet.value.rest_seconds))
     }
+    
+    // Réinitialiser pendingSetData
+    pendingSetData.value = null
+  } catch (e) {
+    error.value = e.message
+    console.error('Erreur lors de l\'ajout d\'une série:', e)
+    toast.error('Erreur', {
+      description: `Impossible d'ajouter la série: ${e.message}`
+    })
+    pendingSetData.value = null
+  }
+}
+
+const handleAddSet = async () => {
+  try {
+    // Créer la donnée de la série à envoyer à la base de données
+    const setData = {
+      exercise_id: exercise.value.exercise.id,
+      weight_kg: newSet.value.weight_kg ? parseFloat(newSet.value.weight_kg) : null,
+      reps: newSet.value.reps ? parseInt(newSet.value.reps) : null,
+      duration_seconds: newSet.value.duration_seconds ? parseInt(newSet.value.duration_seconds) : null,
+      distance_meters: newSet.value.distance_meters ? parseFloat(newSet.value.distance_meters) : null,
+      rest_seconds: newSet.value.rest_seconds ? parseInt(newSet.value.rest_seconds) : null,
+      rpe: newSet.value.rpe ? parseFloat(newSet.value.rpe) : null,
+      note: newSet.value.note || null
+    }
+    
+    // Vérifier les champs manquants
+    const missing = checkMissingFields()
+    
+    if (missing.length > 0) {
+      // Afficher la modale d'avertissement
+      missingFields.value = missing
+      pendingSetData.value = setData
+      showMissingFieldsModal.value = true
+      return
+    }
+    
+    // Si aucun champ manquant, enregistrer directement
+    pendingSetData.value = setData
+    await actuallyAddSet()
   } catch (e) {
     error.value = e.message
     console.error('Erreur lors de l\'ajout d\'une série:', e)

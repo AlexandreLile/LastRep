@@ -3,22 +3,20 @@
     <!-- Type: weight_reps (défaut si measurement_type n'est pas défini) -->
     <div v-if="!exercise.measurement_type || exercise.measurement_type === 'weight_reps'" class="grid grid-cols-2 gap-4">
       <div class="space-y-2">
-        <Label>Poids (kg) *</Label>
+        <Label>Poids (kg)</Label>
         <Input
           v-model="setData.weight_kg"
           type="number"
           step="0.5"
           placeholder="0"
-          required
         />
       </div>
       <div class="space-y-2">
-        <Label>Répétitions *</Label>
+        <Label>Répétitions</Label>
         <Input
           v-model="setData.reps"
           type="number"
           placeholder="0"
-          required
         />
       </div>
     </div>
@@ -26,12 +24,11 @@
     <!-- Type: reps (poids optionnel pour lestage) -->
     <div v-else-if="exercise.measurement_type === 'reps'" class="space-y-4">
       <div class="space-y-2">
-        <Label>Répétitions *</Label>
+        <Label>Répétitions</Label>
         <Input
           v-model="setData.reps"
           type="number"
           placeholder="0"
-          required
         />
       </div>
       <div class="space-y-2">
@@ -56,12 +53,11 @@
     <!-- Type: time -->
     <div v-else-if="exercise.measurement_type === 'time'" class="space-y-4">
       <div class="space-y-2">
-        <Label>Durée (secondes) *</Label>
+        <Label>Durée (secondes)</Label>
         <Input
           v-model="setData.duration_seconds"
           type="number"
           placeholder="0"
-          required
         />
         <p class="text-xs text-muted-foreground">
           {{ formatDuration(setData.duration_seconds) }}
@@ -80,21 +76,19 @@
     <!-- Type: time_reps -->
     <div v-else-if="exercise.measurement_type === 'time_reps'" class="grid grid-cols-2 gap-4">
       <div class="space-y-2">
-        <Label>Durée (secondes) *</Label>
+        <Label>Durée (secondes)</Label>
         <Input
           v-model="setData.duration_seconds"
           type="number"
           placeholder="0"
-          required
         />
       </div>
       <div class="space-y-2">
-        <Label>Répétitions *</Label>
+        <Label>Répétitions</Label>
         <Input
           v-model="setData.reps"
           type="number"
           placeholder="0"
-          required
         />
       </div>
     </div>
@@ -102,47 +96,43 @@
     <!-- Type: time_distance -->
     <div v-else-if="exercise.measurement_type === 'time_distance'" class="grid grid-cols-2 gap-4">
       <div class="space-y-2">
-        <Label>Durée (secondes) *</Label>
+        <Label>Durée (secondes)</Label>
         <Input
           v-model="setData.duration_seconds"
           type="number"
           placeholder="0"
-          required
         />
       </div>
       <div class="space-y-2">
-        <Label>Distance (mètres) *</Label>
+        <Label>Distance (mètres)</Label>
         <Input
           v-model="setData.distance_meters"
           type="number"
           step="0.01"
           placeholder="0"
-          required
         />
       </div>
     </div>
 
     <!-- Type: distance -->
     <div v-else-if="exercise.measurement_type === 'distance'" class="space-y-2">
-      <Label>Distance (mètres) *</Label>
+      <Label>Distance (mètres)</Label>
       <Input
         v-model="setData.distance_meters"
         type="number"
         step="0.01"
         placeholder="0"
-        required
       />
     </div>
 
     <!-- Type: weight_only -->
     <div v-else-if="exercise.measurement_type === 'weight_only'" class="space-y-2">
-      <Label>Poids (kg) *</Label>
+      <Label>Poids (kg)</Label>
       <Input
         v-model="setData.weight_kg"
         type="number"
         step="0.5"
         placeholder="0"
-        required
       />
     </div>
 

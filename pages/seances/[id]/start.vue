@@ -94,8 +94,8 @@
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button 
-                  variant="destructive"
-                  class="flex items-center gap-2 w-full sm:w-auto"
+                  variant="default"
+                  class="flex items-center gap-2 w-full sm:w-auto bg-primary hover:bg-primary/90"
                 >
                   <CheckCircle class="w-4 h-4" />
                   Terminer la séance

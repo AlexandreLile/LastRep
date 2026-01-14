@@ -41,6 +41,15 @@
 
 #### Option B : Ajouter votre propre domaine (recommandé pour production)
 
+**⚠️ IMPORTANT : Utilisez `lastrep.fr` (domaine racine), PAS `app.lastrep.fr`**
+
+**Pourquoi ?**
+- `app.lastrep.fr` est pour votre application web (Vercel)
+- `lastrep.fr` est pour les emails (Resend/SMTP)
+- Les emails sont envoyés depuis `noreply@lastrep.fr`, pas depuis `app.lastrep.fr`
+
+**Étapes :**
+
 1. Dans Resend, allez dans **Domains** (menu de gauche)
 2. Cliquez sur **"Add Domain"**
 3. Entrez votre domaine : `lastrep.fr` (sans le sous-domaine `app`)
@@ -157,7 +166,9 @@
 
 ## 🔧 Configuration DNS pour votre domaine (Optionnel mais recommandé)
 
-Si vous ajoutez `lastrep.fr` dans Resend, vous devrez ajouter ces enregistrements DNS :
+**⚠️ RAPPEL : Utilisez `lastrep.fr` (domaine racine), pas `app.lastrep.fr`**
+
+Si vous ajoutez `lastrep.fr` dans Resend, vous devrez ajouter ces enregistrements DNS **au niveau du domaine racine** (`lastrep.fr`) :
 
 ### Exemple d'enregistrements (Resend vous donnera les vrais) :
 

@@ -180,10 +180,17 @@ export const useAuth = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = async (fromRegister = false) => {
     errorMessage.value = "";
     loading.value = true;
     try {
+      // Stocker dans sessionStorage si c'est depuis la page d'inscription
+      if (typeof window !== 'undefined' && fromRegister) {
+        sessionStorage.setItem('google_oauth_from_register', 'true');
+      } else if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('google_oauth_from_register');
+      }
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

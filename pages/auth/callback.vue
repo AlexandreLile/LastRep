@@ -97,10 +97,36 @@ onMounted(async () => {
     return;
   }
   
+  // Vérifier l'acceptation des CGU pour Google OAuth uniquement si c'est depuis la page d'inscription
+  const fromRegister = typeof window !== 'undefined' ? sessionStorage.getItem('google_oauth_from_register') === 'true' : false;
+  const termsAccepted = typeof window !== 'undefined' ? sessionStorage.getItem('terms_accepted') === 'true' : false;
+  
   try {
     // Écouter les changements d'état d'authentification pour détecter la connexion
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
+        // Vérifier l'acceptation des CGU uniquement si c'est depuis la page d'inscription
+        const fromRegister = typeof window !== 'undefined' ? sessionStorage.getItem('google_oauth_from_register') === 'true' : false;
+        const termsAccepted = typeof window !== 'undefined' ? sessionStorage.getItem('terms_accepted') === 'true' : false;
+        
+        // Si c'est depuis register et que les CGU n'ont pas été acceptées, bloquer
+        if (fromRegister && !termsAccepted) {
+          // Déconnecter l'utilisateur car les CGU n'ont pas été acceptées
+          await supabase.auth.signOut();
+          subscription.unsubscribe();
+          loading.value = false;
+          error.value = true;
+          errorTitle.value = 'Acceptation des CGU requise';
+          errorMessage.value = 'Vous devez accepter les Conditions Générales d\'Utilisation et la Politique de confidentialité pour créer un compte. Veuillez réessayer depuis la page d\'inscription.';
+          return;
+        }
+        
+        // Nettoyer sessionStorage après vérification réussie
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('terms_accepted');
+          sessionStorage.removeItem('google_oauth_from_register');
+        }
+        
         // Attendre un court instant pour s'assurer que la session est bien établie
         await new Promise(resolve => setTimeout(resolve, 500));
         

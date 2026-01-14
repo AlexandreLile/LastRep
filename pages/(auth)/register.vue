@@ -53,7 +53,31 @@
                 </p>
               </div>
 
-              <Button type="submit" class="w-full h-10 mt-2">
+              <div class="flex items-start gap-2 mt-2">
+                <input
+                  id="accept-terms"
+                  type="checkbox"
+                  v-model="acceptTerms"
+                  class="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+                  :class="termsError ? 'border-red-500' : ''"
+                />
+                <label for="accept-terms" class="text-sm text-foreground cursor-pointer leading-relaxed">
+                  J'ai lu et j'accepte les 
+                  <NuxtLink to="/cgu" target="_blank" class="text-primary hover:underline font-medium">
+                    Conditions Générales d'Utilisation
+                  </NuxtLink>
+                  et la 
+                  <NuxtLink to="/politique-confidentialite" target="_blank" class="text-primary hover:underline font-medium">
+                    Politique de confidentialité
+                  </NuxtLink>
+                </label>
+              </div>
+              <p v-if="termsError" class="text-xs text-red-500 flex items-center gap-1">
+                <AlertTriangle class="h-3 w-3" />
+                {{ termsError }}
+              </p>
+
+              <Button type="submit" class="w-full h-10 mt-2" :disabled="!acceptTerms">
                 <CheckCircle v-if="!loading" class="h-4 w-4 mr-2" />
                 <Loader2 v-else class="h-4 w-4 mr-2 animate-spin" />
                 Créer un compte
@@ -68,7 +92,7 @@
                 </div>
               </div>
               
-              <Button variant="outline" class="w-full h-10" @click="handleGoogleLogin">
+              <Button variant="outline" class="w-full h-10" @click="handleGoogleLoginWithTerms" :disabled="!acceptTerms">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 24 24"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 0 1-6.723-4.823l-4.04 3.067A11.965 11.965 0 0 0 12 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/><path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.17 2.766-2.395 3.558L19.834 21Z"/><path fill="#FBBC05" d="M5.277 14.268A7.12 7.12 0 0 1 4.909 12c0-.782.125-1.533.357-2.235L1.24 6.65A11.934 11.934 0 0 0 0 12c0 1.92.445 3.73 1.237 5.335l4.04-3.067Z"/></svg>
                 Continuer avec Google
               </Button>
@@ -79,18 +103,18 @@
               <!-- Message d'erreur pour email déjà utilisé -->
               <div
                 v-if="errorMessage === 'email_exists'"
-                class="text-amber-600 text-sm p-3 rounded-md bg-amber-50 border border-amber-200 mt-4"
+                class="text-primary text-sm p-3 rounded-md bg-primary/10 border border-primary/20 mt-4"
               >
                 <div class="flex items-start">
-                  <AlertTriangle class="h-4 w-4 mr-2 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <AlertTriangle class="h-4 w-4 mr-2 text-primary mt-0.5 flex-shrink-0" />
                   <div class="flex-1">
                     <p class="font-medium mb-1">Cette adresse email est déjà utilisée</p>
-                    <p class="text-xs text-amber-700 mb-2">
+                    <p class="text-xs text-muted-foreground mb-2">
                       Un compte existe déjà avec cette adresse email. Si c'est votre compte, connectez-vous.
                     </p>
                     <NuxtLink
                       to="/login"
-                      class="text-xs font-medium text-amber-700 hover:text-amber-800 underline"
+                      class="text-xs font-medium text-primary hover:text-primary/80 underline"
                     >
                       Aller à la page de connexion →
                     </NuxtLink>
@@ -137,6 +161,8 @@ import { ref, watch } from 'vue';
 
 const { email, password, handleRegister, handleGoogleLogin, errorMessage, loading } = useAuth();
 const emailError = ref('');
+const acceptTerms = ref(false);
+const termsError = ref('');
 
 // Réinitialiser l'erreur d'email déjà utilisé quand l'utilisateur modifie l'email
 watch(email, () => {
@@ -175,6 +201,7 @@ const checkEmailFormat = () => {
 const onSubmit = () => {
   // Réinitialiser les erreurs
   emailError.value = '';
+  termsError.value = '';
   
   // Vérifier le format avant de soumettre
   checkEmailFormat();
@@ -183,6 +210,28 @@ const onSubmit = () => {
     return;
   }
   
+  // Vérifier l'acceptation des CGU
+  if (!acceptTerms.value) {
+    termsError.value = 'Vous devez accepter les Conditions Générales d\'Utilisation et la Politique de confidentialité pour créer un compte.';
+    return;
+  }
+  
   handleRegister();
+};
+
+const handleGoogleLoginWithTerms = () => {
+  termsError.value = '';
+  
+  if (!acceptTerms.value) {
+    termsError.value = 'Vous devez accepter les Conditions Générales d\'Utilisation et la Politique de confidentialité pour continuer avec Google.';
+    return;
+  }
+  
+  // Stocker l'acceptation dans sessionStorage pour vérification dans callback
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem('terms_accepted', 'true');
+  }
+  
+  handleGoogleLogin(true); // Passer true pour indiquer que c'est depuis register
 };
 </script>

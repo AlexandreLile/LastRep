@@ -12,7 +12,7 @@
     <div v-else class="space-y-6">
       <!-- En-tête amélioré -->
       <div class="mb-8 bg-card rounded-xl p-6">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
               <Dumbbell class="h-6 w-6 text-primary" />
@@ -25,7 +25,7 @@
           <Button
             variant="default"
             @click="showCreateDialog = true"
-            class="flex items-center gap-2"
+            class="flex items-center gap-2 w-full sm:w-auto"
           >
             <Plus class="h-4 w-4" />
             Créer un exercice
@@ -39,6 +39,7 @@
         @update:open="showCreateDialog = $event"
         @created="handleExerciseCreated"
       />
+
 
       <!-- Layout principal -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -224,7 +225,7 @@
 
 <script setup>
 import { useExerciseStats } from '~/composables/useExerciseStats'
-import { computed, ref } from 'vue'
+import { computed, ref, nextTick, watch } from 'vue'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import CreateCustomExercise from '~/components/exercises/CreateCustomExercise.vue'

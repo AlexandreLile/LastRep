@@ -61,8 +61,8 @@
   /* Muted (pour les éléments discrets) */
   --muted: #2A1A0F;
   --muted-foreground: oklch(0.70 0 0);
-  /* Couleur de détail : #E7FE55 (jaune/vert citron) */
-  --accent: #E7FE55;
+  /* Couleur de détail : variante de l'orange principal */
+  --accent: #FF8A3D;
   --accent-foreground: #150A02;
   /* Destructive (rouge pour erreurs) */
   --destructive: oklch(0.60 0.20 25);
@@ -73,7 +73,7 @@
   --ring: #FE751C;
   /* Couleurs pour les graphiques */
   --chart-1: #FE751C;
-  --chart-2: #E7FE55;
+  --chart-2: #FF8A3D;
   --chart-3: oklch(0.60 0.20 25);
   --chart-4: oklch(0.75 0.12 180);
   --chart-5: oklch(0.65 0.15 280);
@@ -104,8 +104,8 @@
   --secondary-foreground: oklch(0.95 0 0);
   --muted: #1F1208;
   --muted-foreground: oklch(0.70 0 0);
-  /* Accent jaune/vert plus visible */
-  --accent: #F0FF6B;
+  /* Accent : variante de l'orange principal */
+  --accent: #FF9D5C;
   --accent-foreground: #0F0601;
   --destructive: oklch(0.65 0.22 25);
   --destructive-foreground: oklch(0.95 0 0);
@@ -113,7 +113,7 @@
   --input: #2A1A0F;
   --ring: #FF8A3D;
   --chart-1: #FF8A3D;
-  --chart-2: #F0FF6B;
+  --chart-2: #FF9D5C;
   --chart-3: oklch(0.65 0.22 25);
   --chart-4: oklch(0.80 0.15 180);
   --chart-5: oklch(0.70 0.18 280);

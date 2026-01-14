@@ -20,9 +20,9 @@
           </ul>
         </div>
 
-        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left">
-          <p class="text-sm text-amber-800 font-medium mb-2">⚠️ Si l'email n'arrive pas :</p>
-          <p class="text-xs text-amber-700 mb-2">
+        <div class="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-6 text-left">
+          <p class="text-sm text-primary font-medium mb-2">⚠️ Si l'email n'arrive pas :</p>
+          <p class="text-xs text-muted-foreground mb-2">
             Si vous avez déjà un compte avec cette adresse email (par exemple via Google), 
             vous pouvez vous connecter directement :
           </p>

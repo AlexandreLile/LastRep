@@ -73,6 +73,24 @@
           </div>
         </div>
 
+        <!-- Message informatif -->
+        <div class="bg-primary/10 border border-primary/20 rounded-lg p-4">
+          <div class="flex items-start gap-3">
+            <Info class="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+            <div class="flex-1">
+              <p class="text-sm font-medium text-foreground mb-2">
+                Pour ajouter cet exercice à une séance :
+              </p>
+              <ul class="text-xs text-muted-foreground space-y-1.5 list-disc list-inside">
+                <li>Allez dans une séance d'entraînement</li>
+                <li>Cliquez sur "Ajouter un exercice"</li>
+                <li>Recherchez votre exercice dans la liste</li>
+                <li>Ajoutez-le à votre séance</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
           <!-- Message d'erreur -->
           <div v-if="error" class="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
             {{ error }}
@@ -96,16 +114,17 @@
       </form>
     </DialogContent>
   </Dialog>
+
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, nextTick } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2 } from 'lucide-vue-next'
+import { Loader2, Info } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
 const props = defineProps({
