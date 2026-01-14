@@ -45,7 +45,7 @@
             <Button 
               @click="editSession" 
               variant="outline"
-              class="px-6 py-3 hover:bg-muted/50 transition-colors duration-300 flex items-center"
+              class="px-6 py-3 text-foreground hover:text-primary hover:bg-primary/10 border-border transition-colors duration-300 flex items-center font-medium"
             >
               <Pencil class="mr-2 h-4 w-4" />
               Modifier

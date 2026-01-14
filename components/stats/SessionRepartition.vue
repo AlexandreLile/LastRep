@@ -122,16 +122,17 @@ const chartOptions = {
             position: 'bottom',
             align: 'center',
             labels: {
-                color: 'hsl(var(--foreground))',
+                color: '#F2F2F2',
                 font: {
-                    size: 14,
-                    weight: 'medium',
+                    size: 15,
+                    weight: 'bold',
+                    family: 'system-ui, -apple-system, sans-serif',
                 },
                 padding: 20,
                 usePointStyle: true,
                 pointStyle: 'circle',
-                boxWidth: 12,
-                boxHeight: 12,
+                boxWidth: 14,
+                boxHeight: 14,
             },
         },
         tooltip: {

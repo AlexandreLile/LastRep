@@ -41,11 +41,11 @@
               <Button 
                 variant="ghost" 
                 size="sm" 
-                class="flex items-center gap-1 text-muted-foreground hover:text-primary" 
+                class="flex items-center gap-1 text-foreground hover:text-primary hover:bg-primary/10" 
                 @click.stop="editSession(session)"
               >
                 <Pencil class="h-4 w-4" />
-                <span class="text-sm">Modifier</span>
+                <span class="text-sm font-medium">Modifier</span>
               </Button>
             </div>
           </div>
@@ -69,7 +69,7 @@
             <Button 
               variant="ghost" 
               size="sm" 
-              class="flex items-center gap-1 text-foreground bg-muted hover:bg-primary/10 hover:text-primary px-3 py-1" 
+              class="flex items-center gap-1 text-foreground bg-muted hover:bg-primary/20 hover:text-primary px-3 py-1 font-medium" 
               @click.stop="editSession(session)"
             >
               <Pencil class="h-3.5 w-3.5" />
