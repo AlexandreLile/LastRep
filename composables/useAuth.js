@@ -99,6 +99,12 @@ export const useAuth = () => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
           if (event === 'SIGNED_IN' && session) {
             subscription.unsubscribe();
+            // Ne pas rediriger si on est sur /update-password (réinitialisation de mot de passe)
+            // Vérifier la route actuelle pour éviter de rediriger pendant la réinitialisation
+            if (typeof window !== 'undefined' && window.location.pathname === '/update-password') {
+              loading.value = false;
+              return;
+            }
             navigateTo("/").then(() => {
               loading.value = false;
             });

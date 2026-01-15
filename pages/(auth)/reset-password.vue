@@ -72,10 +72,14 @@ const handleResetPassword = async () => {
     
     console.log('URL de redirection pour reset password:', redirectUrl);
     
+    // Encoder l'URL pour s'assurer qu'elle est correctement passée
+    const encodedRedirectUrl = encodeURI(redirectUrl);
+    console.log('URL encodée:', encodedRedirectUrl);
+    
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       email.value,
       {
-        redirectTo: redirectUrl,
+        redirectTo: encodedRedirectUrl,
       }
     );
 

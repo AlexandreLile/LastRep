@@ -107,15 +107,18 @@ const handleUpdatePassword = async () => {
 // Check la session au montage de la page
 onMounted(async () => {
   try {
-    // Vérifier si on arrive depuis un lien de réinitialisation (hash ou query params)
+    // Sauvegarder l'URL complète AVANT que Supabase ne traite le hash
+    const fullUrl = typeof window !== 'undefined' ? window.location.href : '';
     const hash = typeof window !== 'undefined' ? window.location.hash : '';
     const searchParams = typeof window !== 'undefined' ? window.location.search : '';
-    const hasRecoveryHash = hash.includes('access_token') || hash.includes('type=recovery');
+    const hasRecoveryHash = hash.includes('access_token') || hash.includes('type=recovery') || hash.includes('token');
     const hasRecoveryParams = searchParams.includes('token') || searchParams.includes('type=recovery');
     
-    console.log('URL complète:', typeof window !== 'undefined' ? window.location.href : '');
+    console.log('URL complète:', fullUrl);
     console.log('Hash:', hash);
     console.log('Search params:', searchParams);
+    console.log('Has recovery hash:', hasRecoveryHash);
+    console.log('Has recovery params:', hasRecoveryParams);
     
     // Si on a un hash ou des query params de réinitialisation, laisser Supabase le gérer
     if (hasRecoveryHash || hasRecoveryParams) {
@@ -150,19 +153,19 @@ onMounted(async () => {
       return;
     }
     
-    // Sinon, vérifier la session normale
+    // Si on n'a pas de hash/params mais qu'on est sur cette page, vérifier la session
+    // Si on a une session, on reste sur la page (peut-être que l'utilisateur rafraîchit)
+    // Si on n'a pas de session, rediriger vers reset-password
     const { data } = await supabase.auth.getSession();
 
     if (!data.session) {
       console.log("Pas de session active, redirection vers /reset-password");
       router.push("/reset-password");
     } else {
-      // Si on arrive ici sans hash/params mais avec une session, vérifier si c'est une session de réinitialisation récente
-      // En fait, si on est sur cette page sans hash/params, c'est qu'on ne devrait pas y être normalement
-      // Mais on peut permettre l'accès si l'utilisateur vient juste d'arriver (session fraîche)
-      console.log("Session détectée sans hash/params de réinitialisation");
-      console.log("Redirection vers / car ce n'est pas une session de réinitialisation");
-      router.push("/");
+      // Si on a une session mais pas de hash/params, on reste sur la page
+      // (l'utilisateur peut avoir rafraîchi la page après avoir cliqué sur le lien)
+      console.log("Session détectée, restons sur la page update-password");
+      // Ne pas rediriger, permettre à l'utilisateur de changer son mot de passe
     }
   } catch (err) {
     console.error('Erreur lors de la vérification de la session:', err);

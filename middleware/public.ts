@@ -10,7 +10,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
   ]
 
   // Si la route est publique, on laisse passer
+  // IMPORTANT: /update-password nécessite un traitement spécial car Supabase doit traiter le hash d'abord
   if (publicRoutes.includes(to.path)) {
+    // Pour /update-password, ne pas vérifier la session ici car Supabase doit d'abord traiter le hash
+    if (to.path === '/update-password') {
+      return
+    }
     return
   }
 

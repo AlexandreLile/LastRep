@@ -18,6 +18,29 @@ export default defineNuxtPlugin({
     ];
     
     router.beforeEach(async (to, from, next) => {
+      // IMPORTANT: Pour /update-password, laisser Supabase traiter le hash AVANT toute vérification
+      if (to.path === '/update-password') {
+        // Vérifier si on a un hash de réinitialisation dans l'URL
+        const hasRecoveryHash = typeof window !== 'undefined' && (
+          window.location.hash.includes('access_token') || 
+          window.location.hash.includes('type=recovery') ||
+          window.location.hash.includes('token')
+        );
+        const hasRecoveryParams = typeof window !== 'undefined' && (
+          window.location.search.includes('token') || 
+          window.location.search.includes('type=recovery')
+        );
+        
+        // Si on a un hash/params de réinitialisation, attendre que Supabase le traite
+        if (hasRecoveryHash || hasRecoveryParams) {
+          console.log('Hash de réinitialisation détecté, attente du traitement par Supabase...');
+          await new Promise(resolve => setTimeout(resolve, 1500)); // Attendre plus longtemps pour Supabase
+        }
+        
+        // Laisser passer sans vérifier la session (elle sera vérifiée dans onMounted de la page)
+        return next();
+      }
+      
       // Attendre que le DOM soit prêt et que Supabase soit initialisé
       // Attendre plus longtemps pour laisser les plugins de restauration de session s'exécuter
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -81,7 +104,8 @@ export default defineNuxtPlugin({
         
         // Utilisateur authentifié tentant d'accéder à une page d'authentification
         // Ne pas rediriger si on vient de se connecter (pour éviter une boucle)
-        if (session && isPublicPage && to.path !== '/auth/callback' && from.path !== '/auth/callback') {
+        // Ne pas rediriger depuis /update-password car c'est une page spéciale pour la réinitialisation
+        if (session && isPublicPage && to.path !== '/auth/callback' && from.path !== '/auth/callback' && to.path !== '/update-password') {
           console.log('Redirection vers accueil: utilisateur authentifié sur page publique');
           return next('/');
         }
