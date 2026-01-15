@@ -70,14 +70,14 @@
         <span>Profil</span>
       </NuxtLink>
 
-      <!-- Bouton pour réafficher le guide (optionnel, pour les tests) -->
-      <!-- <button 
+      <!-- Bouton pour réafficher le guide (temporaire, 1 semaine) -->
+      <button 
         @click="handleShowWelcomeModal"
         class="flex items-center space-x-3 text-muted-foreground hover:text-foreground w-full text-left"
       >
         <HelpCircle class="w-5 h-5" />
         <span>Guide de démarrage</span>
-      </button> -->
+      </button>
     </nav>
 
     <AlertDialog>
