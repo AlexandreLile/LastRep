@@ -232,6 +232,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useSupabaseClient } from '#imports'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { 
@@ -285,19 +286,27 @@ const previousSlide = () => {
   }
 }
 
-const handleFinish = () => {
-  // Marquer comme vu dans localStorage
+const handleFinish = async () => {
+  // Marquer comme vu dans localStorage avec l'ID utilisateur
   if (typeof window !== 'undefined') {
-    localStorage.setItem('welcomeModalSeen', 'true')
+    const supabase = useSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      localStorage.setItem(`welcomeModalSeen_${user.id}`, 'true')
+    }
   }
   emit('update:open', false)
 }
 
-const handleOpenChange = (open) => {
+const handleOpenChange = async (open) => {
   if (!open) {
-    // Si on ferme la modal, marquer comme vu
+    // Si on ferme la modal, marquer comme vu avec l'ID utilisateur
     if (typeof window !== 'undefined') {
-      localStorage.setItem('welcomeModalSeen', 'true')
+      const supabase = useSupabaseClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        localStorage.setItem(`welcomeModalSeen_${user.id}`, 'true')
+      }
     }
   }
   emit('update:open', open)

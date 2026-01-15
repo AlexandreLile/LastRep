@@ -140,12 +140,21 @@ const checkIfNewUser = async () => {
     const { data: { user: currentUser } } = await supabase.auth.getUser()
     if (!currentUser) return false
 
-    // Vérifier si la modal a déjà été vue
-    const welcomeModalSeen = typeof window !== 'undefined' 
-      ? localStorage.getItem('welcomeModalSeen') === 'true'
-      : false
-    
-    if (welcomeModalSeen) return false
+    // Vérifier si la modal a déjà été vue pour CET utilisateur spécifique
+    // Utiliser l'ID utilisateur pour éviter les conflits entre comptes
+    if (typeof window !== 'undefined') {
+      // Nettoyer l'ancienne clé globale si elle existe (migration)
+      const oldKey = localStorage.getItem('welcomeModalSeen')
+      if (oldKey) {
+        localStorage.removeItem('welcomeModalSeen')
+      }
+      
+      // Vérifier avec la nouvelle clé spécifique à l'utilisateur
+      const welcomeModalKey = `welcomeModalSeen_${currentUser.id}`
+      const welcomeModalSeen = localStorage.getItem(welcomeModalKey) === 'true'
+      
+      if (welcomeModalSeen) return false
+    }
 
     // Vérifier si l'utilisateur a des séances
     const { data: sessions, error } = await supabase
