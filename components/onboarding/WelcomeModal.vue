@@ -193,41 +193,23 @@
                 </div>
               </div>
             </div>
-            
-            <!-- Instructions iOS détaillées -->
-            <div v-if="showIOSInstructions" class="mt-4 bg-muted/50 rounded-lg p-4 max-w-md mx-auto text-left space-y-2">
-              <p class="text-sm font-medium text-foreground mb-2">Comment ajouter LastRep à l'écran d'accueil :</p>
-              <div class="flex items-start gap-2">
-                <span class="text-primary font-bold">1.</span>
-                <span class="text-xs text-muted-foreground">Appuyez sur le bouton de partage <Share2 class="h-3 w-3 inline" /> en bas de l'écran</span>
-              </div>
-              <div class="flex items-start gap-2">
-                <span class="text-primary font-bold">2.</span>
-                <span class="text-xs text-muted-foreground">Faites défiler et sélectionnez "Sur l'écran d'accueil"</span>
-              </div>
-              <div class="flex items-start gap-2">
-                <span class="text-primary font-bold">3.</span>
-                <span class="text-xs text-muted-foreground">Appuyez sur "Ajouter"</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
 
       <!-- Footer avec navigation -->
       <div class="px-6 py-4 border-t border-border">
-        <!-- Bouton pour ajouter à l'écran d'accueil (sur le dernier slide) -->
-        <div v-if="showInstallButton && currentSlide === slides.length - 1" class="mb-4">
-          <Button
-            @click="handleInstallClick"
-            class="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            <Download class="h-4 w-4 mr-2" />
-            {{ installButtonText }}
-          </Button>
-          <p v-if="isIOS && !isInstalled" class="text-xs text-muted-foreground mt-2 text-center">
-            Appuyez sur le bouton de partage <Share2 class="h-3 w-3 inline" /> puis "Sur l'écran d'accueil"
-          </p>
+        <!-- Message informatif pour ajouter à l'écran d'accueil (sur le dernier slide) -->
+        <div v-if="currentSlide === slides.length - 1" class="mb-4">
+          <div class="bg-primary/10 rounded-lg p-4 text-center">
+            <div class="flex items-center justify-center gap-2 mb-2">
+              <Smartphone class="h-5 w-5 text-primary" />
+              <p class="text-sm font-medium text-foreground">Accès rapide</p>
+            </div>
+            <p class="text-sm text-muted-foreground">
+              💡 <strong class="text-foreground">Astuce :</strong> N'hésitez pas à télécharger ou mettre un raccourci LastRep via les paramètres de votre navigateur pour un accès rapide !
+            </p>
+          </div>
         </div>
         
         <div class="flex items-center justify-between">
@@ -264,7 +246,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -281,8 +263,7 @@ import {
   Target,
   CheckCircle,
   Info,
-  Download,
-  Share2
+  Smartphone
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -300,11 +281,6 @@ watch(() => props.open, (newVal) => {
 })
 
 const currentSlide = ref(0)
-const deferredPrompt = ref(null)
-const isInstalled = ref(false)
-const isIOS = ref(false)
-const showIOSInstructions = ref(false)
-const isMobile = ref(false)
 
 const slides = [
   { title: 'Bienvenue' },
@@ -313,104 +289,6 @@ const slides = [
   { title: 'Statistiques' },
   { title: 'C\'est parti !' }
 ]
-
-// Détecter iOS
-const detectIOS = () => {
-  if (typeof window === 'undefined') return false
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-}
-
-// Détecter si l'app est déjà installée
-const detectInstalled = () => {
-  if (typeof window === 'undefined') return false
-  // Pour iOS
-  if (detectIOS()) {
-    return window.navigator.standalone === true || 
-           window.matchMedia('(display-mode: standalone)').matches
-  }
-  // Pour Android/Chrome
-  return window.matchMedia('(display-mode: standalone)').matches
-}
-
-// Vérifier si on doit afficher le bouton d'installation
-const showInstallButton = computed(() => {
-  if (isInstalled.value) return false
-  if (typeof window === 'undefined') return false
-  // Afficher sur le dernier slide (slide 4) pour permettre les tests
-  // En production, on pourrait restreindre à isMobile.value seulement
-  return currentSlide.value === 4
-})
-
-const installButtonText = computed(() => {
-  if (isIOS.value) {
-    return 'Ajouter à l\'écran d\'accueil'
-  }
-  return 'Installer l\'application'
-})
-
-const handleInstallClick = async () => {
-  if (isIOS.value) {
-    // Pour iOS, afficher les instructions
-    showIOSInstructions.value = !showIOSInstructions.value
-    return
-  }
-  
-  // Pour Android/Chrome, utiliser le prompt
-  if (deferredPrompt.value) {
-    deferredPrompt.value.prompt()
-    const { outcome } = await deferredPrompt.value.userChoice
-    console.log(`User response to the install prompt: ${outcome}`)
-    deferredPrompt.value = null
-    isInstalled.value = true
-  }
-}
-
-// Fonction pour mettre à jour la détection mobile
-const checkMobile = () => {
-  if (typeof window === 'undefined') return
-  const isMobileWidth = window.innerWidth <= 768
-  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-  isMobile.value = isMobileWidth || isMobileUA
-}
-
-// Gestionnaire pour beforeinstallprompt
-const handleBeforeInstallPrompt = (e) => {
-  e.preventDefault()
-  deferredPrompt.value = e
-}
-
-// Gestionnaire pour appinstalled
-const handleAppInstalled = () => {
-  isInstalled.value = true
-  deferredPrompt.value = null
-}
-
-// Écouter l'événement beforeinstallprompt (Android/Chrome)
-onMounted(() => {
-  if (typeof window === 'undefined') return
-  
-  isIOS.value = detectIOS()
-  isInstalled.value = detectInstalled()
-  checkMobile()
-  
-  // Mettre à jour la détection mobile lors du redimensionnement
-  window.addEventListener('resize', checkMobile)
-  
-  // Écouter l'événement beforeinstallprompt pour Android/Chrome
-  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-  
-  // Écouter si l'app est installée après le prompt
-  window.addEventListener('appinstalled', handleAppInstalled)
-})
-
-// Nettoyer les listeners au démontage
-onBeforeUnmount(() => {
-  if (typeof window === 'undefined') return
-  window.removeEventListener('resize', checkMobile)
-  window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-  window.removeEventListener('appinstalled', handleAppInstalled)
-})
 
 const nextSlide = () => {
   if (currentSlide.value < slides.length - 1) {
