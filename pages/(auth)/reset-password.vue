@@ -54,10 +54,15 @@ const handleResetPassword = async () => {
   loading.value = true;
   error.value = "";
   try {
+    // Utiliser l'URL complète avec le protocole
+    const redirectUrl = typeof window !== 'undefined' 
+      ? `${window.location.origin}/update-password`
+      : 'https://app.lastrep.fr/update-password';
+    
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       email.value,
       {
-        redirectTo: `${window.location.origin}/update-password`,
+        redirectTo: redirectUrl,
       }
     );
 
@@ -67,7 +72,8 @@ const handleResetPassword = async () => {
 
     emailSent.value = true;
   } catch (err: any) {
-    error.value = err.message || "Une erreur est survenue";
+    console.error('Erreur reset password:', err);
+    error.value = err.message || "Une erreur est survenue lors de l'envoi de l'email";
   } finally {
     loading.value = false;
   }

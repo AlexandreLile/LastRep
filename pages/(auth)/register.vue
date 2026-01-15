@@ -74,13 +74,13 @@
                 />
                 <label for="accept-terms" class="text-sm text-foreground cursor-pointer leading-relaxed">
                   J'ai lu et j'accepte les 
-                  <NuxtLink to="/cgu" target="_blank" class="text-primary hover:underline font-medium">
+                  <a href="https://www.lastrep.fr/cgu" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline font-medium">
                     Conditions Générales d'Utilisation
-                  </NuxtLink>
+                  </a>
                   et la 
-                  <NuxtLink to="/politique-confidentialite" target="_blank" class="text-primary hover:underline font-medium">
+                  <a href="https://www.lastrep.fr/privacy" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline font-medium">
                     Politique de confidentialité
-                  </NuxtLink>
+                  </a>
                 </label>
               </div>
               <p v-if="termsError" class="text-xs text-red-500 flex items-center gap-1">
