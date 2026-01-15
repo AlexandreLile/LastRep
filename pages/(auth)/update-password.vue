@@ -107,17 +107,24 @@ const handleUpdatePassword = async () => {
 // Check la session au montage de la page
 onMounted(async () => {
   try {
-    // Vérifier si on arrive depuis un lien de réinitialisation (avec hash)
+    // Vérifier si on arrive depuis un lien de réinitialisation (hash ou query params)
     const hash = typeof window !== 'undefined' ? window.location.hash : '';
+    const searchParams = typeof window !== 'undefined' ? window.location.search : '';
     const hasRecoveryHash = hash.includes('access_token') || hash.includes('type=recovery');
+    const hasRecoveryParams = searchParams.includes('token') || searchParams.includes('type=recovery');
     
-    // Si on a un hash de réinitialisation, laisser Supabase le gérer
-    if (hasRecoveryHash) {
-      console.log("Hash de réinitialisation détecté, traitement en cours...");
-      // Attendre un peu pour que Supabase traite le hash
-      await new Promise(resolve => setTimeout(resolve, 500));
+    console.log('URL complète:', typeof window !== 'undefined' ? window.location.href : '');
+    console.log('Hash:', hash);
+    console.log('Search params:', searchParams);
+    
+    // Si on a un hash ou des query params de réinitialisation, laisser Supabase le gérer
+    if (hasRecoveryHash || hasRecoveryParams) {
+      console.log("Lien de réinitialisation détecté, traitement en cours...");
       
-      // Supabase va automatiquement traiter le hash et créer une session
+      // Attendre un peu pour que Supabase traite le hash/params
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Supabase va automatiquement traiter le hash/params et créer une session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
@@ -128,18 +135,18 @@ onMounted(async () => {
       }
       
       if (!session) {
-        console.log("Pas de session après traitement du hash, redirection vers /reset-password");
+        console.log("Pas de session après traitement, redirection vers /reset-password");
         error.value = "Le lien de réinitialisation est invalide ou a expiré";
         setTimeout(() => router.push("/reset-password"), 3000);
         return;
       }
       
-      // Nettoyer le hash de l'URL pour éviter les problèmes
+      // Nettoyer le hash et les query params de l'URL pour éviter les problèmes
       if (typeof window !== 'undefined') {
         window.history.replaceState(null, '', window.location.pathname);
       }
       
-      console.log("Session recovery créée avec succès, restons sur la page");
+      console.log("Session recovery créée avec succès, restons sur la page update-password");
       return;
     }
     
@@ -150,12 +157,11 @@ onMounted(async () => {
       console.log("Pas de session active, redirection vers /reset-password");
       router.push("/reset-password");
     } else {
-      // Si on arrive ici sans hash mais avec une session, c'est probablement une session normale
-      // Rediriger vers la page d'accueil sauf si c'est vraiment une session de réinitialisation
-      // On peut détecter une session de réinitialisation en vérifiant si l'utilisateur vient juste de recevoir un email de réinitialisation
-      // Mais comme on n'a pas cette info, on va plutôt vérifier si l'utilisateur peut accéder à cette page
-      // En fait, si on est sur cette page sans hash, c'est qu'on ne devrait pas y être
-      console.log("Session détectée sans hash de réinitialisation, redirection vers /");
+      // Si on arrive ici sans hash/params mais avec une session, vérifier si c'est une session de réinitialisation récente
+      // En fait, si on est sur cette page sans hash/params, c'est qu'on ne devrait pas y être normalement
+      // Mais on peut permettre l'accès si l'utilisateur vient juste d'arriver (session fraîche)
+      console.log("Session détectée sans hash/params de réinitialisation");
+      console.log("Redirection vers / car ce n'est pas une session de réinitialisation");
       router.push("/");
     }
   } catch (err) {

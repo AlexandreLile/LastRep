@@ -54,10 +54,23 @@ const handleResetPassword = async () => {
   loading.value = true;
   error.value = "";
   try {
-    // Utiliser l'URL complète avec le protocole
-    const redirectUrl = typeof window !== 'undefined' 
-      ? `${window.location.origin}/update-password`
-      : 'https://app.lastrep.fr/update-password';
+    // Déterminer l'URL de redirection selon l'environnement
+    let redirectUrl: string;
+    
+    if (typeof window !== 'undefined') {
+      // En production, utiliser toujours l'URL de production
+      if (window.location.hostname === 'app.lastrep.fr' || window.location.hostname.includes('lastrep.fr')) {
+        redirectUrl = 'https://app.lastrep.fr/update-password';
+      } else {
+        // En développement local
+        redirectUrl = `${window.location.origin}/update-password`;
+      }
+    } else {
+      // Fallback pour SSR
+      redirectUrl = 'https://app.lastrep.fr/update-password';
+    }
+    
+    console.log('URL de redirection pour reset password:', redirectUrl);
     
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       email.value,
