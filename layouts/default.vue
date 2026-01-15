@@ -113,13 +113,18 @@
     <slot />
   </main>
 
+  <!-- Modal de bienvenue -->
+  <WelcomeModal v-model:open="showWelcomeModal" />
+
 </template>
 
 <script setup>
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, Timer, Dumbbell, LogOut, Menu, X, History, User } from 'lucide-vue-next'
+import { LayoutDashboard, Timer, Dumbbell, LogOut, Menu, X, History, User, HelpCircle } from 'lucide-vue-next'
 import { useSupabaseClient } from '#imports'
 import { Button } from '@/components/ui/button'
+import WelcomeModal from '@/components/onboarding/WelcomeModal.vue'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -138,11 +143,17 @@ const supabase = useSupabaseClient()
 
 const currentPath = computed(() => route.path)
 const isMenuOpen = ref(false)
+const showWelcomeModal = ref(false)
 
 const closeMenuOnMobile = () => {
   if (window.innerWidth < 768) { // 768px est le breakpoint md de Tailwind
     isMenuOpen.value = false
   }
+}
+
+const handleShowWelcomeModal = () => {
+  showWelcomeModal.value = true
+  closeMenuOnMobile()
 }
 
 const logout = async () => {
