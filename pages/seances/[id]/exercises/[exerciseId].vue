@@ -1208,9 +1208,7 @@ if (process.client) {
         restTimerStartTime.value = null
         restTimerDuration.value = 0
         showRestModal.value = false
-        toast.success('Temps de repos terminé !', {
-          description: 'Vous pouvez commencer votre prochaine série'
-        })
+        // Pas de toast, le timer continue silencieusement
       }
     }
   }
