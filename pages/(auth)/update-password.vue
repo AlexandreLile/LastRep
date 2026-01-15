@@ -75,6 +75,15 @@ const handleUpdatePassword = async () => {
   error.value = "";
 
   try {
+    // Vérifier qu'on a bien une session avant de mettre à jour
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      error.value = "Votre session a expiré. Veuillez refaire une demande de réinitialisation.";
+      setTimeout(() => router.push("/reset-password"), 3000);
+      return;
+    }
+
     const { error: updateError } = await supabase.auth.updateUser({
       password: newPassword.value,
     });
@@ -83,6 +92,10 @@ const handleUpdatePassword = async () => {
       throw updateError;
     }
 
+    // Déconnecter l'utilisateur après la mise à jour du mot de passe
+    // pour qu'il se reconnecte avec son nouveau mot de passe
+    await supabase.auth.signOut();
+    
     success.value = true;
   } catch (err) {
     error.value = err.message || "Une erreur est survenue";
@@ -121,7 +134,12 @@ onMounted(async () => {
         return;
       }
       
-      console.log("Session recovery créée avec succès");
+      // Nettoyer le hash de l'URL pour éviter les problèmes
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+      
+      console.log("Session recovery créée avec succès, restons sur la page");
       return;
     }
     
@@ -132,18 +150,13 @@ onMounted(async () => {
       console.log("Pas de session active, redirection vers /reset-password");
       router.push("/reset-password");
     } else {
-      // Vérifier si c'est une session de réinitialisation
-      // Les sessions de réinitialisation sont créées via le hash, donc si on a une session sans hash, c'est probablement une session normale
-      const hashCheck = typeof window !== 'undefined' ? window.location.hash : '';
-      const isRecoverySession = hashCheck.includes('type=recovery');
-      
-      if (!isRecoverySession && data.session.user?.email_confirmed_at) {
-        // Si l'utilisateur est connecté normalement, pas en reset
-        console.log("Session normale détectée, redirection vers /");
-        router.push("/");
-      } else {
-        console.log("Session recovery détectée, accès autorisé");
-      }
+      // Si on arrive ici sans hash mais avec une session, c'est probablement une session normale
+      // Rediriger vers la page d'accueil sauf si c'est vraiment une session de réinitialisation
+      // On peut détecter une session de réinitialisation en vérifiant si l'utilisateur vient juste de recevoir un email de réinitialisation
+      // Mais comme on n'a pas cette info, on va plutôt vérifier si l'utilisateur peut accéder à cette page
+      // En fait, si on est sur cette page sans hash, c'est qu'on ne devrait pas y être
+      console.log("Session détectée sans hash de réinitialisation, redirection vers /");
+      router.push("/");
     }
   } catch (err) {
     console.error('Erreur lors de la vérification de la session:', err);
