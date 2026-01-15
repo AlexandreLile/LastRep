@@ -1,6 +1,6 @@
 <template>
   <Dialog :open="open" @update:open="handleOpenChange">
-    <DialogContent class="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+    <DialogContent class="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0" @pointer-down-outside.prevent @escape-key-down.prevent>
       <!-- Header avec indicateur de progression -->
       <div class="px-6 pt-6 pb-4 border-b border-border">
         <div class="mb-4">

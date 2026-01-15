@@ -120,9 +120,28 @@ export default defineNuxtConfig({
     head: {
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
+      title: 'LastRep - Votre compagnon d\'entraînement',
+      meta: [
+        { name: 'description', content: 'Suivez vos entraînements et progressez avec LastRep' },
+        { name: 'theme-color', content: '#FE751C' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
+        { name: 'apple-mobile-web-app-title', content: 'LastRep' },
+        { name: 'mobile-web-app-capable', content: 'yes' }
+      ],
       link: [
         { rel: 'icon', type: 'image/png', href: '/favicon.png' },
-        { rel: 'apple-touch-icon', href: '/favicon.png' }
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/logo.png' },
+        { rel: 'apple-touch-icon', sizes: '152x152', href: '/logo.png' },
+        { rel: 'apple-touch-icon', sizes: '144x144', href: '/logo.png' },
+        { rel: 'apple-touch-icon', sizes: '120x120', href: '/logo.png' },
+        { rel: 'apple-touch-icon', sizes: '114x114', href: '/logo.png' },
+        { rel: 'apple-touch-icon', sizes: '76x76', href: '/logo.png' },
+        { rel: 'apple-touch-icon', sizes: '72x72', href: '/logo.png' },
+        { rel: 'apple-touch-icon', sizes: '60x60', href: '/logo.png' },
+        { rel: 'apple-touch-icon', sizes: '57x57', href: '/logo.png' },
+        { rel: 'apple-touch-icon', href: '/logo.png' },
+        { rel: 'manifest', href: '/manifest.json' }
       ]
     },
     pageTransition: false,
