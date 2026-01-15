@@ -14,12 +14,14 @@
       </Button>
     </div>
     
-    <div class="h-64">
-      <Bar
-        v-if="chartData"
-        :data="chartData"
-        :options="chartOptions"
-      />
+    <div class="h-64 overflow-x-auto chart-scroll-container">
+      <div :style="{ minWidth: chartMinWidth }" class="h-full">
+        <Bar
+          v-if="chartData"
+          :data="chartData"
+          :options="chartOptions"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -42,9 +44,10 @@ const props = defineProps({
 
 const chartData = ref(null)
 const chartOptions = ref(null)
-const MAX_DATA_POINTS = 20 // Limite max de barres à afficher
+const MAX_DATA_POINTS = 20 // Limite max de barres avant regroupement
 const selectedPeriod = ref('all')
 const allData = ref([])
+const chartMinWidth = ref('100%')
 
 const periods = [
   { value: 'all', label: 'Tout' },
@@ -133,7 +136,18 @@ const updateChart = () => {
     return parseFloat(a) - parseFloat(b)
   })
 
-  // Si trop de données, regrouper les poids par incréments
+  // Calculer la largeur minimale du graphique (60px par barre)
+  // Activer le scroll horizontal à partir de 20 barres
+  const minWidthPerBar = 60
+  const minBarsForScroll = 20
+  if (sortedWeights.length >= minBarsForScroll) {
+    const calculatedWidth = sortedWeights.length * minWidthPerBar
+    chartMinWidth.value = `${calculatedWidth}px`
+  } else {
+    chartMinWidth.value = '100%'
+  }
+
+  // Si trop de données, regrouper les poids par incréments (mais permettre le scroll horizontal)
   if (sortedWeights.length > MAX_DATA_POINTS) {
     const groupedMaxReps = {}
     const allWeights = sortedWeights.map(w => parseFloat(w))
@@ -163,6 +177,14 @@ const updateChart = () => {
       return parseFloat(a) - parseFloat(b)
     })
     maxRepsByWeight = groupedMaxReps
+    
+    // Recalculer la largeur après regroupement
+    if (sortedWeights.length >= minBarsForScroll) {
+      const recalculatedWidth = sortedWeights.length * minWidthPerBar
+      chartMinWidth.value = `${recalculatedWidth}px`
+    } else {
+      chartMinWidth.value = '100%'
+    }
   }
 
   chartData.value = {
@@ -216,4 +238,28 @@ watch(selectedPeriod, () => {
 
 onMounted(loadData)
 watch(() => props.exerciseId, loadData)
-</script> 
+</script>
+
+<style scoped>
+.chart-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(254, 117, 28, 0.3) transparent;
+}
+
+.chart-scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.chart-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chart-scroll-container::-webkit-scrollbar-thumb {
+  background-color: rgba(254, 117, 28, 0.3);
+  border-radius: 4px;
+}
+
+.chart-scroll-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(254, 117, 28, 0.5);
+}
+</style> 

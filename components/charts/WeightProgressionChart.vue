@@ -14,12 +14,14 @@
       </Button>
     </div>
     
-    <div class="h-64">
-      <Line
-        v-if="chartData"
-        :data="chartData"
-        :options="chartOptions"
-      />
+    <div class="h-64 overflow-x-auto chart-scroll-container">
+      <div :style="{ minWidth: chartMinWidth }" class="h-full">
+        <Line
+          v-if="chartData"
+          :data="chartData"
+          :options="chartOptions"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -42,9 +44,10 @@ const props = defineProps({
 
 const chartData = ref(null)
 const chartOptions = ref(null)
-const MAX_DATA_POINTS = 30 // Limite max de points à afficher
+const MAX_DATA_POINTS = 30 // Limite max de points à afficher avant regroupement
 const selectedPeriod = ref('all')
 const allData = ref([])
+const chartMinWidth = ref('100%')
 
 const periods = [
   { value: 'all', label: 'Tout' },
@@ -220,18 +223,45 @@ const updateChart = () => {
   dates = Object.keys(dailyMaxWeights)
   weights = Object.values(dailyMaxWeights)
   
-  // Si trop de données, regrouper par semaine ou par mois
+  // Calculer la largeur minimale du graphique (50px par point de données)
+  // Activer le scroll horizontal à partir de 20 points
+  const minWidthPerPoint = 50
+  const minPointsForScroll = 20
+  if (dates.length >= minPointsForScroll) {
+    const calculatedWidth = dates.length * minWidthPerPoint
+    chartMinWidth.value = `${calculatedWidth}px`
+  } else {
+    chartMinWidth.value = '100%'
+  }
+  
+  // Si trop de données, regrouper par semaine ou par mois (mais permettre le scroll horizontal)
   if (dates.length > MAX_DATA_POINTS) {
     // Si plus de MAX_DATA_POINTS jours, regrouper par semaine
     const grouped = groupDataByPeriod(data, 'week')
     dates = grouped.dates
     weights = grouped.weights
     
+    // Recalculer la largeur après regroupement
+    if (dates.length >= minPointsForScroll) {
+      const recalculatedWidth = dates.length * minWidthPerPoint
+      chartMinWidth.value = `${recalculatedWidth}px`
+    } else {
+      chartMinWidth.value = '100%'
+    }
+    
     // Si toujours trop, regrouper par mois
     if (dates.length > MAX_DATA_POINTS) {
       const groupedByMonth = groupDataByPeriod(data, 'month')
       dates = groupedByMonth.dates
       weights = groupedByMonth.weights
+      
+      // Recalculer la largeur après regroupement mensuel
+      if (dates.length >= minPointsForScroll) {
+        const finalWidth = dates.length * minWidthPerPoint
+        chartMinWidth.value = `${finalWidth}px`
+      } else {
+        chartMinWidth.value = '100%'
+      }
     }
   }
   
@@ -301,4 +331,28 @@ watch(selectedPeriod, () => {
 
 onMounted(loadData)
 watch(() => props.exerciseId, loadData)
-</script> 
+</script>
+
+<style scoped>
+.chart-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(254, 117, 28, 0.3) transparent;
+}
+
+.chart-scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.chart-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chart-scroll-container::-webkit-scrollbar-thumb {
+  background-color: rgba(254, 117, 28, 0.3);
+  border-radius: 4px;
+}
+
+.chart-scroll-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(254, 117, 28, 0.5);
+}
+</style> 

@@ -40,13 +40,24 @@
                     Mot de passe oublié ?
                   </NuxtLink>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  v-model="password"
-                  class="h-10"
-                />
+                <div class="relative">
+                  <Input
+                    id="password"
+                    :type="showPassword ? 'text' : 'password'"
+                    required
+                    v-model="password"
+                    class="h-10 pr-10"
+                  />
+                  <button
+                    type="button"
+                    @click="showPassword = !showPassword"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabindex="-1"
+                  >
+                    <Eye v-if="!showPassword" class="h-4 w-4" />
+                    <EyeOff v-else class="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               <Button type="submit" class="w-full h-10 mt-2">
@@ -115,11 +126,13 @@ definePageMeta({
   middleware: ["auth"]
 });
 import { useAuth } from "@/composables/useAuth";
-import { LogIn, LockKeyhole, Loader2, AlertTriangle, CheckCircle } from 'lucide-vue-next';
+import { LogIn, LockKeyhole, Loader2, AlertTriangle, CheckCircle, Eye, EyeOff } from 'lucide-vue-next';
 import { useRoute } from 'vue-router';
+import { ref } from 'vue';
 
 const { email, password, handleLogin, handleGoogleLogin, errorMessage, loading } = useAuth();
 const route = useRoute();
+const showPassword = ref(false);
 
 const onSubmit = () => {
   handleLogin();

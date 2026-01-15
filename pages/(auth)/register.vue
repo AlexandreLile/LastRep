@@ -40,14 +40,25 @@
 
               <div class="grid gap-2">
                 <Label for="password" class="font-medium">Mot de passe</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Votre mot de passe"
-                  required
-                  v-model="password"
-                  class="h-10"
-                />
+                <div class="relative">
+                  <Input
+                    id="password"
+                    :type="showPassword ? 'text' : 'password'"
+                    placeholder="Votre mot de passe"
+                    required
+                    v-model="password"
+                    class="h-10 pr-10"
+                  />
+                  <button
+                    type="button"
+                    @click="showPassword = !showPassword"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabindex="-1"
+                  >
+                    <Eye v-if="!showPassword" class="h-4 w-4" />
+                    <EyeOff v-else class="h-4 w-4" />
+                  </button>
+                </div>
                 <p class="text-xs text-muted-foreground">
                   Le mot de passe doit contenir au moins 6 caractères
                 </p>
@@ -156,13 +167,14 @@ definePageMeta({
   middleware: ["auth"]
 });
 import { useAuth } from "@/composables/useAuth";
-import { UserPlus, CheckCircle, Loader2, AlertTriangle } from 'lucide-vue-next';
+import { UserPlus, CheckCircle, Loader2, AlertTriangle, Eye, EyeOff } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 
 const { email, password, handleRegister, handleGoogleLogin, errorMessage, loading } = useAuth();
 const emailError = ref('');
 const acceptTerms = ref(false);
 const termsError = ref('');
+const showPassword = ref(false);
 
 // Réinitialiser l'erreur d'email déjà utilisé quand l'utilisateur modifie l'email
 watch(email, () => {
