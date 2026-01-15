@@ -3,13 +3,8 @@
     <DialogContent class="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
       <!-- Header avec indicateur de progression -->
       <div class="px-6 pt-6 pb-4 border-b border-border">
-        <div class="flex items-center justify-between mb-4">
+        <div class="mb-4">
           <h2 class="text-2xl font-bold text-foreground">Bienvenue sur LastRep ! 🎉</h2>
-          <DialogClose asChild>
-            <Button variant="ghost" size="icon" class="h-8 w-8">
-              <X class="h-4 w-4" />
-            </Button>
-          </DialogClose>
         </div>
         
         <!-- Indicateur de progression -->
@@ -237,10 +232,9 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { 
-  X, 
   ChevronLeft, 
   ChevronRight, 
   ArrowRight,
