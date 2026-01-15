@@ -12,8 +12,8 @@
     </Button>
     
     <Toaster />
-    <Dialog :open="showRestModal" @update:open="showRestModal = $event">
-      <DialogContent class="sm:max-w-md">
+    <Dialog :open="showRestModal" @update:open="handleRestModalChange">
+      <DialogContent class="sm:max-w-md" @pointer-down-outside.prevent @escape-key-down.prevent>
         <DialogHeader>
           <DialogTitle>Temps de repos</DialogTitle>
           <DialogDescription>
@@ -24,9 +24,6 @@
           <div class="text-4xl font-bold text-primary mb-4">{{ formatTime(restTimeRemaining) }}</div>
           <div class="text-sm text-muted-foreground mb-6">Temps restant</div>
           <div class="flex gap-4">
-            <Button variant="outline" @click="cancelRest">
-              Annuler
-            </Button>
             <Button variant="default" @click="skipRest">
               Passer
             </Button>
@@ -172,14 +169,14 @@
         </div>
         <div class="flex flex-col sm:flex-row justify-end gap-3 mt-4">
           <Button 
-            variant="outline" 
+            variant="default" 
             @click="showMissingFieldsModal = false"
             class="w-full sm:w-auto"
           >
             Remplir
           </Button>
           <Button 
-            variant="default" 
+            variant="secondary" 
             @click="confirmAddSet"
             class="w-full sm:w-auto"
           >
@@ -494,6 +491,8 @@ const newSet = ref({
 const showRestModal = ref(false)
 const restTimeRemaining = ref(0)
 const restTimer = ref(null)
+const restTimerStartTime = ref(null) // Timestamp de début du timer
+const restTimerDuration = ref(0) // Durée totale du timer en secondes
 
 // Variables pour la modale d'édition
 const showEditModal = ref(false)
@@ -604,35 +603,63 @@ const formatDuration = (seconds) => {
 
 // Fonction pour démarrer le timer de repos
 const startRestTimer = (seconds) => {
+  // Nettoyer le timer existant s'il y en a un
+  if (restTimer.value) {
+    clearInterval(restTimer.value)
+    restTimer.value = null
+  }
+  
+  // Stocker le timestamp de début et la durée totale
+  restTimerStartTime.value = Date.now()
+  restTimerDuration.value = seconds
   restTimeRemaining.value = seconds
   showRestModal.value = true
   
-  restTimer.value = setInterval(() => {
-    if (restTimeRemaining.value > 0) {
-      restTimeRemaining.value--
-    } else {
+  // Fonction pour mettre à jour le temps restant basé sur le temps réel écoulé
+  const updateRestTime = () => {
+    if (!restTimerStartTime.value) return
+    
+    const elapsed = Math.floor((Date.now() - restTimerStartTime.value) / 1000)
+    const remaining = Math.max(0, restTimerDuration.value - elapsed)
+    
+    restTimeRemaining.value = remaining
+    
+    if (remaining <= 0) {
       clearInterval(restTimer.value)
+      restTimer.value = null
+      restTimerStartTime.value = null
+      restTimerDuration.value = 0
       showRestModal.value = false
       toast.success('Temps de repos terminé !', {
         description: 'Vous pouvez commencer votre prochaine série'
       })
     }
-  }, 1000)
-}
-
-// Fonction pour annuler le repos
-const cancelRest = () => {
-  clearInterval(restTimer.value)
-  showRestModal.value = false
-  restTimeRemaining.value = 0
+  }
+  
+  // Mettre à jour immédiatement
+  updateRestTime()
+  
+  // Mettre à jour toutes les secondes
+  restTimer.value = setInterval(updateRestTime, 1000)
 }
 
 // Fonction pour passer le repos
 const skipRest = () => {
-  clearInterval(restTimer.value)
+  if (restTimer.value) {
+    clearInterval(restTimer.value)
+    restTimer.value = null
+  }
+  restTimerStartTime.value = null
+  restTimerDuration.value = 0
   showRestModal.value = false
   restTimeRemaining.value = 0
   toast.info('Temps de repos ignoré')
+}
+
+// Fonction pour gérer les changements de la modale de repos
+const handleRestModalChange = (isOpen) => {
+  showRestModal.value = isOpen
+  // Le watcher sur showRestModal s'occupera du nettoyage du timer
 }
 
 // Fonction pour vérifier les champs manquants
@@ -697,15 +724,33 @@ const confirmAddSet = async () => {
 // Fonction qui fait réellement l'enregistrement
 const actuallyAddSet = async () => {
   try {
+    const measurementType = exercise.value?.exercise?.measurement_type || 'weight_reps'
+    
     const setData = pendingSetData.value || {
       exercise_id: exercise.value.exercise.id,
-      weight_kg: newSet.value.weight_kg ? parseFloat(newSet.value.weight_kg) : null,
-      reps: newSet.value.reps ? parseInt(newSet.value.reps) : null,
+      weight_kg: newSet.value.weight_kg ? parseFloat(newSet.value.weight_kg) : 0, // Valeur par défaut 0 si non rempli
+      reps: newSet.value.reps ? parseInt(newSet.value.reps) : (measurementType === 'weight_reps' || measurementType === 'reps' || measurementType === 'time_reps' ? 1 : null), // Valeur par défaut 1 pour les types qui nécessitent reps
       duration_seconds: newSet.value.duration_seconds ? parseInt(newSet.value.duration_seconds) : null,
       distance_meters: newSet.value.distance_meters ? parseFloat(newSet.value.distance_meters) : null,
-      rest_seconds: newSet.value.rest_seconds ? parseInt(newSet.value.rest_seconds) : null,
+      rest_seconds: newSet.value.rest_seconds ? parseInt(newSet.value.rest_seconds) : 0, // Valeur par défaut 0 si non rempli
       rpe: newSet.value.rpe ? parseFloat(newSet.value.rpe) : null,
       note: newSet.value.note || null
+    }
+    
+    // S'assurer que rest_seconds n'est jamais null (même si pendingSetData était défini)
+    if (setData.rest_seconds === null || setData.rest_seconds === undefined) {
+      setData.rest_seconds = 0
+    }
+    
+    // S'assurer que weight_kg n'est jamais null (même si pendingSetData était défini)
+    if (setData.weight_kg === null || setData.weight_kg === undefined) {
+      setData.weight_kg = 0
+    }
+    
+    // S'assurer que reps n'est jamais null pour les types qui le nécessitent (même si pendingSetData était défini)
+    const requiresReps = ['weight_reps', 'reps', 'time_reps'].includes(measurementType)
+    if (requiresReps && (setData.reps === null || setData.reps === undefined)) {
+      setData.reps = 1
     }
     
     // Faire l'appel directement à Supabase pour un meilleur contrôle
@@ -813,15 +858,33 @@ const actuallyAddSet = async () => {
 const handleAddSet = async () => {
   try {
     // Créer la donnée de la série à envoyer à la base de données
+    const measurementType = exercise.value?.exercise?.measurement_type || 'weight_reps'
+    
     const setData = {
       exercise_id: exercise.value.exercise.id,
-      weight_kg: newSet.value.weight_kg ? parseFloat(newSet.value.weight_kg) : null,
-      reps: newSet.value.reps ? parseInt(newSet.value.reps) : null,
+      weight_kg: newSet.value.weight_kg ? parseFloat(newSet.value.weight_kg) : 0, // Valeur par défaut 0 si non rempli
+      reps: newSet.value.reps ? parseInt(newSet.value.reps) : (measurementType === 'weight_reps' || measurementType === 'reps' || measurementType === 'time_reps' ? 1 : null), // Valeur par défaut 1 pour les types qui nécessitent reps
       duration_seconds: newSet.value.duration_seconds ? parseInt(newSet.value.duration_seconds) : null,
       distance_meters: newSet.value.distance_meters ? parseFloat(newSet.value.distance_meters) : null,
-      rest_seconds: newSet.value.rest_seconds ? parseInt(newSet.value.rest_seconds) : null,
+      rest_seconds: newSet.value.rest_seconds ? parseInt(newSet.value.rest_seconds) : 0, // Valeur par défaut 0 si non rempli
       rpe: newSet.value.rpe ? parseFloat(newSet.value.rpe) : null,
       note: newSet.value.note || null
+    }
+    
+    // S'assurer que rest_seconds n'est jamais null
+    if (setData.rest_seconds === null || setData.rest_seconds === undefined) {
+      setData.rest_seconds = 0
+    }
+    
+    // S'assurer que weight_kg n'est jamais null
+    if (setData.weight_kg === null || setData.weight_kg === undefined) {
+      setData.weight_kg = 0
+    }
+    
+    // S'assurer que reps n'est jamais null pour les types qui le nécessitent
+    const requiresReps = ['weight_reps', 'reps', 'time_reps'].includes(measurementType)
+    if (requiresReps && (setData.reps === null || setData.reps === undefined)) {
+      setData.reps = 1
     }
     
     // Vérifier les champs manquants
@@ -1117,11 +1180,57 @@ watch(localExerciseSets, (newSets, oldSets) => {
   )
 }, { deep: true })
 
+// Watch pour nettoyer le timer si la modale de repos est fermée autrement
+watch(showRestModal, (isOpen) => {
+  // Si la modale est fermée sans passer par skipRest, nettoyer le timer
+  if (!isOpen && restTimer.value) {
+    clearInterval(restTimer.value)
+    restTimer.value = null
+    restTimerStartTime.value = null
+    restTimerDuration.value = 0
+    restTimeRemaining.value = 0
+  }
+})
+
+// Gérer la visibilité de la page pour recalculer le timer quand l'utilisateur revient
+if (process.client) {
+  const handleVisibilityChange = () => {
+    // Si la page redevient visible et qu'un timer de repos est actif, recalculer le temps restant
+    if (!document.hidden && restTimer.value && restTimerStartTime.value) {
+      const elapsed = Math.floor((Date.now() - restTimerStartTime.value) / 1000)
+      const remaining = Math.max(0, restTimerDuration.value - elapsed)
+      restTimeRemaining.value = remaining
+      
+      // Si le temps est écoulé pendant que l'app était en arrière-plan
+      if (remaining <= 0) {
+        clearInterval(restTimer.value)
+        restTimer.value = null
+        restTimerStartTime.value = null
+        restTimerDuration.value = 0
+        showRestModal.value = false
+        toast.success('Temps de repos terminé !', {
+          description: 'Vous pouvez commencer votre prochaine série'
+        })
+      }
+    }
+  }
+  
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  
+  // Nettoyer l'écouteur lors du démontage
+  onBeforeUnmount(() => {
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+  })
+}
+
 // Nettoyer le timer lors du démontage du composant
 onBeforeUnmount(() => {
   if (restTimer.value) {
     clearInterval(restTimer.value)
+    restTimer.value = null
   }
+  restTimerStartTime.value = null
+  restTimerDuration.value = 0
 })
 </script>
 
