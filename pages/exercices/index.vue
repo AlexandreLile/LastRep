@@ -56,7 +56,19 @@
               </div>
             </div>
 
-            <Tabs default-value="all" class="w-full">
+            <!-- Barre de recherche -->
+            <div class="mb-4">
+              <div class="relative">
+                <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  v-model="searchQuery"
+                  placeholder="Rechercher un exercice..."
+                  class="pl-10"
+                />
+              </div>
+            </div>
+
+            <Tabs default-value="all" class="w-full" v-model="currentTab" @update:model-value="currentPage = 1">
               <div class="overflow-x-auto px-2 pb-2 -mx-2">
                 <TabsList class="flex w-full min-w-max space-x-2">
                   <TabsTrigger 
@@ -77,9 +89,9 @@
               </div>
 
               <TabsContent value="all" class="mt-6">
-                <div v-if="exerciseStats.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div v-if="paginatedExerciseStats.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div 
-                    v-for="stat in exerciseStats" 
+                    v-for="stat in paginatedExerciseStats" 
                     :key="stat.exercise_id" 
                     class="relative bg-card rounded-xl p-4 cursor-pointer group overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
                     @click="navigateTo(`/exercices/${stat.exercise_id}`)"
@@ -109,20 +121,45 @@
                 <div v-else class="flex flex-col items-center justify-center py-12 px-4 space-y-4 bg-muted/70 rounded-lg">
                   <ActivitySquare class="w-16 h-16 text-muted-foreground/30" />
                   <p class="text-base text-muted-foreground text-center">
-                    Aucun exercice avec des séries enregistrées
+                    {{ searchQuery ? 'Aucun exercice trouvé pour votre recherche' : 'Aucun exercice avec des séries enregistrées' }}
                   </p>
+                </div>
+                
+                <!-- Pagination -->
+                <div v-if="filteredExerciseStats.length > itemsPerPage" class="mt-6 flex items-center justify-between">
+                  <p class="text-sm text-muted-foreground">
+                    Affichage {{ (currentPage - 1) * itemsPerPage + 1 }}-{{ Math.min(currentPage * itemsPerPage, filteredExerciseStats.length) }} sur {{ filteredExerciseStats.length }}
+                  </p>
+                  <div class="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      @click="currentPage--"
+                      :disabled="currentPage === 1"
+                    >
+                      Précédent
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      @click="currentPage++"
+                      :disabled="currentPage >= totalPages"
+                    >
+                      Suivant
+                    </Button>
+                  </div>
                 </div>
               </TabsContent>
 
               <TabsContent 
-                v-for="(exercises, muscle) in groupedExercises" 
+                v-for="(exercises, muscle) in filteredGroupedExercises" 
                 :key="muscle" 
                 :value="muscle"
                 class="mt-6"
               >
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div 
-                    v-for="stat in exercises" 
+                    v-for="stat in paginatedGroupedExercises(muscle)" 
                     :key="stat.exercise_id" 
                     class="relative bg-card rounded-xl p-4 cursor-pointer group overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
                     @click="navigateTo(`/exercices/${stat.exercise_id}`)"
@@ -149,6 +186,31 @@
                     </div>
                   </div>
                 </div>
+                
+                <!-- Pagination pour les groupes musculaires -->
+                <div v-if="filteredGroupedExercises[muscle]?.length > itemsPerPage" class="mt-6 flex items-center justify-between">
+                  <p class="text-sm text-muted-foreground">
+                    Affichage {{ (currentPage - 1) * itemsPerPage + 1 }}-{{ Math.min(currentPage * itemsPerPage, filteredGroupedExercises[muscle].length) }} sur {{ filteredGroupedExercises[muscle].length }}
+                  </p>
+                  <div class="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      @click="currentPage--"
+                      :disabled="currentPage === 1"
+                    >
+                      Précédent
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      @click="currentPage++"
+                      :disabled="currentPage >= totalPagesForGroup(muscle)"
+                    >
+                      Suivant
+                    </Button>
+                  </div>
+                </div>
               </TabsContent>
             </Tabs>
           </div>
@@ -173,7 +235,7 @@
                   </div>
                   <span class="text-sm font-medium">Exercices pratiqués</span>
                 </div>
-                <span class="text-xl font-bold text-primary">{{ exerciseStats.length }}</span>
+                <span class="text-xl font-bold text-primary">{{ filteredExerciseStats.length }}</span>
               </div>
 
               <div class="flex justify-between items-center p-4 bg-muted rounded-lg" v-if="Object.keys(groupedExercises).length > 0">
@@ -183,7 +245,7 @@
                   </div>
                   <span class="text-sm font-medium">Groupes musculaires</span>
                 </div>
-                <span class="text-xl font-bold text-primary">{{ Object.keys(groupedExercises).length }}</span>
+                <span class="text-xl font-bold text-primary">{{ Object.keys(filteredGroupedExercises).length }}</span>
               </div>
             </div>
           </div>
@@ -228,6 +290,7 @@ import { useExerciseStats } from '~/composables/useExerciseStats'
 import { computed, ref, nextTick, watch } from 'vue'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import CreateCustomExercise from '~/components/exercises/CreateCustomExercise.vue'
 import { 
   Dumbbell, 
@@ -239,11 +302,82 @@ import {
   ActivitySquare,
   Weight,
   ChevronRight,
-  Plus
+  Plus,
+  Search
 } from 'lucide-vue-next'
 
 const { exerciseStats, error, loading, getExerciseStats } = useExerciseStats()
 const showCreateDialog = ref(false)
+const searchQuery = ref('')
+const currentPage = ref(1)
+const currentTab = ref('all')
+const itemsPerPage = 20
+
+// Filtrer les exercices par recherche
+const filteredExerciseStats = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return exerciseStats.value
+  }
+  
+  const query = searchQuery.value.toLowerCase().trim()
+  return exerciseStats.value.filter(stat => {
+    const name = (stat.exercise?.name || '').toLowerCase()
+    const muscle = (stat.exercise?.primary_muscle || '').toLowerCase()
+    return name.includes(query) || muscle.includes(query)
+  })
+})
+
+// Pagination pour tous les exercices
+const paginatedExerciseStats = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return filteredExerciseStats.value.slice(start, end)
+})
+
+const totalPages = computed(() => {
+  return Math.ceil(filteredExerciseStats.value.length / itemsPerPage)
+})
+
+// Grouper les exercices filtrés
+const filteredGroupedExercises = computed(() => {
+  const groups = {}
+  
+  filteredExerciseStats.value.forEach(stat => {
+    const muscle = stat.exercise.primary_muscle
+    if (!groups[muscle]) {
+      groups[muscle] = []
+    }
+    groups[muscle].push(stat)
+  })
+
+  // Trier les groupes par ordre alphabétique
+  const sortedGroups = Object.keys(groups).sort()
+  const result = {}
+  sortedGroups.forEach(muscle => {
+    result[muscle] = groups[muscle]
+  })
+
+  return result
+})
+
+// Pagination pour les exercices groupés par muscle (utilise la pagination globale)
+const paginatedGroupedExercises = (muscle) => {
+  const exercises = filteredGroupedExercises.value[muscle] || []
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return exercises.slice(start, end)
+}
+
+// Calculer le total de pages pour les groupes musculaires
+const totalPagesForGroup = (muscle) => {
+  const exercises = filteredGroupedExercises.value[muscle] || []
+  return Math.ceil(exercises.length / itemsPerPage)
+}
+
+// Réinitialiser la page quand la recherche change
+watch(searchQuery, () => {
+  currentPage.value = 1
+})
 
 const groupedExercises = computed(() => {
   const groups = {}

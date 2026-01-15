@@ -83,14 +83,41 @@
       </div>
 
       <!-- Liste des sessions -->
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <SessionHistoryCard 
-          v-for="session in filteredSessions" 
-          :key="session.id" 
-          :session="session"
-          @delete="handleDeleteSession"
-          class="animate-fade-in"
-        />
+      <div v-else>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <SessionHistoryCard 
+            v-for="session in paginatedSessions" 
+            :key="session.id" 
+            :session="session"
+            @delete="handleDeleteSession"
+            class="animate-fade-in"
+          />
+        </div>
+        
+        <!-- Pagination -->
+        <div v-if="filteredSessions.length > itemsPerPage" class="mt-6 flex items-center justify-between">
+          <p class="text-sm text-muted-foreground">
+            Affichage {{ (currentPage - 1) * itemsPerPage + 1 }}-{{ Math.min(currentPage * itemsPerPage, filteredSessions.length) }} sur {{ filteredSessions.length }}
+          </p>
+          <div class="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              @click="currentPage--"
+              :disabled="currentPage === 1"
+            >
+              Précédent
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              @click="currentPage++"
+              :disabled="currentPage >= totalPages"
+            >
+              Suivant
+            </Button>
+          </div>
+        </div>
       </div>
 
       <!-- Statistiques -->
@@ -142,7 +169,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useSessionHistory } from '~/composables/useSessionHistory'
 import SessionHistoryCard from '~/components/sessions/SessionHistoryCard.vue'
 import { Button } from '@/components/ui/button'
@@ -160,6 +187,8 @@ import {
 
 const { sessions, loading, error, loadSessions, deleteSession } = useSessionHistory()
 const currentFilter = ref('all')
+const currentPage = ref(1)
+const itemsPerPage = 20
 
 // Filtrer les sessions par période
 const filteredSessions = computed(() => {
@@ -195,6 +224,22 @@ const filteredSessions = computed(() => {
     const sessionDate = new Date(session.ended_at || session.started_at)
     return sessionDate >= startDate
   })
+})
+
+// Pagination
+const totalPages = computed(() => {
+  return Math.ceil(filteredSessions.value.length / itemsPerPage)
+})
+
+const paginatedSessions = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return filteredSessions.value.slice(start, end)
+})
+
+// Réinitialiser la page quand le filtre change
+watch(currentFilter, () => {
+  currentPage.value = 1
 })
 
 // Calculer la durée moyenne des séances
