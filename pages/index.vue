@@ -1,6 +1,7 @@
 <template>
   <div class="relative">
-   
+    <!-- Modal de bienvenue (affichée automatiquement pour les nouveaux utilisateurs) -->
+    <WelcomeModal :open="showWelcomeModal" @update:open="showWelcomeModal = $event" />
 
     <!-- Header amélioré -->
     <div class="mb-8 bg-card rounded-xl p-6">
@@ -111,6 +112,7 @@ import { LayoutDashboard, Timer, Target, LogOut, Calendar, Dumbbell, Weight, Clo
 import SessionCountSupabase from '~/components/stats/SessionCountSupabase.vue'
 import TotalWeightLiftedSupabase from '~/components/stats/TotalWeightLiftedSupabase.vue'
 import TotalTrainingTimeSupabase from '~/components/stats/TotalTrainingTimeSupabase.vue'
+import WelcomeModal from '@/components/onboarding/WelcomeModal.vue'
 import { Button } from '@/components/ui/button'
 import { useAuthentication } from '~/composables/useAuthentication'
 
@@ -127,9 +129,43 @@ definePageMeta({
 // Utiliser le composable d'authentification
 const { user, loading: authLoading, initialized, checkAuth } = useAuthentication()
 const dataLoading = ref(true)
+const showWelcomeModal = ref(false)
 
 const supabase = useSupabaseClient()
 const router = useRouter()
+
+// Vérifier si l'utilisateur est nouveau (pas de séances)
+const checkIfNewUser = async () => {
+  try {
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    if (!currentUser) return false
+
+    // Vérifier si la modal a déjà été vue
+    const welcomeModalSeen = typeof window !== 'undefined' 
+      ? localStorage.getItem('welcomeModalSeen') === 'true'
+      : false
+    
+    if (welcomeModalSeen) return false
+
+    // Vérifier si l'utilisateur a des séances
+    const { data: sessions, error } = await supabase
+      .from('workoutsession')
+      .select('id')
+      .eq('user_id', currentUser.id)
+      .limit(1)
+
+    if (error) {
+      console.error('Erreur lors de la vérification des séances:', error)
+      return false
+    }
+
+    // Si aucune séance, c'est un nouvel utilisateur
+    return !sessions || sessions.length === 0
+  } catch (error) {
+    console.error('Erreur lors de la vérification:', error)
+    return false
+  }
+}
 
 // Assurer que l'authentification est vérifiée avant d'afficher la page
 onMounted(async () => {
@@ -141,6 +177,15 @@ onMounted(async () => {
   setTimeout(() => {
     dataLoading.value = false
   }, 200)
+
+  // Vérifier si on doit afficher la modal de bienvenue (première connexion)
+  const isNewUser = await checkIfNewUser()
+  if (isNewUser) {
+    // Attendre un peu pour que la page soit chargée
+    setTimeout(() => {
+      showWelcomeModal.value = true
+    }, 500)
+  }
 })
 
 const logout = async () => {
