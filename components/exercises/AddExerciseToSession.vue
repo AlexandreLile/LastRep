@@ -120,6 +120,21 @@ const handleAddExercise = async (exercise) => {
     console.error('Erreur lors de l\'ajout de l\'exercice:', e);
   }
 };
+
+// Gérer la création d'un exercice personnalisé
+const handleExerciseCreated = async (newExercise) => {
+  try {
+    // Recharger la liste des exercices pour inclure le nouvel exercice
+    await getAllExercises();
+    
+    // Optionnellement, ajouter automatiquement l'exercice créé à la séance
+    if (newExercise && newExercise.id) {
+      await handleAddExercise(newExercise);
+    }
+  } catch (e) {
+    console.error('Erreur lors de la gestion de l\'exercice créé:', e);
+  }
+};
 </script>
 
 <style scoped>

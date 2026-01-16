@@ -51,7 +51,7 @@
 
       <!-- Liste des exercices - toujours affichée sur mobile -->
       <div
-        v-if="exercises.length > 0"
+        v-if="exercises && exercises.length > 0"
         ref="exerciseList"
         class="mt-2 bg-card border rounded-xl shadow-sm overflow-y-auto overflow-x-hidden transition-all duration-300 exercise-list"
         :class="{ 'max-h-60': !isMobile, 'max-h-[60vh]': isMobile }"
@@ -132,6 +132,10 @@ const props = defineProps({
     type: Array,
     required: true,
     default: () => []
+  },
+  exercises: {
+    type: Array,
+    default: null
   }
 });
 
@@ -141,9 +145,14 @@ const searchForm = ref(null);
 const searchInput = ref(null);
 const exerciseList = ref(null);
 const searchQuery = ref('');
-const { exercises, loading, error, getAllExercises } = useExercise();
+const { exercises: localExercises, loading, error, getAllExercises } = useExercise();
 const isMobile = ref(false);
 const searchTimer = ref(null);
+
+// Utiliser les exercices passés en prop si disponibles, sinon utiliser ceux du composable local
+const exercises = computed(() => {
+  return props.exercises !== null ? props.exercises : localExercises.value;
+});
 
 // Fonction pour normaliser le texte (enlever les accents)
 const normalizeText = (text) => {
@@ -184,12 +193,13 @@ watch(searchQuery, (newVal) => {
 // Une version simplifiée mais efficace du filtrage
 const filteredExercises = computed(() => {
   const query = (searchQuery.value || '').toLowerCase();
+  const exercisesList = exercises.value || [];
   
   // Si requête vide, retourner tous les exercices
-  if (!query) return exercises.value;
+  if (!query) return exercisesList;
   
   // Sinon, filtrer explicitement
-  return exercises.value.filter(ex => {
+  return exercisesList.filter(ex => {
     const name = (ex.name || '').toLowerCase();
     const muscle = (ex.primary_muscle || '').toLowerCase();
     return name.includes(query) || muscle.includes(query);
@@ -217,9 +227,11 @@ const focusSearchInput = () => {
   }
 };
 
-// Charger tous les exercices au montage
+// Charger tous les exercices au montage seulement si pas de prop exercises
 onMounted(async () => {
-  await getAllExercises();
+  if (props.exercises === null) {
+    await getAllExercises();
+  }
   checkMobile();
   window.addEventListener('resize', checkMobile);
   
