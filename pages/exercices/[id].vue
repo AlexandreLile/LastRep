@@ -281,7 +281,51 @@
                 class="relative bg-card border border-primary/30 rounded-xl p-4 hover:shadow-md hover:border-primary transition-all duration-200 group"
               >
                 <div class="flex justify-between items-start">
-                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+                  <!-- Affichage pour exercices isométriques (time) -->
+                  <div v-if="exercise?.measurement_type === 'time'" class="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
+                    <div>
+                      <div class="flex items-center gap-2 mb-1">
+                        <Clock class="h-4 w-4 text-primary" />
+                        <p class="text-sm text-muted-foreground">Durée</p>
+                      </div>
+                      <p class="text-lg font-medium">{{ formatDuration(set.duration_seconds) }}</p>
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-2 mb-1">
+                        <CalendarDays class="h-4 w-4 text-primary" />
+                        <p class="text-sm text-muted-foreground">Date</p>
+                      </div>
+                      <p class="text-lg font-medium">{{ formatDate(set.created_at) }}</p>
+                    </div>
+                  </div>
+                  
+                  <!-- Affichage pour exercices en répétitions (reps) -->
+                  <div v-else-if="exercise?.measurement_type === 'reps'" class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+                    <div>
+                      <div class="flex items-center gap-2 mb-1">
+                        <Repeat class="h-4 w-4 text-primary" />
+                        <p class="text-sm text-muted-foreground">Répétitions</p>
+                      </div>
+                      <p class="text-lg font-medium">{{ set.reps }}</p>
+                    </div>
+                    <div v-if="set.weight_kg && parseFloat(set.weight_kg) > 0">
+                      <div class="flex items-center gap-2 mb-1">
+                        <Weight class="h-4 w-4 text-primary" />
+                        <p class="text-sm text-muted-foreground">Poids (lesté)</p>
+                      </div>
+                      <p class="text-lg font-medium">{{ set.weight_kg }} kg</p>
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-2 mb-1">
+                        <CalendarDays class="h-4 w-4 text-primary" />
+                        <p class="text-sm text-muted-foreground">Date</p>
+                      </div>
+                      <p class="text-lg font-medium">{{ formatDate(set.created_at) }}</p>
+                    </div>
+                  </div>
+                  
+                  <!-- Affichage pour autres types d'exercices -->
+                  <div v-else class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
                     <div>
                       <div class="flex items-center gap-2 mb-1">
                         <Weight class="h-4 w-4 text-primary" />
@@ -480,7 +524,8 @@ import {
   Repeat,
   CalendarDays,
   MessageSquare,
-  ArrowLeft
+  ArrowLeft,
+  Clock
 } from 'lucide-vue-next'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -559,6 +604,17 @@ const formatDate = (dateString) => {
     month: 'long',
     year: 'numeric'
   })
+}
+
+// Fonction pour formater la durée
+const formatDuration = (seconds) => {
+  if (!seconds) return '0s'
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  if (mins > 0) {
+    return `${mins}min ${secs}s`
+  }
+  return `${secs}s`
 }
 
 // Fonction pour traduire les erreurs techniques en messages user-friendly
