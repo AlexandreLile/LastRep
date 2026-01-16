@@ -1,7 +1,17 @@
 <template>
   <div>
+    <!-- Pour exercices en temps (isométrie) -->
+    <template v-if="isTimeExercise">
+      <h3 class="text-lg font-medium mb-2">Temps total effectué</h3>
+      <p class="text-sm text-muted-foreground mb-4">Temps total effectué en tout</p>
+      
+      <div class="flex items-baseline space-x-2">
+        <p class="text-2xl font-semibold">{{ formatDuration(totalTimeAll) }}</p>
+      </div>
+    </template>
+    
     <!-- Pour exercices avec poids -->
-    <template v-if="!isRepsOnly">
+    <template v-else-if="!isRepsOnly">
       <h3 class="text-lg font-medium mb-2">Volume total</h3>
       <p class="text-sm text-muted-foreground mb-4">Poids total soulevé lors de la dernière séance</p>
       
@@ -58,11 +68,16 @@ const props = defineProps({
 const supabase = useSupabaseClient()
 const lastSessionSets = ref([])
 const prevSessionSets = ref([])
+const allSets = ref([])
 const exercise = ref(null)
 
 // Récupérer le measurement_type de l'exercice
 const isRepsOnly = computed(() => {
   return exercise.value?.measurement_type === 'reps'
+})
+
+const isTimeExercise = computed(() => {
+  return exercise.value?.measurement_type === 'time'
 })
 
 // Calculer le volume total (poids x répétitions) pour une séance
@@ -112,6 +127,30 @@ const repsDifference = computed(() => {
   return totalReps.value - prevTotalReps.value
 })
 
+// Pour exercices en temps : temps total
+const calculateTotalTime = (sets) => {
+  return sets.reduce((total, set) => {
+    return total + (set.duration_seconds || 0)
+  }, 0)
+}
+
+// Temps total de toutes les séances pour les exercices en temps
+const totalTimeAll = computed(() => {
+  if (!allSets.value || allSets.value.length === 0) return 0
+  return calculateTotalTime(allSets.value)
+})
+
+// Fonction pour formater la durée
+const formatDuration = (seconds) => {
+  if (!seconds) return '0s'
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  if (mins > 0) {
+    return `${mins}min ${secs}s`
+  }
+  return `${secs}s`
+}
+
 const loadSets = async () => {
   try {
     const user = (await supabase.auth.getUser()).data.user
@@ -138,6 +177,7 @@ const loadSets = async () => {
           exercise_id,
           weight_kg,
           reps,
+          duration_seconds,
           created_at
         )
       `)
@@ -159,10 +199,24 @@ const loadSets = async () => {
     // 3. Prendre la plus récente et la précédente
     lastSessionSets.value = filteredSessions[0]?.sets || []
     prevSessionSets.value = filteredSessions[1]?.sets || []
+    
+    // Pour les exercices en temps, récupérer tous les sets de toutes les séances
+    if (exercise.value?.measurement_type === 'time') {
+      const { data: allSetsData, error: allSetsError } = await supabase
+        .from('exerciseset')
+        .select('duration_seconds')
+        .eq('exercise_id', props.exerciseId)
+        .eq('user_id', user.id)
+        .not('duration_seconds', 'is', null)
+      
+      if (allSetsError) throw allSetsError
+      allSets.value = allSetsData || []
+    }
   } catch (e) {
     console.error('Erreur chargement sets pour volume total:', e)
     lastSessionSets.value = []
     prevSessionSets.value = []
+    allSets.value = []
   }
 }
 

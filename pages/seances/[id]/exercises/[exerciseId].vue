@@ -41,7 +41,59 @@
           </DialogDescription>
         </DialogHeader>
         <form @submit.prevent="handleUpdateSet" class="space-y-6">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Champs adaptatifs selon le type d'exercice -->
+          <div v-if="exercise && exercise.exercise && exercise.exercise.measurement_type === 'time'" class="space-y-4">
+            <div class="space-y-2">
+              <Label class="font-medium">Durée (secondes)</Label>
+              <Input 
+                v-model="editingSet.duration_seconds" 
+                type="number"
+                class="focus:border-primary focus:ring-primary w-full"
+                required
+              />
+            </div>
+          </div>
+          <div v-else-if="exercise && exercise.exercise && exercise.exercise.measurement_type === 'time_reps'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <Label class="font-medium">Durée (secondes)</Label>
+              <Input 
+                v-model="editingSet.duration_seconds" 
+                type="number"
+                class="focus:border-primary focus:ring-primary w-full"
+                required
+              />
+            </div>
+            <div class="space-y-2">
+              <Label class="font-medium">Répétitions</Label>
+              <Input 
+                v-model="editingSet.reps" 
+                type="number"
+                class="focus:border-primary focus:ring-primary w-full"
+                required
+              />
+            </div>
+          </div>
+          <div v-else-if="exercise && exercise.exercise && exercise.exercise.measurement_type === 'reps'" class="space-y-4">
+            <div class="space-y-2">
+              <Label class="font-medium">Répétitions</Label>
+              <Input 
+                v-model="editingSet.reps" 
+                type="number"
+                class="focus:border-primary focus:ring-primary w-full"
+                required
+              />
+            </div>
+            <div class="space-y-2">
+              <Label class="font-medium">Poids (optionnel)</Label>
+              <Input 
+                v-model="editingSet.weight_kg" 
+                type="number" 
+                step="0.5"
+                class="focus:border-primary focus:ring-primary w-full"
+              />
+            </div>
+          </div>
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-2">
               <Label class="font-medium">Poids (kg)</Label>
               <Input 
@@ -61,6 +113,10 @@
                 required
               />
             </div>
+          </div>
+          
+          <!-- Champs communs -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-2">
               <Label class="font-medium">Temps de repos (secondes)</Label>
               <Input 
@@ -157,25 +213,44 @@
         <DialogHeader>
           <DialogTitle>Champs manquants</DialogTitle>
           <DialogDescription>
-            Attention, vous n'avez pas rempli certains champs importants :
+            <span v-if="missingFields.length > 0">
+              Attention, vous n'avez pas rempli certains champs obligatoires :
+            </span>
+            <span v-else-if="missingOptionalFields.length > 0">
+              Attention, vous n'avez pas rempli certains champs optionnels :
+            </span>
           </DialogDescription>
         </DialogHeader>
         <div class="py-4">
-          <ul class="list-disc list-inside space-y-2 text-sm text-muted-foreground">
-            <li v-for="field in missingFields" :key="field" class="text-foreground">
-              {{ field }}
-            </li>
-          </ul>
+          <!-- Champs obligatoires manquants -->
+          <div v-if="missingFields.length > 0">
+            <ul class="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+              <li v-for="field in missingFields" :key="field" class="text-red-600 font-medium">
+                {{ field }}
+              </li>
+            </ul>
+          </div>
+          
+          <!-- Champs optionnels manquants -->
+          <div v-if="missingOptionalFields.length > 0 && missingFields.length === 0">
+            <ul class="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+              <li v-for="field in missingOptionalFields" :key="field" class="text-foreground">
+                {{ field }}
+              </li>
+            </ul>
+          </div>
         </div>
         <div class="flex flex-col sm:flex-row justify-end gap-3 mt-4">
           <Button 
             variant="default" 
-            @click="showMissingFieldsModal = false"
+            @click="fillMissingFields"
             class="w-full sm:w-auto"
           >
             Remplir
           </Button>
+          <!-- Afficher "Enregistrer quand même" seulement si ce sont des champs optionnels qui manquent -->
           <Button 
+            v-if="missingFields.length === 0 && missingOptionalFields.length > 0"
             variant="secondary" 
             @click="confirmAddSet"
             class="w-full sm:w-auto"
@@ -231,7 +306,40 @@
         </div>
         
         <div v-if="bestSet" class="bg-primary/5 rounded-lg p-4">
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <!-- Affichage pour exercices en temps (isométrie) -->
+          <div v-if="exercise?.exercise?.measurement_type === 'time' && bestSet.isTimeExercise" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div class="space-y-1">
+              <span class="text-xs text-muted-foreground uppercase">Temps max</span>
+              <p class="font-bold text-lg text-primary">{{ formatDuration(bestSet.maxTime) }}</p>
+            </div>
+            <div class="space-y-1">
+              <span class="text-xs text-muted-foreground uppercase">Séries max dans une séance</span>
+              <p class="font-bold text-lg">{{ bestSet.maxSetsInSession }}</p>
+            </div>
+            <div class="space-y-1">
+              <span class="text-xs text-muted-foreground uppercase">Date</span>
+              <p class="text-sm">{{ formatDate(bestSet.created_at) }}</p>
+            </div>
+          </div>
+          
+          <!-- Affichage pour exercices en répétitions -->
+          <div v-else-if="exercise?.exercise?.measurement_type === 'reps' && bestSet.isRepsExercise" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div class="space-y-1">
+              <span class="text-xs text-muted-foreground uppercase">Max reps en une série</span>
+              <p class="font-bold text-lg text-primary">{{ bestSet.maxReps }}</p>
+            </div>
+            <div class="space-y-1">
+              <span class="text-xs text-muted-foreground uppercase">Meilleur total dans une séance</span>
+              <p class="font-bold text-lg">{{ bestSet.maxTotalRepsInSession }} reps</p>
+            </div>
+            <div class="space-y-1">
+              <span class="text-xs text-muted-foreground uppercase">Date</span>
+              <p class="text-sm">{{ formatDate(bestSet.created_at) }}</p>
+            </div>
+          </div>
+          
+          <!-- Affichage pour autres types d'exercices -->
+          <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div class="space-y-1">
               <span class="text-xs text-muted-foreground uppercase">Poids max</span>
               <p class="font-bold text-lg text-primary">{{ bestSet.weight_kg }} kg</p>
@@ -256,7 +364,7 @@
       </div>
 
       <!-- Formulaire d'ajout de série -->
-      <div class="bg-card rounded-xl p-6">
+      <div ref="formContainer" class="bg-card rounded-xl p-6" :class="{ 'ring-2 ring-red-500': hasFormErrors }">
         <div class="flex items-center gap-3 mb-6">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <Plus class="w-5 h-5 text-primary" />
@@ -266,12 +374,20 @@
             <p class="text-sm text-muted-foreground">Renseignez les détails de votre série</p>
           </div>
         </div>
+        
+        <div v-if="hasFormErrors" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p class="text-sm text-red-700 font-medium">⚠️ Veuillez corriger les champs suivants :</p>
+          <ul class="mt-2 list-disc list-inside text-sm text-red-600">
+            <li v-for="field in formErrors" :key="field">{{ field }}</li>
+          </ul>
+        </div>
 
         <form @submit.prevent="handleAddSet" class="space-y-6">
           <AdaptSetInput
             v-if="exercise && exercise.exercise && exercise.exercise.measurement_type"
             :exercise="exercise.exercise"
             v-model="newSet"
+            :field-errors="formFieldErrors"
           />
           <div v-else-if="exercise && exercise.exercise && !exercise.exercise.measurement_type" class="text-sm text-muted-foreground p-4 bg-primary/10 border border-primary/20 rounded-lg">
             ⚠️ Type de mesure non défini pour cet exercice. Utilisation du type par défaut (Poids + Répétitions).
@@ -331,10 +447,6 @@
                 <div class="space-y-1">
                   <span class="text-xs text-muted-foreground uppercase">Durée</span>
                   <p class="font-medium">{{ formatDuration(set.duration_seconds) }}</p>
-                </div>
-                <div v-if="set.reps" class="space-y-1">
-                  <span class="text-xs text-muted-foreground uppercase">Séries</span>
-                  <p class="font-medium">{{ set.reps }}</p>
                 </div>
               </template>
               <template v-else-if="exercise && exercise.exercise && exercise.exercise.measurement_type === 'time_distance'">
@@ -506,13 +618,156 @@ const deleting = ref(false)
 // Variables pour la modale de champs manquants
 const showMissingFieldsModal = ref(false)
 const missingFields = ref([])
+const missingOptionalFields = ref([])
 const pendingSetData = ref(null)
+
+// Variables pour la gestion des erreurs de formulaire
+const formContainer = ref(null)
+const hasFormErrors = ref(false)
+const formErrors = ref([])
+const formFieldErrors = ref({})
 
 // Format date for display
 const formatDate = (dateString) => {
   if (!dateString) return '';
   const date = new Date(dateString);
   return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+// Fonction pour extraire les champs manquants depuis un message d'erreur
+const extractMissingFields = (errorMessage) => {
+  if (!errorMessage) return { fields: [], fieldErrors: {} }
+  
+  const errorLower = errorMessage.toLowerCase()
+  const fields = []
+  const fieldErrors = {}
+  
+  // Erreurs de validation des exercices
+  if (errorLower.includes('time requires duration_seconds') || (errorLower.includes('null value') && errorLower.includes('duration_seconds'))) {
+    fields.push('Durée (secondes)')
+    fieldErrors.duration_seconds = true
+  }
+  if (errorLower.includes('weight_reps requires reps') || errorLower.includes('reps type requires reps') || (errorLower.includes('null value') && errorLower.includes('reps'))) {
+    fields.push('Répétitions')
+    fieldErrors.reps = true
+  }
+  if (errorLower.includes('time_reps requires reps')) {
+    fields.push('Répétitions')
+    fieldErrors.reps = true
+  }
+  if (errorLower.includes('time_reps requires duration_seconds')) {
+    if (!fields.includes('Durée (secondes)')) {
+      fields.push('Durée (secondes)')
+      fieldErrors.duration_seconds = true
+    }
+  }
+  if (errorLower.includes('distance requires distance_meters')) {
+    fields.push('Distance (mètres)')
+    fieldErrors.distance_meters = true
+  }
+  if (errorLower.includes('weight_only requires weight_kg') || (errorLower.includes('null value') && errorLower.includes('weight_kg'))) {
+    fields.push('Poids (kg)')
+    fieldErrors.weight_kg = true
+  }
+  if (errorLower.includes('time_distance requires both duration_seconds and distance_meters')) {
+    fields.push('Durée (secondes)')
+    fields.push('Distance (mètres)')
+    fieldErrors.duration_seconds = true
+    fieldErrors.distance_meters = true
+  }
+  
+  return { fields, fieldErrors }
+}
+
+// Fonction pour traduire les erreurs techniques en messages user-friendly
+const getUserFriendlyError = (errorMessage) => {
+  if (!errorMessage) return 'Une erreur est survenue'
+  
+  const errorLower = errorMessage.toLowerCase()
+  
+  // Erreurs de validation des exercices
+  if (errorLower.includes('time requires duration_seconds')) {
+    return 'Veuillez renseigner la durée de l\'exercice (en secondes)'
+  }
+  if (errorLower.includes('weight_reps requires reps')) {
+    return 'Veuillez renseigner le nombre de répétitions'
+  }
+  if (errorLower.includes('reps type requires reps')) {
+    return 'Veuillez renseigner le nombre de répétitions'
+  }
+  if (errorLower.includes('distance requires distance_meters')) {
+    return 'Veuillez renseigner la distance parcourue (en mètres)'
+  }
+  if (errorLower.includes('weight_only requires weight_kg')) {
+    return 'Veuillez renseigner le poids soulevé (en kg)'
+  }
+  if (errorLower.includes('time_distance requires both duration_seconds and distance_meters')) {
+    return 'Veuillez renseigner la durée et la distance'
+  }
+  if (errorLower.includes('time_reps requires duration_seconds')) {
+    return 'Veuillez renseigner la durée de l\'exercice (en secondes)'
+  }
+  if (errorLower.includes('time_reps requires reps')) {
+    return 'Veuillez renseigner le nombre de répétitions'
+  }
+  
+  // Erreurs de contrainte de base de données
+  if (errorLower.includes('null value') && errorLower.includes('reps')) {
+    return 'Le nombre de répétitions est requis'
+  }
+  if (errorLower.includes('null value') && errorLower.includes('duration_seconds')) {
+    return 'La durée de l\'exercice est requise'
+  }
+  if (errorLower.includes('null value') && errorLower.includes('weight_kg')) {
+    return 'Le poids est requis'
+  }
+  
+  // Erreurs d'authentification
+  if (errorLower.includes('non authentifié') || errorLower.includes('not authenticated')) {
+    return 'Vous devez être connecté pour effectuer cette action'
+  }
+  
+  // Erreurs de permission
+  if (errorLower.includes('permission') || errorLower.includes('row-level security')) {
+    return 'Vous n\'avez pas la permission d\'effectuer cette action'
+  }
+  
+  // Erreurs de connexion
+  if (errorLower.includes('network') || errorLower.includes('fetch')) {
+    return 'Erreur de connexion. Vérifiez votre connexion internet'
+  }
+  
+  // Par défaut, retourner le message d'erreur original si on ne le reconnaît pas
+  return errorMessage
+}
+
+// Fonction pour scroller vers le formulaire et mettre en évidence les erreurs
+const scrollToFormAndHighlightErrors = (errorMessage) => {
+  const { fields, fieldErrors } = extractMissingFields(errorMessage)
+  
+  if (fields.length > 0) {
+    hasFormErrors.value = true
+    formErrors.value = fields
+    formFieldErrors.value = fieldErrors
+    
+    // Scroller vers le formulaire avec un petit délai pour s'assurer que le DOM est mis à jour
+    setTimeout(() => {
+      if (formContainer.value) {
+        formContainer.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 100)
+  } else {
+    hasFormErrors.value = false
+    formErrors.value = []
+    formFieldErrors.value = {}
+  }
+}
+
+// Fonction pour réinitialiser les erreurs du formulaire
+const resetFormErrors = () => {
+  hasFormErrors.value = false
+  formErrors.value = []
+  formFieldErrors.value = {}
 }
 
 // Fonction pour empêcher la navigation sans confirmation
@@ -557,18 +812,102 @@ const loadBestSet = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     
-    // Récupérer le set avec le poids le plus élevé pour cet exercice
-    const { data, error: bestSetError } = await supabase
-      .from('exerciseset')
-      .select('*')
-      .eq('exercise_id', exercise.value.exercise.id)
-      .eq('user_id', user.id)
-      .order('weight_kg', { ascending: false })
-      .order('reps', { ascending: false })
-      .limit(1)
+    const measurementType = exercise.value.exercise.measurement_type || 'weight_reps'
+    
+    // Pour les exercices en temps (isométrie), charger le meilleur temps et le nombre max de séries dans une séance
+    if (measurementType === 'time') {
+      // Récupérer toutes les séries de cet exercice
+      const { data: allSets, error: allSetsError } = await supabase
+        .from('exerciseset')
+        .select('duration_seconds, created_at')
+        .eq('exercise_id', exercise.value.exercise.id)
+        .eq('user_id', user.id)
+        .not('duration_seconds', 'is', null)
+        .order('duration_seconds', { ascending: false })
 
-    if (bestSetError) throw bestSetError
-    bestSet.value = data && data.length > 0 ? data[0] : null
+      if (allSetsError) throw allSetsError
+      
+      if (allSets && allSets.length > 0) {
+        // Trouver le meilleur temps (max duration_seconds)
+        const bestTimeSet = allSets[0] // Déjà trié par duration_seconds desc
+        
+        // Grouper par date pour trouver le nombre max de séries dans une séance
+        const setsByDate = {}
+        allSets.forEach(set => {
+          const date = new Date(set.created_at).toLocaleDateString('fr-FR')
+          if (!setsByDate[date]) {
+            setsByDate[date] = 0
+          }
+          setsByDate[date]++
+        })
+        
+        const maxSetsInSession = Math.max(...Object.values(setsByDate))
+        const dateWithMaxSets = Object.keys(setsByDate).find(date => setsByDate[date] === maxSetsInSession)
+        
+        bestSet.value = {
+          ...bestTimeSet,
+          maxTime: bestTimeSet.duration_seconds,
+          maxSetsInSession: maxSetsInSession,
+          dateWithMaxSets: dateWithMaxSets,
+          isTimeExercise: true
+        }
+      } else {
+        bestSet.value = null
+      }
+    } else if (measurementType === 'reps') {
+      // Pour les exercices en répétitions, charger le max reps en une série et le meilleur total de reps dans une séance
+      const { data: allSets, error: allSetsError } = await supabase
+        .from('exerciseset')
+        .select('reps, created_at')
+        .eq('exercise_id', exercise.value.exercise.id)
+        .eq('user_id', user.id)
+        .not('reps', 'is', null)
+        .order('reps', { ascending: false })
+
+      if (allSetsError) throw allSetsError
+      
+      if (allSets && allSets.length > 0) {
+        // Trouver le max reps en une série
+        const bestRepsSet = allSets[0] // Déjà trié par reps desc
+        
+        // Grouper par date pour trouver le meilleur total de répétitions dans une séance
+        const repsByDate = {}
+        allSets.forEach(set => {
+          const date = new Date(set.created_at).toLocaleDateString('fr-FR')
+          if (!repsByDate[date]) {
+            repsByDate[date] = 0
+          }
+          repsByDate[date] += set.reps || 0
+        })
+        
+        const maxTotalRepsInSession = Math.max(...Object.values(repsByDate))
+        const dateWithMaxReps = Object.keys(repsByDate).find(date => repsByDate[date] === maxTotalRepsInSession)
+        
+        bestSet.value = {
+          ...bestRepsSet,
+          maxReps: bestRepsSet.reps,
+          maxTotalRepsInSession: maxTotalRepsInSession,
+          dateWithMaxReps: dateWithMaxReps,
+          isRepsExercise: true
+        }
+      } else {
+        bestSet.value = null
+      }
+    } else {
+      // Pour les autres types d'exercices, logique classique
+      const { data, error: bestSetError } = await supabase
+        .from('exerciseset')
+        .select('*')
+        .eq('exercise_id', exercise.value.exercise.id)
+        .eq('user_id', user.id)
+        .order('weight_kg', { ascending: false })
+        .order('reps', { ascending: false })
+        .limit(1)
+
+      if (bestSetError) throw bestSetError
+      bestSet.value = data && data.length > 0 ? data[0] : null
+    }
+    
     console.log('Meilleur set chargé:', bestSet.value)
   } catch (e) {
     console.error('Erreur lors du chargement du meilleur set:', e.message)
@@ -578,6 +917,24 @@ const loadBestSet = async () => {
 // Fonction pour comparer deux sets et déterminer si le nouveau est meilleur
 const isBetterSet = (newSet, currentBest) => {
   if (!currentBest) return true
+  
+  const measurementType = exercise.value?.exercise?.measurement_type || 'weight_reps'
+  
+  // Pour les exercices en temps, comparer le temps
+  if (measurementType === 'time') {
+    const newTime = newSet.duration_seconds || 0
+    const bestTime = currentBest.isTimeExercise ? currentBest.maxTime : (currentBest.duration_seconds || 0)
+    return newTime > bestTime
+  }
+  
+  // Pour les exercices en répétitions, comparer les reps
+  if (measurementType === 'reps') {
+    const newReps = newSet.reps || 0
+    const bestReps = currentBest.isRepsExercise ? currentBest.maxReps : (currentBest.reps || 0)
+    return newReps > bestReps
+  }
+  
+  // Pour les autres types, logique classique
   if (newSet.weight_kg > currentBest.weight_kg) return true
   if (newSet.weight_kg === currentBest.weight_kg && newSet.reps > currentBest.reps) return true
   return false
@@ -664,61 +1021,92 @@ const handleRestModalChange = (isOpen) => {
 
 // Fonction pour vérifier les champs manquants
 const checkMissingFields = () => {
-  const missing = []
+  const required = [] // Champs obligatoires
+  const optional = [] // Champs optionnels
+  
   const measurementType = exercise.value?.exercise?.measurement_type || 'weight_reps'
   
-  // Vérifier selon le type d'exercice
+  // Vérifier selon le type d'exercice - CHAMPS OBLIGATOIRES
   if (measurementType === 'weight_reps' || !measurementType) {
     if (!newSet.value.weight_kg || parseFloat(newSet.value.weight_kg) <= 0) {
-      missing.push('Poids')
+      required.push('Poids')
     }
     if (!newSet.value.reps || parseInt(newSet.value.reps) <= 0) {
-      missing.push('Répétitions')
+      required.push('Répétitions')
     }
   } else if (measurementType === 'reps') {
     if (!newSet.value.reps || parseInt(newSet.value.reps) <= 0) {
-      missing.push('Répétitions')
+      required.push('Répétitions')
     }
   } else if (measurementType === 'time') {
     if (!newSet.value.duration_seconds || parseInt(newSet.value.duration_seconds) <= 0) {
-      missing.push('Durée')
+      required.push('Durée')
     }
   } else if (measurementType === 'time_reps') {
     if (!newSet.value.duration_seconds || parseInt(newSet.value.duration_seconds) <= 0) {
-      missing.push('Durée')
+      required.push('Durée')
     }
     if (!newSet.value.reps || parseInt(newSet.value.reps) <= 0) {
-      missing.push('Répétitions')
+      required.push('Répétitions')
     }
   } else if (measurementType === 'time_distance') {
     if (!newSet.value.duration_seconds || parseInt(newSet.value.duration_seconds) <= 0) {
-      missing.push('Durée')
+      required.push('Durée')
     }
     if (!newSet.value.distance_meters || parseFloat(newSet.value.distance_meters) <= 0) {
-      missing.push('Distance')
+      required.push('Distance')
     }
   } else if (measurementType === 'distance') {
     if (!newSet.value.distance_meters || parseFloat(newSet.value.distance_meters) <= 0) {
-      missing.push('Distance')
+      required.push('Distance')
     }
   } else if (measurementType === 'weight_only') {
     if (!newSet.value.weight_kg || parseFloat(newSet.value.weight_kg) <= 0) {
-      missing.push('Poids')
+      required.push('Poids')
     }
   }
   
-  // Toujours vérifier le repos
+  // Vérifier les champs optionnels (temps de repos)
+  // Le temps de repos a une valeur par défaut de 0, mais on informe l'utilisateur s'il n'est pas rempli
   if (!newSet.value.rest_seconds || parseInt(newSet.value.rest_seconds) <= 0) {
-    missing.push('Repos')
+    optional.push('Temps de repos')
   }
   
-  return missing
+  return { required, optional }
 }
 
 // Fonction pour enregistrer réellement la série
 const confirmAddSet = async () => {
   showMissingFieldsModal.value = false
   await actuallyAddSet()
+}
+
+// Fonction pour fermer la modale et scroller vers le formulaire
+const fillMissingFields = () => {
+  showMissingFieldsModal.value = false
+  
+  // Mettre en évidence UNIQUEMENT les champs obligatoires manquants dans le formulaire
+  const { required, optional } = checkMissingFields()
+  
+  // Créer un objet d'erreurs pour mettre en évidence les champs obligatoires uniquement
+  const fieldErrors = {}
+  
+  if (required.includes('Poids')) fieldErrors.weight_kg = true
+  if (required.includes('Répétitions')) fieldErrors.reps = true
+  if (required.includes('Durée')) fieldErrors.duration_seconds = true
+  if (required.includes('Distance')) fieldErrors.distance_meters = true
+  
+  // Ne mettre en évidence que les champs obligatoires (pas les optionnels)
+  hasFormErrors.value = required.length > 0
+  formErrors.value = required // Seulement les champs obligatoires
+  formFieldErrors.value = fieldErrors
+  
+  // Scroller vers le formulaire
+  setTimeout(() => {
+    if (formContainer.value) {
+      formContainer.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, 100)
 }
 
 // Fonction qui fait réellement l'enregistrement
@@ -729,7 +1117,7 @@ const actuallyAddSet = async () => {
     const setData = pendingSetData.value || {
       exercise_id: exercise.value.exercise.id,
       weight_kg: newSet.value.weight_kg ? parseFloat(newSet.value.weight_kg) : 0, // Valeur par défaut 0 si non rempli
-      reps: newSet.value.reps ? parseInt(newSet.value.reps) : (measurementType === 'weight_reps' || measurementType === 'reps' || measurementType === 'time_reps' ? 1 : null), // Valeur par défaut 1 pour les types qui nécessitent reps
+      reps: newSet.value.reps ? parseInt(newSet.value.reps) : (measurementType === 'weight_reps' || measurementType === 'reps' || measurementType === 'time_reps' ? 1 : 0), // Valeur par défaut 1 pour les types qui nécessitent reps, 0 pour time
       duration_seconds: newSet.value.duration_seconds ? parseInt(newSet.value.duration_seconds) : null,
       distance_meters: newSet.value.distance_meters ? parseFloat(newSet.value.distance_meters) : null,
       rest_seconds: newSet.value.rest_seconds ? parseInt(newSet.value.rest_seconds) : 0, // Valeur par défaut 0 si non rempli
@@ -747,10 +1135,11 @@ const actuallyAddSet = async () => {
       setData.weight_kg = 0
     }
     
-    // S'assurer que reps n'est jamais null pour les types qui le nécessitent (même si pendingSetData était défini)
-    const requiresReps = ['weight_reps', 'reps', 'time_reps'].includes(measurementType)
-    if (requiresReps && (setData.reps === null || setData.reps === undefined)) {
-      setData.reps = 1
+    // S'assurer que reps n'est jamais null (même si pendingSetData était défini)
+    // Pour les exercices time, on met 0 au lieu de null
+    if (setData.reps === null || setData.reps === undefined) {
+      const requiresReps = ['weight_reps', 'reps', 'time_reps'].includes(measurementType)
+      setData.reps = requiresReps ? 1 : 0
     }
     
     // Faire l'appel directement à Supabase pour un meilleur contrôle
@@ -787,7 +1176,12 @@ const actuallyAddSet = async () => {
     
     // Vérifier si c'est un meilleur set en utilisant la nouvelle fonction de comparaison
     if (isBetterSet(addedSet, bestSet.value)) {
-      bestSet.value = addedSet
+      // Pour les exercices en temps et en répétitions, recharger les données pour avoir les stats complètes
+      if (exercise.value.exercise.measurement_type === 'time' || exercise.value.exercise.measurement_type === 'reps') {
+        await loadBestSet()
+      } else {
+        bestSet.value = addedSet
+      }
       console.log('Nouveau record personnel!')
       
       // Message adaptatif selon le type d'exercice
@@ -825,6 +1219,9 @@ const actuallyAddSet = async () => {
       toast.success('Série ajoutée avec succès!', { description })
     }
     
+    // Réinitialiser les erreurs du formulaire en cas de succès
+    resetFormErrors()
+    
     // Préremplir le formulaire avec la dernière série (celle qu'on vient d'ajouter)
     if (addedSet) {
       newSet.value = {
@@ -846,10 +1243,15 @@ const actuallyAddSet = async () => {
     // Réinitialiser pendingSetData
     pendingSetData.value = null
   } catch (e) {
-    error.value = e.message
+    const friendlyMessage = getUserFriendlyError(e.message)
+    error.value = friendlyMessage
     console.error('Erreur lors de l\'ajout d\'une série:', e)
+    
+    // Détecter si c'est une erreur de validation et mettre en évidence le formulaire
+    scrollToFormAndHighlightErrors(e.message)
+    
     toast.error('Erreur', {
-      description: `Impossible d'ajouter la série: ${e.message}`
+      description: friendlyMessage
     })
     pendingSetData.value = null
   }
@@ -863,7 +1265,7 @@ const handleAddSet = async () => {
     const setData = {
       exercise_id: exercise.value.exercise.id,
       weight_kg: newSet.value.weight_kg ? parseFloat(newSet.value.weight_kg) : 0, // Valeur par défaut 0 si non rempli
-      reps: newSet.value.reps ? parseInt(newSet.value.reps) : (measurementType === 'weight_reps' || measurementType === 'reps' || measurementType === 'time_reps' ? 1 : null), // Valeur par défaut 1 pour les types qui nécessitent reps
+      reps: newSet.value.reps ? parseInt(newSet.value.reps) : (measurementType === 'weight_reps' || measurementType === 'reps' || measurementType === 'time_reps' ? 1 : 0), // Valeur par défaut 1 pour les types qui nécessitent reps, 0 pour time
       duration_seconds: newSet.value.duration_seconds ? parseInt(newSet.value.duration_seconds) : null,
       distance_meters: newSet.value.distance_meters ? parseFloat(newSet.value.distance_meters) : null,
       rest_seconds: newSet.value.rest_seconds ? parseInt(newSet.value.rest_seconds) : 0, // Valeur par défaut 0 si non rempli
@@ -881,18 +1283,40 @@ const handleAddSet = async () => {
       setData.weight_kg = 0
     }
     
-    // S'assurer que reps n'est jamais null pour les types qui le nécessitent
-    const requiresReps = ['weight_reps', 'reps', 'time_reps'].includes(measurementType)
-    if (requiresReps && (setData.reps === null || setData.reps === undefined)) {
-      setData.reps = 1
+    // S'assurer que reps n'est jamais null
+    // Pour les exercices time, on met 0 au lieu de null
+    if (setData.reps === null || setData.reps === undefined) {
+      const requiresReps = ['weight_reps', 'reps', 'time_reps'].includes(measurementType)
+      setData.reps = requiresReps ? 1 : 0
     }
     
-    // Vérifier les champs manquants
-    const missing = checkMissingFields()
+    // Réinitialiser les erreurs du formulaire avant la validation
+    resetFormErrors()
     
-    if (missing.length > 0) {
-      // Afficher la modale d'avertissement
-      missingFields.value = missing
+    // Vérifier les champs manquants (obligatoires et optionnels)
+    const { required, optional } = checkMissingFields()
+    
+    // Si des champs obligatoires manquent, empêcher la soumission et afficher la modale
+    if (required.length > 0) {
+      missingFields.value = required
+      missingOptionalFields.value = optional
+      pendingSetData.value = setData
+      showMissingFieldsModal.value = true
+      
+      // Scroller vers le formulaire et mettre en évidence les erreurs
+      setTimeout(() => {
+        if (formContainer.value) {
+          formContainer.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 100)
+      
+      return
+    }
+    
+    // Si seulement des champs optionnels manquent, proposer "Enregistrer quand même"
+    if (optional.length > 0) {
+      missingFields.value = []
+      missingOptionalFields.value = optional
       pendingSetData.value = setData
       showMissingFieldsModal.value = true
       return
@@ -902,10 +1326,15 @@ const handleAddSet = async () => {
     pendingSetData.value = setData
     await actuallyAddSet()
   } catch (e) {
-    error.value = e.message
+    const friendlyMessage = getUserFriendlyError(e.message)
+    error.value = friendlyMessage
     console.error('Erreur lors de l\'ajout d\'une série:', e)
+    
+    // Détecter si c'est une erreur de validation et mettre en évidence le formulaire
+    scrollToFormAndHighlightErrors(e.message)
+    
     toast.error('Erreur', {
-      description: `Impossible d'ajouter la série: ${e.message}`
+      description: friendlyMessage
     })
   }
 }
@@ -941,8 +1370,9 @@ const loadExerciseSets = async () => {
     localExerciseSets.value = data || []
     console.log('Séries chargées:', localExerciseSets.value)
   } catch (e) {
+    const friendlyMessage = getUserFriendlyError(e.message)
     console.error('Erreur lors du chargement des séries:', e)
-    error.value = e.message
+    error.value = friendlyMessage
   }
 }
 
@@ -992,8 +1422,9 @@ const loadExercise = async () => {
       }
     }
   } catch (e) {
+    const friendlyMessage = getUserFriendlyError(e.message)
     console.error('Erreur lors du chargement de l\'exercice:', e)
-    error.value = e.message
+    error.value = friendlyMessage
   } finally {
     loading.value = false
   }
@@ -1032,10 +1463,11 @@ const deleteSet = async (setId) => {
       await loadBestSet()
     }
   } catch (e) {
-    error.value = e.message
+    const friendlyMessage = getUserFriendlyError(e.message)
+    error.value = friendlyMessage
     console.error('Erreur lors de la suppression d\'une série:', e)
     toast.error('Erreur', {
-      description: `Impossible de supprimer la série: ${e.message}`
+      description: friendlyMessage
     })
     // En cas d'erreur, recharger les séries pour rétablir l'état correct
     await loadExerciseSets()
@@ -1060,15 +1492,34 @@ const handleUpdateSet = async () => {
   try {
     updating.value = true
     
+    const measurementType = exercise.value?.exercise?.measurement_type || 'weight_reps'
+    const updateData = {
+      rest_seconds: editingSet.value.rest_seconds ? parseInt(editingSet.value.rest_seconds) : 0,
+      rpe: editingSet.value.rpe ? parseFloat(editingSet.value.rpe) : null,
+      note: editingSet.value.note || null
+    }
+    
+    // Ajouter les champs selon le type d'exercice
+    if (measurementType === 'time' || measurementType === 'time_reps' || measurementType === 'time_distance') {
+      updateData.duration_seconds = editingSet.value.duration_seconds ? parseInt(editingSet.value.duration_seconds) : null
+    }
+    
+    // Pour reps : toujours définir une valeur (0 pour time, la valeur pour les autres)
+    if (measurementType === 'time') {
+      updateData.reps = 0 // Pour les exercices time, on met 0 car il n'y a pas de répétitions
+    } else if (measurementType === 'time_reps' || measurementType === 'weight_reps' || measurementType === 'reps') {
+      updateData.reps = editingSet.value.reps ? parseInt(editingSet.value.reps) : (measurementType === 'time_reps' || measurementType === 'weight_reps' || measurementType === 'reps' ? 1 : 0)
+    } else {
+      updateData.reps = 0 // Par défaut pour les autres types
+    }
+    
+    if (measurementType === 'weight_reps' || measurementType === 'weight_only' || measurementType === 'reps') {
+      updateData.weight_kg = editingSet.value.weight_kg ? parseFloat(editingSet.value.weight_kg) : 0
+    }
+    
     const { data: updatedSet, error: updateError } = await supabase
       .from('exerciseset')
-      .update({
-        weight_kg: parseFloat(editingSet.value.weight_kg),
-        reps: parseInt(editingSet.value.reps),
-        rest_seconds: parseInt(editingSet.value.rest_seconds),
-        rpe: editingSet.value.rpe ? parseFloat(editingSet.value.rpe) : null,
-        note: editingSet.value.note || null
-      })
+      .update(updateData)
       .eq('id', editingSet.value.id)
       .select()
       .single()
@@ -1083,19 +1534,39 @@ const handleUpdateSet = async () => {
 
     // Vérifier si c'est un nouveau record
     if (isBetterSet(updatedSet, bestSet.value)) {
-      bestSet.value = updatedSet
-      toast.success('Félicitations ! 🏆', {
-        description: `Vous avez battu votre ancien record avec ${updatedSet.weight_kg}kg x ${updatedSet.reps} répétitions`
-      })
+      // Pour les exercices en temps et en répétitions, recharger les données pour avoir les stats complètes
+      if (measurementType === 'time' || measurementType === 'reps') {
+        await loadBestSet()
+      } else {
+        bestSet.value = updatedSet
+      }
+      
+      let description = ''
+      if (measurementType === 'weight_reps' || !measurementType) {
+        description = `Vous avez battu votre ancien record avec ${updatedSet.weight_kg}kg x ${updatedSet.reps} répétitions`
+      } else if (measurementType === 'time') {
+        description = `Vous avez battu votre ancien record avec ${formatDuration(updatedSet.duration_seconds || 0)}`
+      } else if (measurementType === 'reps') {
+        description = `Vous avez battu votre ancien record avec ${updatedSet.reps} répétitions`
+      } else {
+        description = 'Nouveau record personnel !'
+      }
+      
+      toast.success('Félicitations ! 🏆', { description })
     } else {
+      // Pour les exercices en temps et en répétitions, recharger quand même pour mettre à jour les stats
+      if (measurementType === 'time' || measurementType === 'reps') {
+        await loadBestSet()
+      }
       toast.success('Série mise à jour avec succès!')
     }
 
     showEditModal.value = false
   } catch (e) {
+    const friendlyMessage = getUserFriendlyError(e.message)
     console.error('Erreur lors de la mise à jour de la série:', e)
     toast.error('Erreur', {
-      description: `Impossible de mettre à jour la série: ${e.message}`
+      description: friendlyMessage
     })
   } finally {
     updating.value = false
@@ -1143,9 +1614,10 @@ const handleDelete = async () => {
     
     toast.success('Série supprimée avec succès')
   } catch (e) {
+    const friendlyMessage = getUserFriendlyError(e.message)
     console.error('Erreur lors de la suppression de la série:', e)
     toast.error('Erreur', {
-      description: `Impossible de supprimer la série: ${e.message}`
+      description: friendlyMessage
     })
   } finally {
     deleting.value = false
@@ -1191,6 +1663,18 @@ watch(showRestModal, (isOpen) => {
     restTimeRemaining.value = 0
   }
 })
+
+// Watcher pour réinitialiser les erreurs quand l'utilisateur modifie les champs
+watch([() => newSet.value.weight_kg, () => newSet.value.reps, () => newSet.value.duration_seconds, () => newSet.value.distance_meters, () => newSet.value.rest_seconds], () => {
+  // Si l'utilisateur modifie les champs, vérifier si les erreurs sont toujours valides
+  if (hasFormErrors.value) {
+    const { required } = checkMissingFields()
+    // Si plus de champs obligatoires manquants, réinitialiser les erreurs
+    if (required.length === 0) {
+      resetFormErrors()
+    }
+  }
+}, { deep: true })
 
 // Gérer la visibilité de la page pour recalculer le timer quand l'utilisateur revient
 if (process.client) {

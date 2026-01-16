@@ -1,7 +1,30 @@
 <template>
   <div>
+    <!-- Pour exercices en temps (isométrie) -->
+    <template v-if="isTimeExercise">
+      <h3 class="text-lg font-medium mb-2">Meilleur temps sur une série</h3>
+      <p class="text-sm text-muted-foreground mb-4">Comparaison avec la dernière séance</p>
+      
+      <div class="flex items-baseline space-x-2">
+        <p class="text-2xl font-semibold">
+          {{ maxTime !== null ? formatDuration(maxTime) : '-' }}
+        </p>
+        <span v-if="timeDifference !== null"
+          :class="[
+            'flex items-center space-x-1 text-sm font-medium',
+            timeDifference > 0 ? 'text-green-500' : timeDifference < 0 ? 'text-red-500' : 'text-muted-foreground'
+          ]"
+        >
+          <svg v-if="timeDifference > 0" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+          <svg v-if="timeDifference < 0" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
+          <span>{{ formatDuration(Math.abs(timeDifference)) }}</span>
+        </span>
+        <span v-else class="text-muted-foreground text-sm">(pas de comparaison)</span>
+      </div>
+    </template>
+    
     <!-- Pour exercices avec poids -->
-    <template v-if="!isRepsOnly">
+    <template v-else-if="!isRepsOnly">
       <h3 class="text-lg font-medium mb-2">RM estimé</h3>
       <p class="text-sm text-muted-foreground mb-4">Basé sur votre dernière séance</p>
       
@@ -70,6 +93,10 @@ const isRepsOnly = computed(() => {
   return exercise.value?.measurement_type === 'reps'
 })
 
+const isTimeExercise = computed(() => {
+  return exercise.value?.measurement_type === 'time'
+})
+
 function calculateRM(weight, reps) {
   return weight * (1 + 0.0333 * reps)
 }
@@ -121,6 +148,33 @@ const repsDifference = computed(() => {
   return maxReps.value - prevMaxReps.value
 })
 
+// Pour exercices en temps : meilleur temps
+const maxTime = computed(() => {
+  if (!lastSessionSets.value.length) return null
+  return Math.max(...lastSessionSets.value.map(set => set.duration_seconds || 0))
+})
+
+const prevMaxTime = computed(() => {
+  if (!prevSessionSets.value.length) return null
+  return Math.max(...prevSessionSets.value.map(set => set.duration_seconds || 0))
+})
+
+const timeDifference = computed(() => {
+  if (maxTime.value === null || prevMaxTime.value === null) return null
+  return maxTime.value - prevMaxTime.value
+})
+
+// Fonction pour formater la durée
+const formatDuration = (seconds) => {
+  if (!seconds) return '0s'
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  if (mins > 0) {
+    return `${mins}min ${secs}s`
+  }
+  return `${secs}s`
+}
+
 const loadSets = async () => {
   loading.value = true
   try {
@@ -148,6 +202,7 @@ const loadSets = async () => {
           exercise_id,
           weight_kg,
           reps,
+          duration_seconds,
           created_at
         )
       `)

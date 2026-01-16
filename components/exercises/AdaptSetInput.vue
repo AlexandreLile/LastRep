@@ -9,6 +9,7 @@
           type="number"
           step="0.5"
           placeholder="0"
+          :class="{ 'border-red-500 ring-red-500': fieldErrors.weight_kg }"
         />
       </div>
       <div class="space-y-2">
@@ -17,6 +18,7 @@
           v-model="setData.reps"
           type="number"
           placeholder="0"
+          :class="{ 'border-red-500 ring-red-500': fieldErrors.reps }"
         />
       </div>
     </div>
@@ -29,6 +31,7 @@
           v-model="setData.reps"
           type="number"
           placeholder="0"
+          :class="{ 'border-red-500 ring-red-500': fieldErrors.reps }"
         />
       </div>
       <div class="space-y-2">
@@ -43,6 +46,7 @@
           type="number"
           step="0.5"
           placeholder="0"
+          :class="{ 'border-red-500 ring-red-500': fieldErrors.weight_kg }"
         />
         <p v-if="setData.weight_kg && parseFloat(setData.weight_kg) > 0" class="text-xs text-primary mt-1">
           💡 Exercice lesté : +{{ setData.weight_kg }}kg
@@ -58,18 +62,11 @@
           v-model="setData.duration_seconds"
           type="number"
           placeholder="0"
+          :class="{ 'border-red-500 ring-red-500': fieldErrors.duration_seconds }"
         />
         <p class="text-xs text-muted-foreground">
           {{ formatDuration(setData.duration_seconds) }}
         </p>
-      </div>
-      <div class="space-y-2">
-        <Label>Nombre de séries (optionnel)</Label>
-        <Input
-          v-model="setData.reps"
-          type="number"
-          placeholder="1"
-        />
       </div>
     </div>
 
@@ -81,6 +78,7 @@
           v-model="setData.duration_seconds"
           type="number"
           placeholder="0"
+          :class="{ 'border-red-500 ring-red-500': fieldErrors.duration_seconds }"
         />
       </div>
       <div class="space-y-2">
@@ -89,6 +87,7 @@
           v-model="setData.reps"
           type="number"
           placeholder="0"
+          :class="{ 'border-red-500 ring-red-500': fieldErrors.reps }"
         />
       </div>
     </div>
@@ -101,6 +100,7 @@
           v-model="setData.duration_seconds"
           type="number"
           placeholder="0"
+          :class="{ 'border-red-500 ring-red-500': fieldErrors.duration_seconds }"
         />
       </div>
       <div class="space-y-2">
@@ -110,6 +110,7 @@
           type="number"
           step="0.01"
           placeholder="0"
+          :class="{ 'border-red-500 ring-red-500': fieldErrors.distance_meters }"
         />
       </div>
     </div>
@@ -122,6 +123,7 @@
         type="number"
         step="0.01"
         placeholder="0"
+        :class="{ 'border-red-500 ring-red-500': fieldErrors.distance_meters }"
       />
     </div>
 
@@ -133,6 +135,7 @@
         type="number"
         step="0.5"
         placeholder="0"
+        :class="{ 'border-red-500 ring-red-500': fieldErrors.weight_kg }"
       />
     </div>
 
@@ -191,6 +194,10 @@ const props = defineProps({
       rpe: null,
       note: null
     })
+  },
+  fieldErrors: {
+    type: Object,
+    default: () => ({})
   }
 })
 

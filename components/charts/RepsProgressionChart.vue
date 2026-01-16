@@ -1,13 +1,12 @@
 <template>
   <div>
-    <div class="h-64 overflow-x-auto chart-scroll-container">
-      <div :style="{ minWidth: chartMinWidth }" class="h-full">
-        <Line
-          v-if="chartData"
-          :data="chartData"
-          :options="chartOptions"
-        />
-      </div>
+    <ChartPeriodFilter v-model="selectedPeriod" />
+    <div class="h-64">
+      <Line
+        v-if="chartData"
+        :data="chartData"
+        :options="chartOptions"
+      />
     </div>
   </div>
 </template>
@@ -17,6 +16,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { Line } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
+import ChartPeriodFilter from './ChartPeriodFilter.vue'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
@@ -27,14 +27,16 @@ const props = defineProps({
   }
 })
 
+const selectedPeriod = ref('week')
+
 const chartData = ref(null)
 const chartOptions = ref(null)
 const MAX_DATA_POINTS = 30
+const MAX_DISPLAY_POINTS = 50 // Maximum avec regroupement
 const allData = ref([])
-const chartMinWidth = ref('100%')
 
 // Fonction pour regrouper les données par période
-const groupDataByPeriod = (data, period = 'week') => {
+const groupDataByPeriod = (data, period = 'day') => {
   data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
   
   const groups = {}
@@ -42,32 +44,42 @@ const groupDataByPeriod = (data, period = 'week') => {
   data.forEach(item => {
     const date = new Date(item.created_at)
     let key
-    
-    if (period === 'week') {
+    let periodDate // Date réelle pour le tri
+
+    if (period === 'day') {
+      const dayDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+      periodDate = dayDate
+      key = dayDate.toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: 'numeric' })
+    } else if (period === 'week') {
       const day = date.getDay() || 7
       const firstDayOfWeek = new Date(date)
       firstDayOfWeek.setDate(date.getDate() - day + 1)
+      firstDayOfWeek.setHours(0, 0, 0, 0) // Normaliser à minuit
+      periodDate = firstDayOfWeek
       key = firstDayOfWeek.toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: 'numeric' }) + ' (sem)'
     } else if (period === 'month') {
+      const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1)
+      periodDate = firstDayOfMonth
       key = date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long' })
-    } else {
-      key = date.toLocaleDateString('fr-FR')
     }
     
-    // Pour les répétitions, on prend le total ou le maximum selon le contexte
-    // Ici on prend le total de répétitions par période
     if (!groups[key]) {
-      groups[key] = { total: 0, max: 0, count: 0 }
+      groups[key] = { total: 0, max: 0, count: 0, periodDate: periodDate }
     }
     groups[key].total += item.reps || 0
     groups[key].max = Math.max(groups[key].max, item.reps || 0)
     groups[key].count += 1
   })
   
-  // Retourner le total de répétitions par période
+  // Trier par date de période (chronologique)
+  const sortedEntries = Object.entries(groups).sort((a, b) => 
+    a[1].periodDate - b[1].periodDate
+  )
+  
+  // Retourner le total par période dans l'ordre chronologique
   return { 
-    dates: Object.keys(groups), 
-    reps: Object.values(groups).map(g => g.total)
+    dates: sortedEntries.map(([key]) => key), 
+    reps: sortedEntries.map(([, value]) => value.total)
   }
 }
 
@@ -79,55 +91,20 @@ const updateChart = () => {
     return
   }
   
-  let dates, reps
-  
-  // Regrouper par date et calculer le total de répétitions pour chaque jour
-  const dailyReps = data.reduce((acc, item) => {
-    const date = new Date(item.created_at).toLocaleDateString('fr-FR')
-    if (!acc[date]) {
-      acc[date] = { total: 0, max: 0 }
-    }
-    acc[date].total += item.reps || 0
-    acc[date].max = Math.max(acc[date].max, item.reps || 0)
-    return acc
-  }, {})
+  // Regrouper selon la période sélectionnée
+  const grouped = groupDataByPeriod(data, selectedPeriod.value)
+  let dates = grouped.dates
+  let reps = grouped.reps
 
-  dates = Object.keys(dailyReps)
-  reps = Object.values(dailyReps).map(d => d.total) // Total de répétitions par jour
-  
-  // Calculer la largeur minimale
-  const minWidthPerPoint = 50
-  const minPointsForScroll = 20
-  if (dates.length >= minPointsForScroll) {
-    chartMinWidth.value = `${dates.length * minWidthPerPoint}px`
-  } else {
-    chartMinWidth.value = '100%'
+  // Pour la vue "jour", limiter aux 12 dernières séances
+  if (selectedPeriod.value === 'day' && dates.length > 12) {
+    dates = dates.slice(-12)
+    reps = reps.slice(-12)
   }
   
-  // Si trop de données, regrouper
-  if (dates.length > MAX_DATA_POINTS) {
-    const grouped = groupDataByPeriod(data, 'week')
-    dates = grouped.dates
-    reps = grouped.reps
-    
-    if (dates.length >= minPointsForScroll) {
-      chartMinWidth.value = `${dates.length * minWidthPerPoint}px`
-    } else {
-      chartMinWidth.value = '100%'
-    }
-    
-    if (dates.length > MAX_DATA_POINTS) {
-      const groupedByMonth = groupDataByPeriod(data, 'month')
-      dates = groupedByMonth.dates
-      reps = groupedByMonth.reps
-      
-      if (dates.length >= minPointsForScroll) {
-        chartMinWidth.value = `${dates.length * minWidthPerPoint}px`
-      } else {
-        chartMinWidth.value = '100%'
-      }
-    }
-  }
+  // Calculer la taille des points selon le nombre de données
+  const pointRadius = dates.length > 20 ? 3 : 5
+  const pointHoverRadius = dates.length > 20 ? 5 : 7
   
   const minReps = Math.min(...reps)
   const maxReps = Math.max(...reps)
@@ -140,10 +117,13 @@ const updateChart = () => {
       borderColor: '#FE751C',
       backgroundColor: '#FE751C',
       tension: 0.4,
-      pointRadius: 5,
-      pointHoverRadius: 7
+      pointRadius: pointRadius,
+      pointHoverRadius: pointHoverRadius
     }]
   }
+  
+  // Calculer le nombre optimal de ticks à afficher
+  const optimalTicks = Math.min(dates.length, 15)
 
   chartOptions.value = {
     responsive: true,
@@ -175,11 +155,14 @@ const updateChart = () => {
           text: 'Date'
         },
         ticks: {
-          maxRotation: 45,
-          minRotation: 45,
-          maxTicksLimit: 15,
+          maxRotation: dates.length > 15 ? 90 : 45,
+          minRotation: dates.length > 15 ? 90 : 0,
+          maxTicksLimit: optimalTicks,
           autoSkip: true,
-          autoSkipPadding: 10
+          autoSkipPadding: 5,
+          font: {
+            size: dates.length > 20 ? 10 : 12
+          }
         }
       }
     }
@@ -212,28 +195,13 @@ const loadData = async () => {
 
 onMounted(loadData)
 watch(() => props.exerciseId, loadData)
+watch(selectedPeriod, () => {
+  if (allData.value.length) {
+    updateChart()
+  }
+})
 </script>
 
 <style scoped>
-.chart-scroll-container {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(254, 117, 28, 0.3) transparent;
-}
-
-.chart-scroll-container::-webkit-scrollbar {
-  height: 8px;
-}
-
-.chart-scroll-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.chart-scroll-container::-webkit-scrollbar-thumb {
-  background-color: rgba(254, 117, 28, 0.3);
-  border-radius: 4px;
-}
-
-.chart-scroll-container::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(254, 117, 28, 0.5);
-}
+/* Styles supprimés - plus de scroll horizontal */
 </style>

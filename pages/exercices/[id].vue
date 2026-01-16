@@ -45,7 +45,7 @@
               <Trophy class="h-5 w-5 text-primary" />
             </div>
             <h3 class="text-sm font-medium text-muted-foreground">
-              {{ exercise?.measurement_type === 'reps' ? 'Max reps' : '1RM max' }}
+              {{ exercise?.measurement_type === 'time' ? 'Meilleur temps' : exercise?.measurement_type === 'reps' ? 'Max reps' : '1RM max' }}
             </h3>
           </div>
           <LastSetRMStats :exercise-id="route.params.id" />
@@ -55,7 +55,9 @@
             <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
               <Calendar class="h-5 w-5 text-primary" />
             </div>
-            <h3 class="text-sm font-medium text-muted-foreground">Dernière séance</h3>
+            <h3 class="text-sm font-medium text-muted-foreground">
+              {{ exercise?.measurement_type === 'time' ? 'Temps total dernière séance' : 'Dernière séance' }}
+            </h3>
           </div>
           <LastExerciseSessionStats :exercise-id="route.params.id" />
         </div>
@@ -65,7 +67,7 @@
               <Weight class="h-5 w-5 text-primary" />
             </div>
             <h3 class="text-sm font-medium text-muted-foreground">
-              {{ exercise?.measurement_type === 'reps' ? 'Total répétitions' : 'Volume total' }}
+              {{ exercise?.measurement_type === 'time' ? 'Temps total effectué' : exercise?.measurement_type === 'reps' ? 'Total répétitions' : 'Volume total' }}
             </h3>
           </div>
           <TotalVolumeStats :exercise-id="route.params.id" />
@@ -128,8 +130,8 @@
                 <BarChart class="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 class="text-lg font-semibold">Répétitions par série</h3>
-                <p class="text-sm text-muted-foreground">Nombre de répétitions pour chaque série</p>
+                <h3 class="text-lg font-semibold">Meilleure série par période</h3>
+                <p class="text-sm text-muted-foreground">Meilleure performance par semaine ou par mois</p>
               </div>
             </div>
             <div class="flex-1">
@@ -152,6 +154,21 @@
             </div>
             <div class="flex-1">
               <TimeProgressionChart :exercise-id="route.params.id" />
+            </div>
+          </div>
+          <!-- Graphique meilleur temps par série pour time (isométrie) -->
+          <div v-if="exercise?.measurement_type === 'time'" class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <BarChart class="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold">Meilleur temps par série</h3>
+                <p class="text-sm text-muted-foreground">Meilleur temps par série dans une séance par date</p>
+              </div>
+            </div>
+            <div class="flex-1">
+              <BestTimePerSetChart :exercise-id="route.params.id" />
             </div>
           </div>
           <!-- Graphique répétitions par série pour time_reps -->
@@ -324,7 +341,54 @@
         </DialogHeader>
         
         <form @submit.prevent="handleEditSet" class="space-y-4">
-          <div class="grid grid-cols-2 gap-4">
+          <!-- Champs adaptatifs selon le type d'exercice -->
+          <div v-if="exercise?.measurement_type === 'time'" class="space-y-4">
+            <div class="space-y-2">
+              <Label>Durée (secondes)</Label>
+              <Input 
+                v-model="editForm.duration_seconds" 
+                type="number" 
+                required
+              />
+            </div>
+          </div>
+          <div v-else-if="exercise?.measurement_type === 'time_reps'" class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <Label>Durée (secondes)</Label>
+              <Input 
+                v-model="editForm.duration_seconds" 
+                type="number" 
+                required
+              />
+            </div>
+            <div class="space-y-2">
+              <Label>Répétitions</Label>
+              <Input 
+                v-model="editForm.reps" 
+                type="number" 
+                required
+              />
+            </div>
+          </div>
+          <div v-else-if="exercise?.measurement_type === 'reps'" class="space-y-4">
+            <div class="space-y-2">
+              <Label>Répétitions</Label>
+              <Input 
+                v-model="editForm.reps" 
+                type="number" 
+                required
+              />
+            </div>
+            <div class="space-y-2">
+              <Label>Poids (optionnel)</Label>
+              <Input 
+                v-model="editForm.weight_kg" 
+                type="number" 
+                step="0.5"
+              />
+            </div>
+          </div>
+          <div v-else class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
               <Label>Poids (kg)</Label>
               <Input 
@@ -342,6 +406,10 @@
                 required
               />
             </div>
+          </div>
+          
+          <!-- Champs communs -->
+          <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
               <Label>Temps de repos (s)</Label>
               <Input 
@@ -393,6 +461,7 @@ import WeightProgressionChart from '~/components/charts/WeightProgressionChart.v
 import RepsProgressionChart from '~/components/charts/RepsProgressionChart.vue'
 import RepsPerSetChart from '~/components/charts/RepsPerSetChart.vue'
 import TimeProgressionChart from '~/components/charts/TimeProgressionChart.vue'
+import BestTimePerSetChart from '~/components/charts/BestTimePerSetChart.vue'
 import RMCalculator from '~/components/charts/RMCalculator.vue'
 import LastSetRMStats from '~/components/stats/LastSetRMStats.vue'
 import LastExerciseSessionStats from '~/components/stats/LastExerciseSessionStats.vue'
@@ -431,6 +500,7 @@ const editingSet = ref(null)
 const editForm = ref({
   weight_kg: '',
   reps: '',
+  duration_seconds: '',
   rest_seconds: '',
   rpe: '',
   note: ''
@@ -462,6 +532,7 @@ const loadExerciseData = async () => {
         id,
         weight_kg,
         reps,
+        duration_seconds,
         rest_seconds,
         rpe,
         note,
@@ -476,7 +547,7 @@ const loadExerciseData = async () => {
 
     // Les statistiques sont maintenant gérées par les composants dédiés
   } catch (e) {
-    error.value = e.message
+    error.value = getUserFriendlyError(e.message)
   } finally {
     loading.value = false
   }
@@ -490,14 +561,77 @@ const formatDate = (dateString) => {
   })
 }
 
+// Fonction pour traduire les erreurs techniques en messages user-friendly
+const getUserFriendlyError = (errorMessage) => {
+  if (!errorMessage) return 'Une erreur est survenue'
+  
+  const errorLower = errorMessage.toLowerCase()
+  
+  // Erreurs de validation des exercices
+  if (errorLower.includes('time requires duration_seconds')) {
+    return 'Veuillez renseigner la durée de l\'exercice (en secondes)'
+  }
+  if (errorLower.includes('weight_reps requires reps')) {
+    return 'Veuillez renseigner le nombre de répétitions'
+  }
+  if (errorLower.includes('reps type requires reps')) {
+    return 'Veuillez renseigner le nombre de répétitions'
+  }
+  if (errorLower.includes('distance requires distance_meters')) {
+    return 'Veuillez renseigner la distance parcourue (en mètres)'
+  }
+  if (errorLower.includes('weight_only requires weight_kg')) {
+    return 'Veuillez renseigner le poids soulevé (en kg)'
+  }
+  if (errorLower.includes('time_distance requires both duration_seconds and distance_meters')) {
+    return 'Veuillez renseigner la durée et la distance'
+  }
+  if (errorLower.includes('time_reps requires duration_seconds')) {
+    return 'Veuillez renseigner la durée de l\'exercice (en secondes)'
+  }
+  if (errorLower.includes('time_reps requires reps')) {
+    return 'Veuillez renseigner le nombre de répétitions'
+  }
+  
+  // Erreurs de contrainte de base de données
+  if (errorLower.includes('null value') && errorLower.includes('reps')) {
+    return 'Le nombre de répétitions est requis'
+  }
+  if (errorLower.includes('null value') && errorLower.includes('duration_seconds')) {
+    return 'La durée de l\'exercice est requise'
+  }
+  if (errorLower.includes('null value') && errorLower.includes('weight_kg')) {
+    return 'Le poids est requis'
+  }
+  
+  // Erreurs d'authentification
+  if (errorLower.includes('non authentifié') || errorLower.includes('not authenticated')) {
+    return 'Vous devez être connecté pour effectuer cette action'
+  }
+  
+  // Erreurs de permission
+  if (errorLower.includes('permission') || errorLower.includes('row-level security')) {
+    return 'Vous n\'avez pas la permission d\'effectuer cette action'
+  }
+  
+  // Erreurs de connexion
+  if (errorLower.includes('network') || errorLower.includes('fetch')) {
+    return 'Erreur de connexion. Vérifiez votre connexion internet'
+  }
+  
+  // Par défaut, retourner le message d'erreur original si on ne le reconnaît pas
+  return errorMessage
+}
+
 const openEditModal = (set) => {
   editingSet.value = set
   editForm.value = {
-    weight_kg: set.weight_kg,
-    reps: set.reps,
-    rest_seconds: set.rest_seconds,
-    rpe: set.rpe,
-    note: set.note
+    weight_kg: set.weight_kg || '',
+    reps: set.reps || '',
+    duration_seconds: set.duration_seconds || '',
+    rest_seconds: set.rest_seconds || '',
+    rpe: set.rpe || '',
+    note: set.note || ''
   }
 }
 
@@ -506,6 +640,7 @@ const closeEditModal = () => {
   editForm.value = {
     weight_kg: '',
     reps: '',
+    duration_seconds: '',
     rest_seconds: '',
     rpe: '',
     note: ''
@@ -514,15 +649,38 @@ const closeEditModal = () => {
 
 const handleEditSet = async () => {
   try {
+    const measurementType = exercise.value?.measurement_type || 'weight_reps'
+    const updateData = {
+      rest_seconds: editForm.value.rest_seconds ? parseInt(editForm.value.rest_seconds) : 0,
+      rpe: editForm.value.rpe ? parseFloat(editForm.value.rpe) : null,
+      note: editForm.value.note || null
+    }
+    
+    // Ajouter les champs selon le type d'exercice
+    if (measurementType === 'time' || measurementType === 'time_reps' || measurementType === 'time_distance') {
+      updateData.duration_seconds = editForm.value.duration_seconds ? parseInt(editForm.value.duration_seconds) : null
+    }
+    
+    // Pour reps : toujours définir une valeur (0 pour time, la valeur pour les autres)
+    if (measurementType === 'time') {
+      updateData.reps = 0 // Pour les exercices time, on met 0 car il n'y a pas de répétitions
+    } else if (measurementType === 'time_reps' || measurementType === 'weight_reps' || measurementType === 'reps') {
+      updateData.reps = editForm.value.reps ? parseInt(editForm.value.reps) : (measurementType === 'time_reps' || measurementType === 'weight_reps' || measurementType === 'reps' ? 1 : 0)
+    } else {
+      updateData.reps = 0 // Par défaut pour les autres types
+    }
+    
+    if (measurementType === 'weight_reps' || measurementType === 'weight_only' || measurementType === 'reps') {
+      updateData.weight_kg = editForm.value.weight_kg ? parseFloat(editForm.value.weight_kg) : 0
+    }
+    
+    if (measurementType === 'time_distance' || measurementType === 'distance') {
+      // distance_meters pourrait être ajouté si nécessaire
+    }
+    
     const { error: updateError } = await supabase
       .from('exerciseset')
-      .update({
-        weight_kg: editForm.value.weight_kg,
-        reps: editForm.value.reps,
-        rest_seconds: editForm.value.rest_seconds,
-        rpe: editForm.value.rpe,
-        note: editForm.value.note
-      })
+      .update(updateData)
       .eq('id', editingSet.value.id)
 
     if (updateError) throw updateError
@@ -531,7 +689,7 @@ const handleEditSet = async () => {
     await loadExerciseData()
     closeEditModal()
   } catch (e) {
-    error.value = e.message
+    error.value = getUserFriendlyError(e.message)
   }
 }
 

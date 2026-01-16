@@ -1,13 +1,12 @@
 <template>
   <div>
-    <div class="h-64 overflow-x-auto chart-scroll-container">
-      <div :style="{ minWidth: chartMinWidth }" class="h-full">
-        <Bar
-          v-if="chartData"
-          :data="chartData"
-          :options="chartOptions"
-        />
-      </div>
+    <ChartPeriodFilter v-model="selectedPeriod" />
+    <div class="h-64">
+      <Bar
+        v-if="chartData"
+        :data="chartData"
+        :options="chartOptions"
+      />
     </div>
   </div>
 </template>
@@ -17,6 +16,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { Bar } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
+import ChartPeriodFilter from './ChartPeriodFilter.vue'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
@@ -27,11 +27,13 @@ const props = defineProps({
   }
 })
 
+const selectedPeriod = ref('week')
+
 const chartData = ref(null)
 const chartOptions = ref(null)
-const MAX_DATA_POINTS = 20 // Limite max de barres avant regroupement
+const MAX_DATA_POINTS = 25 // Limite max de barres avant regroupement
+const MAX_DISPLAY_POINTS = 40 // Maximum avec regroupement
 const allData = ref([])
-const chartMinWidth = ref('100%')
 
 const loadData = async () => {
   try {
@@ -58,6 +60,30 @@ const loadData = async () => {
   }
 }
 
+// Filtrer les données pour la vue "jour" (12 dernières séances)
+const filterDataByPeriod = (data, period) => {
+  if (period !== 'day') {
+    return data
+  }
+
+  // Prendre les 12 dernières séances (jours distincts)
+  const daySet = new Set()
+  const sorted = [...data].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const date = new Date(sorted[i].created_at)
+    const dayKey = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString()
+    daySet.add(dayKey)
+    if (daySet.size >= 12) break
+  }
+
+  return sorted.filter(item => {
+    const date = new Date(item.created_at)
+    const dayKey = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString()
+    return daySet.has(dayKey)
+  })
+}
+
 // Fonction pour mettre à jour le graphique
 const updateChart = () => {
   const data = allData.value
@@ -66,8 +92,11 @@ const updateChart = () => {
     return
   }
 
+  // Filtrer les données pour la vue "jour" (12 dernières séances)
+  const filteredData = filterDataByPeriod(data, selectedPeriod.value)
+
   // Trouver le maximum de répétitions pour chaque poids
-  let maxRepsByWeight = data.reduce((acc, curr) => {
+  let maxRepsByWeight = filteredData.reduce((acc, curr) => {
     const weight = `${curr.weight_kg}kg`
     if (!acc[weight] || curr.reps > acc[weight]) {
       acc[weight] = curr.reps
@@ -80,19 +109,31 @@ const updateChart = () => {
     return parseFloat(a) - parseFloat(b)
   })
 
-  // Calculer la largeur minimale du graphique (60px par barre)
-  // Activer le scroll horizontal à partir de 20 barres
-  const minWidthPerBar = 60
-  const minBarsForScroll = 20
-  if (sortedWeights.length >= minBarsForScroll) {
-    const calculatedWidth = sortedWeights.length * minWidthPerBar
-    chartMinWidth.value = `${calculatedWidth}px`
-  } else {
-    chartMinWidth.value = '100%'
-  }
-
-  // Si trop de données, regrouper les poids par incréments (mais permettre le scroll horizontal)
-  if (sortedWeights.length > MAX_DATA_POINTS) {
+  // Si beaucoup de données, regrouper les poids par incréments plus grands
+  if (sortedWeights.length > MAX_DISPLAY_POINTS) {
+    // Plus de 40 poids différents : utiliser un incrément plus grand
+    const allWeights = sortedWeights.map(w => parseFloat(w))
+    const minWeight = Math.min(...allWeights)
+    const maxWeight = Math.max(...allWeights)
+    const range = maxWeight - minWeight
+    
+    // Incrément plus grand pour réduire le nombre de barres
+    let increment = Math.ceil(range / MAX_DATA_POINTS / 5) * 5 // Arrondir à 5kg près
+    
+    const groupedMaxReps = {}
+    sortedWeights.forEach(weight => {
+      const numWeight = parseFloat(weight)
+      const groupKey = `${Math.round(numWeight / increment) * increment}kg`
+      if (!groupedMaxReps[groupKey] || maxRepsByWeight[weight] > groupedMaxReps[groupKey]) {
+        groupedMaxReps[groupKey] = maxRepsByWeight[weight]
+      }
+    })
+    
+    sortedWeights = Object.keys(groupedMaxReps).sort((a, b) => {
+      return parseFloat(a) - parseFloat(b)
+    })
+    maxRepsByWeight = groupedMaxReps
+  } else if (sortedWeights.length > MAX_DATA_POINTS) {
     const groupedMaxReps = {}
     const allWeights = sortedWeights.map(w => parseFloat(w))
     const minWeight = Math.min(...allWeights)
@@ -121,15 +162,11 @@ const updateChart = () => {
       return parseFloat(a) - parseFloat(b)
     })
     maxRepsByWeight = groupedMaxReps
-    
-    // Recalculer la largeur après regroupement
-    if (sortedWeights.length >= minBarsForScroll) {
-      const recalculatedWidth = sortedWeights.length * minWidthPerBar
-      chartMinWidth.value = `${recalculatedWidth}px`
-    } else {
-      chartMinWidth.value = '100%'
-    }
   }
+  
+  // Calculer la taille des barres selon le nombre de données
+  const barThickness = sortedWeights.length > 20 ? 'flex' : undefined
+  const maxBarThickness = sortedWeights.length > 20 ? 20 : 40
 
   chartData.value = {
     labels: sortedWeights,
@@ -138,9 +175,14 @@ const updateChart = () => {
       data: sortedWeights.map(weight => maxRepsByWeight[weight]),
       backgroundColor: '#FE751C',
       borderColor: '#FE751C',
-      borderWidth: 1
+      borderWidth: 1,
+      barThickness: barThickness,
+      maxBarThickness: maxBarThickness
     }]
   }
+  
+  // Calculer le nombre optimal de ticks à afficher
+  const optimalTicks = Math.min(sortedWeights.length, 15)
   
   chartOptions.value = {
     responsive: true,
@@ -169,6 +211,16 @@ const updateChart = () => {
         title: {
           display: true,
           text: 'Poids (kg)'
+        },
+        ticks: {
+          maxRotation: sortedWeights.length > 15 ? 90 : 45,
+          minRotation: sortedWeights.length > 15 ? 90 : 0,
+          maxTicksLimit: optimalTicks,
+          autoSkip: true,
+          autoSkipPadding: 5,
+          font: {
+            size: sortedWeights.length > 20 ? 10 : 12
+          }
         }
       }
     }
@@ -178,28 +230,13 @@ const updateChart = () => {
 // Mettre à jour le graphique quand la période change
 onMounted(loadData)
 watch(() => props.exerciseId, loadData)
+watch(selectedPeriod, () => {
+  if (allData.value.length) {
+    updateChart()
+  }
+})
 </script>
 
 <style scoped>
-.chart-scroll-container {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(254, 117, 28, 0.3) transparent;
-}
-
-.chart-scroll-container::-webkit-scrollbar {
-  height: 8px;
-}
-
-.chart-scroll-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.chart-scroll-container::-webkit-scrollbar-thumb {
-  background-color: rgba(254, 117, 28, 0.3);
-  border-radius: 4px;
-}
-
-.chart-scroll-container::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(254, 117, 28, 0.5);
-}
+/* Styles supprimés - plus de scroll horizontal */
 </style> 
