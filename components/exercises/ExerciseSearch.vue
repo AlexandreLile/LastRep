@@ -51,7 +51,7 @@
 
       <!-- Liste des exercices - toujours affichée sur mobile -->
       <div
-        v-if="exercises && exercises.length > 0"
+        v-if="exercisesList.length > 0"
         ref="exerciseList"
         class="mt-2 bg-card border rounded-xl shadow-sm overflow-y-auto overflow-x-hidden transition-all duration-300 exercise-list"
         :class="{ 'max-h-60': !isMobile, 'max-h-[60vh]': isMobile }"
@@ -67,7 +67,7 @@
         </div>
         
         <div
-          v-for="exercise in filteredExercises.length > 0 ? filteredExercises : exercises"
+          v-for="exercise in filteredExercises"
           :key="exercise.id"
           class="group relative hover:bg-primary/5 active:bg-primary/10 transition-all duration-200 p-3 flex flex-col md:flex-row md:items-center gap-3 border-b last:border-b-0 transform-gpu"
         >
@@ -82,9 +82,17 @@
             
             <div class="flex-1 min-w-0">
               <div class="font-medium text-foreground break-words pr-1">{{ exercise.name }}</div>
-              <div class="text-sm text-muted-foreground mt-1">
-                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-muted/80 text-muted-foreground border border-border/50 shadow-sm">
-                  {{ exercise.primary_muscle }}
+              <div class="text-sm text-muted-foreground mt-1 flex flex-wrap gap-1.5">
+                <span
+                  v-for="(muscle, index) in (exercise.muscles_names || [exercise.primary_muscle].filter(Boolean))"
+                  :key="index"
+                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-muted/80 text-muted-foreground border border-border/50 shadow-sm"
+                  :class="{ 'bg-primary/10 text-primary border-primary/30': index === 0 }"
+                >
+                  {{ muscle }}
+                  <span v-if="index === 0 && (exercise.muscles_names || []).length > 1" class="ml-1 text-[10px] opacity-70">
+                    (Principal)
+                  </span>
                 </span>
               </div>
             </div>
@@ -154,6 +162,11 @@ const exercises = computed(() => {
   return props.exercises !== null ? props.exercises : localExercises.value;
 });
 
+// Liste des exercices pour l'affichage (computed pour réactivité)
+const exercisesList = computed(() => {
+  return exercises.value || [];
+});
+
 // Fonction pour normaliser le texte (enlever les accents)
 const normalizeText = (text) => {
   if (!text) return '';
@@ -193,16 +206,25 @@ watch(searchQuery, (newVal) => {
 // Une version simplifiée mais efficace du filtrage
 const filteredExercises = computed(() => {
   const query = (searchQuery.value || '').toLowerCase();
-  const exercisesList = exercises.value || [];
+  const exercisesArray = exercises.value || [];
   
   // Si requête vide, retourner tous les exercices
-  if (!query) return exercisesList;
+  if (!query) return exercisesArray;
   
   // Sinon, filtrer explicitement
-  return exercisesList.filter(ex => {
+  return exercisesArray.filter(ex => {
+    if (!ex) return false;
+    
     const name = (ex.name || '').toLowerCase();
-    const muscle = (ex.primary_muscle || '').toLowerCase();
-    return name.includes(query) || muscle.includes(query);
+    const primaryMuscle = (ex.primary_muscle || '').toLowerCase();
+    // Rechercher aussi dans tous les muscles si disponibles
+    const allMuscles = ex.muscles_names || [];
+    const musclesMatch = allMuscles.length > 0 && allMuscles.some(m => {
+      if (!m) return false;
+      return m.toLowerCase().includes(query);
+    });
+    
+    return name.includes(query) || primaryMuscle.includes(query) || musclesMatch;
   });
 });
 

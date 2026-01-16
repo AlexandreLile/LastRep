@@ -23,29 +23,37 @@
           />
         </div>
 
-        <!-- Muscle principal -->
+        <!-- Muscles (sélection multiple) -->
         <div class="space-y-2">
-          <Label for="muscle">Muscle principal *</Label>
-          <select
-            id="muscle"
-            v-model="form.primary_muscle"
-            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            required
-            :disabled="loading"
-          >
-            <option value="">Sélectionnez un muscle</option>
-            <option value="Pectoraux">Pectoraux</option>
-            <option value="Dorsaux">Dorsaux</option>
-            <option value="Épaules">Épaules</option>
-            <option value="Biceps">Biceps</option>
-            <option value="Triceps">Triceps</option>
-            <option value="Jambes">Jambes</option>
-            <option value="Fessiers">Fessiers</option>
-            <option value="Mollets">Mollets</option>
-            <option value="Abdominaux">Abdominaux</option>
-            <option value="Cardio">Cardio</option>
-            <option value="Autre">Autre</option>
-          </select>
+          <Label for="muscles">Muscles sollicités *</Label>
+          <p class="text-xs text-muted-foreground mb-2">
+            Sélectionnez un ou plusieurs muscles. Le premier sera le muscle principal.
+          </p>
+          <div class="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3">
+            <label
+              v-for="muscle in availableMuscles"
+              :key="muscle"
+              class="flex items-center space-x-2 p-2 rounded hover:bg-muted/50 cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                :value="muscle"
+                v-model="form.muscles"
+                class="rounded border-gray-300 text-primary focus:ring-primary"
+                :disabled="loading"
+              />
+              <span class="text-sm">{{ muscle }}</span>
+              <span 
+                v-if="form.muscles[0] === muscle && form.muscles.length > 0" 
+                class="text-xs text-primary font-medium ml-auto"
+              >
+                (Principal)
+              </span>
+            </label>
+          </div>
+          <p v-if="form.muscles.length === 0" class="text-xs text-destructive">
+            Veuillez sélectionner au moins un muscle
+          </p>
         </div>
 
         <!-- Type de mesure -->
@@ -142,9 +150,50 @@ const error = ref('')
 
 const form = ref({
   name: '',
-  primary_muscle: '',
+  muscles: [], // Tableau pour plusieurs muscles
   measurement_type: 'weight_reps'
 })
+
+const availableMuscles = [
+  'Pectoraux',
+  'Pectoraux supérieurs',
+  'Pectoraux inférieurs',
+  'Dorsaux',
+  'Grand dorsal',
+  'Rhomboïdes',
+  'Épaules',
+  'Deltoïdes antérieurs',
+  'Deltoïdes postérieurs',
+  'Deltoïdes moyens',
+  'Biceps',
+  'Brachial antérieur',
+  'Triceps',
+  'Avant-bras',
+  'Jambes',
+  'Fessiers',
+  'Fessiers moyens',
+  'Petit fessier',
+  'Ischio-jambiers',
+  'Quadriceps',
+  'Adducteurs',
+  'Mollets',
+  'Gastrocnémien',
+  'Soléaire',
+  'Tibial antérieur',
+  'Lombaires',
+  'Érecteurs du rachis',
+  'Trapèzes',
+  'Trapèzes supérieurs',
+  'Trapèzes moyens',
+  'Trapèzes inférieurs',
+  'Abdominaux',
+  'Grand droit',
+  'Obliques',
+  'Transverse',
+  'Fléchisseurs de hanche',
+  'Cardio',
+  'Autre'
+]
 
 const measurementTypes = [
   {
@@ -191,7 +240,7 @@ watch(isOpen, (newValue) => {
   if (newValue) {
     form.value = {
       name: '',
-      primary_muscle: '',
+      muscles: [],
       measurement_type: 'weight_reps'
     }
     error.value = ''
@@ -199,8 +248,8 @@ watch(isOpen, (newValue) => {
 })
 
 const handleSubmit = async () => {
-  if (!form.value.name || !form.value.primary_muscle) {
-    error.value = 'Veuillez remplir tous les champs obligatoires'
+  if (!form.value.name || form.value.muscles.length === 0) {
+    error.value = 'Veuillez remplir tous les champs obligatoires et sélectionner au moins un muscle'
     return
   }
 
@@ -213,11 +262,15 @@ const handleSubmit = async () => {
       throw new Error('Utilisateur non authentifié')
     }
 
-    const { data, error: insertError } = await supabase
+    // Le premier muscle sélectionné est le muscle principal
+    const primaryMuscle = form.value.muscles[0]
+
+    // Créer l'exercice
+    const { data: exerciseData, error: insertError } = await supabase
       .from('exercise')
       .insert({
         name: form.value.name,
-        primary_muscle: form.value.primary_muscle,
+        primary_muscle: primaryMuscle, // Garder pour compatibilité
         measurement_type: form.value.measurement_type,
         is_custom: true,
         user_id: user.id
@@ -227,8 +280,29 @@ const handleSubmit = async () => {
 
     if (insertError) throw insertError
 
+    // Récupérer les IDs des muscles depuis la table muscle
+    const { data: musclesData, error: musclesError } = await supabase
+      .from('muscle')
+      .select('id, name')
+      .in('name', form.value.muscles)
+
+    if (musclesError) throw musclesError
+
+    // Créer les associations exercise_muscle
+    const exerciseMuscles = musclesData.map((muscle, index) => ({
+      exercise_id: exerciseData.id,
+      muscle_id: muscle.id,
+      is_primary: index === 0 // Le premier est le muscle principal
+    }))
+
+    const { error: exerciseMusclesError } = await supabase
+      .from('exercise_muscle')
+      .insert(exerciseMuscles)
+
+    if (exerciseMusclesError) throw exerciseMusclesError
+
     toast.success('Exercice créé avec succès !')
-    emit('created', data)
+    emit('created', exerciseData)
     emit('update:open', false)
   } catch (e) {
     console.error('Erreur lors de la création de l\'exercice:', e)
