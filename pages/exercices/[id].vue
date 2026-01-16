@@ -44,7 +44,9 @@
             <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
               <Trophy class="h-5 w-5 text-primary" />
             </div>
-            <h3 class="text-sm font-medium text-muted-foreground">1RM max</h3>
+            <h3 class="text-sm font-medium text-muted-foreground">
+              {{ exercise?.measurement_type === 'reps' ? 'Max reps' : '1RM max' }}
+            </h3>
           </div>
           <LastSetRMStats :exercise-id="route.params.id" />
         </div>
@@ -62,46 +64,148 @@
             <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
               <Weight class="h-5 w-5 text-primary" />
             </div>
-            <h3 class="text-sm font-medium text-muted-foreground">Volume total</h3>
+            <h3 class="text-sm font-medium text-muted-foreground">
+              {{ exercise?.measurement_type === 'reps' ? 'Total répétitions' : 'Volume total' }}
+            </h3>
           </div>
           <TotalVolumeStats :exercise-id="route.params.id" />
         </div>
       </div>
 
-      <!-- Graphiques avec en-têtes améliorés -->
+      <!-- Graphiques avec en-têtes améliorés - Adaptés selon le type d'exercice -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-              <BarChart class="w-5 h-5 text-primary" />
+        <!-- Graphiques pour exercices avec poids (weight_reps, weight_only) -->
+        <template v-if="exercise?.measurement_type === 'weight_reps' || exercise?.measurement_type === 'weight_only'">
+          <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <BarChart class="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold">Poids vs Répétitions</h3>
+                <p class="text-sm text-muted-foreground">Maximum de répétitions pour chaque poids</p>
+              </div>
             </div>
-            <div>
-              <h3 class="text-lg font-semibold">Poids vs Répétitions</h3>
-              <p class="text-sm text-muted-foreground">Maximum de répétitions pour chaque poids</p>
-            </div>
-          </div>
-          <div class="flex-1">
-            <WeightRepsChart :exercise-id="route.params.id" />
-          </div>
-        </div>
-        <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-              <LineChart class="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h3 class="text-lg font-semibold">Progression du poids</h3>
-              <p class="text-sm text-muted-foreground">Poids maximum par jour d'entraînement</p>
+            <div class="flex-1">
+              <WeightRepsChart :exercise-id="route.params.id" />
             </div>
           </div>
-          <div class="flex-1">
-            <WeightProgressionChart :exercise-id="route.params.id" />
+          <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <LineChart class="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold">Progression du poids</h3>
+                <p class="text-sm text-muted-foreground">Poids maximum par jour d'entraînement</p>
+              </div>
+            </div>
+            <div class="flex-1">
+              <WeightProgressionChart :exercise-id="route.params.id" />
+            </div>
           </div>
-        </div>
+        </template>
+
+        <!-- Graphiques pour exercices en répétitions (reps) -->
+        <template v-else-if="exercise?.measurement_type === 'reps'">
+          <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <LineChart class="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold">Progression des répétitions</h3>
+                <p class="text-sm text-muted-foreground">Total de répétitions par jour d'entraînement</p>
+              </div>
+            </div>
+            <div class="flex-1">
+              <RepsProgressionChart :exercise-id="route.params.id" />
+            </div>
+          </div>
+          <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <BarChart class="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold">Répétitions par série</h3>
+                <p class="text-sm text-muted-foreground">Nombre de répétitions pour chaque série</p>
+              </div>
+            </div>
+            <div class="flex-1">
+              <RepsPerSetChart :exercise-id="route.params.id" />
+            </div>
+          </div>
+        </template>
+
+        <!-- Graphiques pour exercices en temps (time, time_reps) -->
+        <template v-else-if="exercise?.measurement_type === 'time' || exercise?.measurement_type === 'time_reps'">
+          <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <LineChart class="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold">Progression du temps</h3>
+                <p class="text-sm text-muted-foreground">Temps total par jour d'entraînement</p>
+              </div>
+            </div>
+            <div class="flex-1">
+              <TimeProgressionChart :exercise-id="route.params.id" />
+            </div>
+          </div>
+          <!-- Graphique répétitions par série pour time_reps -->
+          <div v-if="exercise?.measurement_type === 'time_reps'" class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <BarChart class="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold">Répétitions par série</h3>
+                <p class="text-sm text-muted-foreground">Nombre de répétitions pour chaque série</p>
+              </div>
+            </div>
+            <div class="flex-1">
+              <RepsPerSetChart :exercise-id="route.params.id" />
+            </div>
+          </div>
+        </template>
+
+        <!-- Par défaut : graphiques avec poids (pour compatibilité) -->
+        <template v-else>
+          <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <BarChart class="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold">Poids vs Répétitions</h3>
+                <p class="text-sm text-muted-foreground">Maximum de répétitions pour chaque poids</p>
+              </div>
+            </div>
+            <div class="flex-1">
+              <WeightRepsChart :exercise-id="route.params.id" />
+            </div>
+          </div>
+          <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <LineChart class="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold">Progression du poids</h3>
+                <p class="text-sm text-muted-foreground">Poids maximum par jour d'entraînement</p>
+              </div>
+            </div>
+            <div class="flex-1">
+              <WeightProgressionChart :exercise-id="route.params.id" />
+            </div>
+          </div>
+        </template>
       </div>
 
-      <!-- 1RM estimé -->
-      <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
+      <!-- 1RM estimé (uniquement pour exercices avec poids) -->
+      <div v-if="exercise?.measurement_type === 'weight_reps' || exercise?.measurement_type === 'weight_only' || !exercise?.measurement_type" class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <Target class="w-5 h-5 text-primary" />
@@ -286,6 +390,9 @@ import { ref, onMounted } from 'vue'
 import { useSupabaseClient } from '#imports'
 import WeightRepsChart from '~/components/charts/WeightRepsChart.vue'
 import WeightProgressionChart from '~/components/charts/WeightProgressionChart.vue'
+import RepsProgressionChart from '~/components/charts/RepsProgressionChart.vue'
+import RepsPerSetChart from '~/components/charts/RepsPerSetChart.vue'
+import TimeProgressionChart from '~/components/charts/TimeProgressionChart.vue'
 import RMCalculator from '~/components/charts/RMCalculator.vue'
 import LastSetRMStats from '~/components/stats/LastSetRMStats.vue'
 import LastExerciseSessionStats from '~/components/stats/LastExerciseSessionStats.vue'

@@ -29,7 +29,6 @@ const props = defineProps({
 
 const chartData = ref(null)
 const chartOptions = ref(null)
-const MAX_DATA_POINTS = 20 // Limite max de barres avant regroupement
 const allData = ref([])
 const chartMinWidth = ref('100%')
 
@@ -42,16 +41,15 @@ const loadData = async () => {
 
     const { data, error } = await supabase
       .from('exerciseset')
-      .select('weight_kg, reps, created_at')
+      .select('reps, created_at')
       .eq('exercise_id', props.exerciseId)
       .eq('user_id', user.id)
+      .not('reps', 'is', null)
       .order('created_at', { ascending: true })
 
     if (error) throw error
     
-    // Stocker toutes les données
     allData.value = data
-    
     updateChart()
   } catch (e) {
     console.error('Erreur lors du chargement des données:', e)
@@ -66,76 +64,41 @@ const updateChart = () => {
     return
   }
 
-  // Trouver le maximum de répétitions pour chaque poids
-  let maxRepsByWeight = data.reduce((acc, curr) => {
-    const weight = `${curr.weight_kg}kg`
-    if (!acc[weight] || curr.reps > acc[weight]) {
-      acc[weight] = curr.reps
-    }
-    return acc
-  }, {})
-
-  // Trier les poids par valeur numérique croissante
-  let sortedWeights = Object.keys(maxRepsByWeight).sort((a, b) => {
-    return parseFloat(a) - parseFloat(b)
+  // Créer un label pour chaque série (numérotation séquentielle globale)
+  const labels = []
+  const reps = []
+  
+  // Numéroter toutes les séries de manière séquentielle dans l'ordre chronologique
+  data.forEach((set, index) => {
+    const date = new Date(set.created_at).toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'short'
+    })
+    
+    // Label: date + numéro de série global (S1, S2, S3, etc.)
+    labels.push(`${date} S${index + 1}`)
+    reps.push(set.reps)
   })
 
   // Calculer la largeur minimale du graphique (60px par barre)
   // Activer le scroll horizontal à partir de 20 barres
   const minWidthPerBar = 60
   const minBarsForScroll = 20
-  if (sortedWeights.length >= minBarsForScroll) {
-    const calculatedWidth = sortedWeights.length * minWidthPerBar
+  if (labels.length >= minBarsForScroll) {
+    const calculatedWidth = labels.length * minWidthPerBar
     chartMinWidth.value = `${calculatedWidth}px`
   } else {
     chartMinWidth.value = '100%'
   }
 
-  // Si trop de données, regrouper les poids par incréments (mais permettre le scroll horizontal)
-  if (sortedWeights.length > MAX_DATA_POINTS) {
-    const groupedMaxReps = {}
-    const allWeights = sortedWeights.map(w => parseFloat(w))
-    const minWeight = Math.min(...allWeights)
-    const maxWeight = Math.max(...allWeights)
-    const range = maxWeight - minWeight
-    
-    // Calculer l'incrément optimal
-    let increment = 2.5 // Incrément minimum
-    if (range / increment > MAX_DATA_POINTS) {
-      // Augmenter l'incrément pour avoir moins de barres
-      increment = Math.ceil(range / MAX_DATA_POINTS / 2.5) * 2.5
-    }
-    
-    // Regrouper par incréments
-    sortedWeights.forEach(weight => {
-      const numWeight = parseFloat(weight)
-      // Arrondir au plus proche multiple de l'incrément
-      const groupKey = `${Math.round(numWeight / increment) * increment}kg`
-      if (!groupedMaxReps[groupKey] || maxRepsByWeight[weight] > groupedMaxReps[groupKey]) {
-        groupedMaxReps[groupKey] = maxRepsByWeight[weight]
-      }
-    })
-    
-    // Mettre à jour les données
-    sortedWeights = Object.keys(groupedMaxReps).sort((a, b) => {
-      return parseFloat(a) - parseFloat(b)
-    })
-    maxRepsByWeight = groupedMaxReps
-    
-    // Recalculer la largeur après regroupement
-    if (sortedWeights.length >= minBarsForScroll) {
-      const recalculatedWidth = sortedWeights.length * minWidthPerBar
-      chartMinWidth.value = `${recalculatedWidth}px`
-    } else {
-      chartMinWidth.value = '100%'
-    }
-  }
+  const minReps = Math.min(...reps)
+  const maxReps = Math.max(...reps)
 
   chartData.value = {
-    labels: sortedWeights,
+    labels: labels,
     datasets: [{
-      label: 'Répétitions max',
-      data: sortedWeights.map(weight => maxRepsByWeight[weight]),
+      label: 'Répétitions par série',
+      data: reps,
       backgroundColor: '#FE751C',
       borderColor: '#FE751C',
       borderWidth: 1
@@ -152,7 +115,7 @@ const updateChart = () => {
       tooltip: {
         callbacks: {
           label: function(context) {
-            return `Répétitions max: ${context.parsed.y}`;
+            return `Répétitions: ${context.parsed.y} reps`
           }
         }
       }
@@ -160,22 +123,30 @@ const updateChart = () => {
     scales: {
       y: {
         beginAtZero: true,
+        min: Math.max(0, minReps - 2),
+        max: maxReps + 2,
         title: {
           display: true,
-          text: 'Répétitions (max)'
+          text: 'Répétitions'
         }
       },
       x: {
         title: {
           display: true,
-          text: 'Poids (kg)'
+          text: 'Séries'
+        },
+        ticks: {
+          maxRotation: 45,
+          minRotation: 45,
+          maxTicksLimit: 30,
+          autoSkip: true,
+          autoSkipPadding: 10
         }
       }
     }
   }
 }
 
-// Mettre à jour le graphique quand la période change
 onMounted(loadData)
 watch(() => props.exerciseId, loadData)
 </script>
@@ -202,4 +173,4 @@ watch(() => props.exerciseId, loadData)
 .chart-scroll-container::-webkit-scrollbar-thumb:hover {
   background-color: rgba(254, 117, 28, 0.5);
 }
-</style> 
+</style>

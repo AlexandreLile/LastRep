@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-if="loading" class="flex justify-center items-center h-32">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-b-2 border-primary"></div>
     </div>
 
     <div v-else-if="lastSession" class="space-y-6">
@@ -41,6 +41,31 @@
           </div>
         </div>
       </div>
+
+      <!-- Bouton pour ouvrir la modale du récapitulatif -->
+      <Dialog v-model:open="showRecap">
+        <DialogTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            class="w-full flex items-center justify-center gap-2"
+          >
+            <Trophy class="w-4 h-4" />
+            <span>Voir le récapitulatif</span>
+          </Button>
+        </DialogTrigger>
+        <DialogContent class="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle class="text-2xl font-bold">Récapitulatif de la séance</DialogTitle>
+            <DialogDescription>
+              Détails de votre dernière séance : records battus, meilleures séries et évolutions
+            </DialogDescription>
+          </DialogHeader>
+          <div class="mt-4">
+            <SessionRecap />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
 
     <div v-else class="flex flex-col items-center justify-center py-8 px-4 space-y-4 bg-muted/50 rounded-lg">
@@ -55,13 +80,17 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useSupabaseClient } from '#imports'
-import { Timer, Dumbbell, ArrowUp, ArrowDown, Calendar, Clock } from 'lucide-vue-next'
+import { Timer, Dumbbell, ArrowUp, ArrowDown, Calendar, Clock, Trophy } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import SessionRecap from '~/components/stats/SessionRecap.vue'
 
 const supabase = useSupabaseClient()
 const loading = ref(true)
 const lastSession = ref(null)
 const totalWeight = ref(0)
 const volumeDifference = ref(null)
+const showRecap = ref(false)
 
 const fetchLastSession = async () => {
   try {

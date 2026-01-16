@@ -1,19 +1,5 @@
 <template>
   <div>
-    <!-- Filtres de période -->
-    <div class="mb-4 flex flex-wrap gap-2">
-      <Button
-        v-for="period in periods"
-        :key="period.value"
-        :variant="selectedPeriod === period.value ? 'default' : 'outline'"
-        size="sm"
-        @click="selectedPeriod = period.value"
-        class="text-xs"
-      >
-        {{ period.label }}
-      </Button>
-    </div>
-    
     <div class="h-64 overflow-x-auto chart-scroll-container">
       <div :style="{ minWidth: chartMinWidth }" class="h-full">
         <Line
@@ -27,11 +13,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { Line } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
-import { Button } from '@/components/ui/button'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
@@ -45,49 +30,8 @@ const props = defineProps({
 const chartData = ref(null)
 const chartOptions = ref(null)
 const MAX_DATA_POINTS = 30 // Limite max de points à afficher avant regroupement
-const selectedPeriod = ref('all')
 const allData = ref([])
 const chartMinWidth = ref('100%')
-
-const periods = [
-  { value: 'all', label: 'Tout' },
-  { value: 'year', label: '1 an' },
-  { value: 'month', label: '1 mois' },
-  { value: 'week', label: '1 semaine' },
-  { value: 'last30', label: '30 derniers' }
-]
-
-// Filtrer les données selon la période sélectionnée
-const filteredData = computed(() => {
-  if (!allData.value.length) return []
-  
-  const now = new Date()
-  let startDate = null
-  
-  switch (selectedPeriod.value) {
-    case 'week':
-      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-      break
-    case 'month':
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1)
-      break
-    case 'year':
-      startDate = new Date(now.getFullYear(), 0, 1)
-      break
-    case 'last30':
-      // Retourner les 30 derniers points
-      return allData.value.slice(-30)
-    case 'all':
-    default:
-      return allData.value
-  }
-  
-  if (startDate) {
-    return allData.value.filter(item => new Date(item.created_at) >= startDate)
-  }
-  
-  return allData.value
-})
 
 // Fonction pour regrouper les données par période (semaine ou mois)
 const groupDataByPeriod = (data, period = 'week') => {
@@ -200,9 +144,9 @@ const loadData = async () => {
   }
 }
 
-// Fonction pour mettre à jour le graphique avec les données filtrées
+// Fonction pour mettre à jour le graphique
 const updateChart = () => {
-  const data = filteredData.value
+  const data = allData.value
   if (!data.length) {
     chartData.value = null
     return
@@ -323,11 +267,6 @@ const updateChart = () => {
     }
   }
 }
-
-// Mettre à jour le graphique quand la période change
-watch(selectedPeriod, () => {
-  updateChart()
-})
 
 onMounted(loadData)
 watch(() => props.exerciseId, loadData)
