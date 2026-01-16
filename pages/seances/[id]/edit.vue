@@ -85,7 +85,7 @@
                 <Button
                   type="button"
                   class="flex items-center gap-2 shadow-sm hover:shadow transition-all duration-300 w-full sm:w-auto"
-                  @click="showAddExercise = true"
+                  @click="openAddExerciseModal"
                 >
                   <Plus class="h-4 w-4" />
                   <span class="hidden sm:inline">Ajouter des exercices</span>
@@ -226,20 +226,47 @@
       </div>
     </div>
 
-    <!-- Modal d'ajout d'exercices -->
-    <Dialog :open="showAddExercise" @update:open="showAddExercise = false">
-      <DialogContent class="sm:max-w-lg max-w-[95vw] w-full overflow-hidden p-4 sm:p-6">
-        <DialogHeader>
+    <!-- Modal d'ajout d'exercices - Full screen sur mobile -->
+    <Dialog :open="showAddExercise" @update:open="handleModalClose">
+      <DialogContent 
+        :class="[
+          'p-0',
+          isMobile 
+            ? 'fixed inset-0 !translate-x-0 !translate-y-0 !top-0 !left-0 w-full h-full max-w-full max-h-full rounded-none' 
+            : 'sm:max-w-2xl sm:p-6'
+        ]"
+      >
+        <!-- Header mobile avec bouton retour -->
+        <div class="sticky top-0 z-10 bg-card border-b border-border p-4 flex items-center gap-3 sm:hidden">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            class="h-10 w-10 rounded-full"
+            @click="handleModalClose(false)"
+          >
+            <ArrowLeft class="h-5 w-5" />
+          </Button>
+          <div>
+            <h2 class="text-lg font-semibold">Ajouter des exercices</h2>
+            <p class="text-xs text-muted-foreground">Sélectionnez des exercices</p>
+          </div>
+        </div>
+        
+        <!-- Header desktop -->
+        <DialogHeader class="hidden sm:block pb-4">
           <DialogTitle>Ajouter des exercices</DialogTitle>
           <DialogDescription>
             Sélectionnez des exercices à ajouter à votre séance
           </DialogDescription>
         </DialogHeader>
-        <AddExerciseToSession
-          :session-id="route.params.id"
-          @close="showAddExercise = false"
-          @update-exercises="handleExercisesUpdate"
-        />
+        
+        <div class="flex-1 overflow-auto sm:overflow-visible h-full">
+          <AddExerciseToSession
+            :session-id="route.params.id"
+            @close="handleModalClose(false)"
+            @update-exercises="handleExercisesUpdate"
+          />
+        </div>
       </DialogContent>
     </Dialog>
 
@@ -283,6 +310,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const route = useRoute();
 const router = useRouter();
@@ -304,6 +338,34 @@ const isDragging = ref(false);
 const draggedItemId = ref(null);
 const isMobile = ref(false);
 const showDeleteExerciseModal = ref(false);
+
+// Gestion du bouton retour hardware pour la modale
+const handleModalClose = (value) => {
+  if (value === false) {
+    showAddExercise.value = false;
+    // Retirer l'entrée de l'historique si on ferme manuellement
+    if (window.history.state?.modalOpen) {
+      window.history.back();
+    }
+  } else {
+    showAddExercise.value = value;
+  }
+};
+
+// Gestion du popstate (bouton retour hardware)
+const handlePopState = (event) => {
+  if (showAddExercise.value) {
+    showAddExercise.value = false;
+    event.preventDefault();
+  }
+};
+
+// Ouvrir la modale avec gestion de l'historique
+const openAddExerciseModal = () => {
+  // Ajouter une entrée dans l'historique pour le bouton retour
+  window.history.pushState({ modalOpen: true }, '');
+  showAddExercise.value = true;
+};
 const exerciseToDeleteId = ref(null);
 const exerciseToDeleteName = ref('');
 
@@ -478,10 +540,12 @@ onMounted(() => {
   loadSession();
   checkMobile();
   window.addEventListener('resize', checkMobile);
+  window.addEventListener('popstate', handlePopState);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', checkMobile);
+  window.removeEventListener('popstate', handlePopState);
 });
 </script>
 
@@ -505,4 +569,13 @@ onBeforeUnmount(() => {
   background-color: hsla(var(--primary), 0.05);
   border: 2px dashed hsla(var(--primary), 0.3);
 }
-</style> 
+</style>
+
+<style>
+/* Cacher le bouton X par défaut de DialogContent sur mobile */
+@media (max-width: 639px) {
+  [data-slot="dialog-content"] > button:has(svg) {
+    display: none !important;
+  }
+}
+</style>

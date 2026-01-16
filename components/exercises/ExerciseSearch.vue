@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full overflow-hidden">
-    <CardContent class="p-0">
+  <div class="w-full overflow-hidden h-full flex flex-col">
+    <CardContent class="p-0 flex flex-col flex-1 overflow-hidden">
       <!-- Formulaire de recherche mobile-first -->
       <form ref="searchForm" class="space-y-4 px-2 pb-2">
         <!-- Bouton créer exercice personnalisé -->
@@ -53,8 +53,8 @@
       <div
         v-if="exercisesList.length > 0"
         ref="exerciseList"
-        class="mt-2 bg-card border rounded-xl shadow-sm overflow-y-auto overflow-x-hidden transition-all duration-300 exercise-list"
-        :class="{ 'max-h-60': !isMobile, 'max-h-[60vh]': isMobile }"
+        class="mt-2 bg-card border rounded-xl shadow-sm overflow-y-auto overflow-x-hidden transition-all duration-300 exercise-list flex-1"
+        :class="{ 'sm:max-h-60': !isMobile }"
       >
         <div 
           v-if="filteredExercises.length === 0 && searchQuery" 
@@ -315,6 +315,9 @@ const forceSyncInput = (event) => {
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: y proximity;
     overscroll-behavior: contain;
+    /* Sur mobile full screen, la liste prend l'espace disponible */
+    max-height: none;
+    min-height: 0;
   }
   
   /* Rendre les boutons et zones cliquables plus grands pour mobile */
@@ -329,10 +332,10 @@ const forceSyncInput = (event) => {
   padding: 12px 16px;
 }
 
-/* Réduire la hauteur de la liste sur les petits écrans */
-@media (max-height: 600px) {
-  .exercise-list.max-h-\[60vh\] {
-    max-height: 50vh;
+/* Desktop - limiter la hauteur */
+@media (min-width: 769px) {
+  .exercise-list {
+    max-height: 400px;
   }
 }
 </style> 

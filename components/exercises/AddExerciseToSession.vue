@@ -1,15 +1,7 @@
 <template>
-  <div class="space-y-4 overflow-hidden max-h-[75vh] flex flex-col">
-    <!-- Titre et instructions pour mobile -->
-    <div class="px-3 pb-1 pt-2 text-center md:hidden">
-      <h3 class="text-base font-medium text-primary">Trouvez et ajoutez des exercices</h3>
-      <p class="text-xs text-muted-foreground mt-1">
-        Recherchez et ajoutez des exercices à votre séance d'entraînement
-      </p>
-    </div>
-
+  <div class="space-y-4 overflow-hidden sm:max-h-[75vh] h-full flex flex-col">
     <!-- Composant de recherche avec flex-grow pour occuper l'espace disponible -->
-    <div class="flex-grow overflow-hidden">
+    <div class="flex-grow overflow-auto px-4 sm:px-0 pt-2 sm:pt-0">
       <ExerciseSearch
         :exercises="exercises"
         :added-exercises="currentExercises"
@@ -24,17 +16,6 @@
       @update:open="showCreateDialog = $event"
       @created="handleExerciseCreated"
     />
-    
-    <!-- Bouton de fermeture optimisé pour mobile -->
-    <div class="sticky bottom-0 bg-card border-t border-border p-3 shadow-md">
-      <Button 
-        variant="default" 
-        class="w-full h-12 text-base"
-        @click="$emit('close')"
-      >
-        Terminé
-      </Button>
-    </div>
   </div>
 </template>
 
