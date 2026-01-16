@@ -135,6 +135,17 @@
           </div>
           <SessionWeightChart :workout-session-id="route.params.id" />
         </div>
+
+        <!-- Répartition des muscles -->
+        <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <PieChart class="w-5 h-5 text-primary" />
+            </div>
+            <h3 class="text-lg font-semibold">Répartition des muscles</h3>
+          </div>
+          <MuscleDistributionChart :workout-session-id="route.params.id" />
+        </div>
         
         <!-- Section de motivation -->
         <div v-if="exercises.length > 0" class="bg-primary rounded-xl p-6 text-white hover:shadow-lg transition-all duration-300">
@@ -164,12 +175,14 @@ import { useWorkoutExercise } from '~/composables/useWorkoutExercise'
 import { usePerformedSession } from '~/composables/usePerformedSession'
 import RMCalculator from '@/components/charts/RMCalculator.vue'
 import SessionWeightChart from '@/components/charts/SessionWeightChart.vue'
+import MuscleDistributionChart from '@/components/charts/MuscleDistributionChart.vue'
 import { 
   Dumbbell,
   Play,
   Pencil,
   ListChecks,
   BarChart,
+  PieChart,
   FolderPlus,
   AlertTriangle
 } from 'lucide-vue-next'
