@@ -48,7 +48,7 @@
           <Button
             variant="outline"
             size="sm"
-            class="w-full flex items-center justify-center gap-2"
+            class="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white border-primary"
           >
             <Trophy class="w-4 h-4" />
             <span>Voir le récapitulatif</span>

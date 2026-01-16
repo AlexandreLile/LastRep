@@ -162,21 +162,17 @@
                   <template v-else-if="bestSet.measurementType === 'reps'">
                     <div class="flex items-center gap-1.5">
                       <Repeat class="w-4 h-4 text-muted-foreground" />
-                      <span class="font-medium text-foreground">{{ bestSet.reps }} rep{{ bestSet.reps > 1 ? 's' : '' }}</span>
+                      <span class="font-bold text-primary">{{ bestSet.value }} rep{{ bestSet.value > 1 ? 's' : '' }}</span>
                     </div>
                     <span v-if="bestSet.weight > 0" class="text-muted-foreground">({{ formatWeight(bestSet.weight) }} kg)</span>
-                    <span class="text-muted-foreground">=</span>
-                    <span class="font-bold text-primary">{{ formatSetValue(bestSet.value, bestSet.measurementType) }}</span>
                   </template>
                   
                   <template v-else-if="bestSet.measurementType === 'time' || bestSet.measurementType === 'time_reps'">
                     <div class="flex items-center gap-1.5">
                       <Clock class="w-4 h-4 text-muted-foreground" />
-                      <span class="font-medium text-foreground">{{ Math.floor((bestSet.duration_seconds || 0) / 60) }}min {{ (bestSet.duration_seconds || 0) % 60 }}s</span>
+                      <span class="font-bold text-primary">{{ formatSetValue(bestSet.value, bestSet.measurementType) }}</span>
                     </div>
                     <span v-if="bestSet.measurementType === 'time_reps' && bestSet.reps > 0" class="text-muted-foreground">× {{ bestSet.reps }} reps</span>
-                    <span class="text-muted-foreground">=</span>
-                    <span class="font-bold text-primary">{{ formatSetValue(bestSet.value, bestSet.measurementType) }}</span>
                   </template>
                   
                   <template v-else-if="bestSet.measurementType === 'distance' || bestSet.measurementType === 'time_distance'">
@@ -200,6 +196,17 @@
                         ]"
                       >
                         ({{ (bestSet.rm || bestSet.value) > (bestSet.previousBest.rm || bestSet.previousBest.value) ? '+' : '' }}{{ formatWeight(Math.abs((bestSet.rm || bestSet.value) - (bestSet.previousBest.rm || bestSet.previousBest.value))) }} kg)
+                      </span>
+                    </template>
+                    <template v-else-if="bestSet.measurementType === 'reps'">
+                      <span class="font-medium">{{ bestSet.previousBest.value }} rep{{ bestSet.previousBest.value > 1 ? 's' : '' }}</span>
+                      <span
+                        :class="[
+                          'font-medium',
+                          bestSet.value > bestSet.previousBest.value ? 'text-green-500' : 'text-muted-foreground'
+                        ]"
+                      >
+                        ({{ bestSet.value > bestSet.previousBest.value ? '+' : '' }}{{ Math.abs(bestSet.value - bestSet.previousBest.value) }} rep{{ Math.abs(bestSet.value - bestSet.previousBest.value) > 1 ? 's' : '' }})
                       </span>
                     </template>
                     <template v-else>
@@ -636,8 +643,15 @@ const loadSessionRecap = async () => {
             bestValue = value
             bestSet = set
           }
+        } else if (exerciseType === 'reps') {
+          // Pour les exercices de répétition, utiliser directement le nombre de reps
+          const reps = set.reps || 0
+          if (reps > bestValue) {
+            bestValue = reps
+            bestSet = set
+          }
         } else {
-          // Pour les autres types (reps, time, etc.), utiliser la valeur brute
+          // Pour les autres types (time, etc.), utiliser la valeur brute
           if (value > bestValue) {
             bestValue = value
             bestSet = set
@@ -646,50 +660,96 @@ const loadSessionRecap = async () => {
       })
 
       if (bestSet) {
-        // Comparer avec toutes les séries précédentes de cet exercice
-        const previousSetsForExercise = allPreviousSets?.filter(set => set.exercise_id === exerciseId) || []
         let isPR = true
         let previousBest = null
         let previousBestRM = 0
 
-        previousSetsForExercise.forEach(prevSet => {
-          if (exerciseType === 'weight_reps' || exerciseType === 'weight_only') {
-            // Pour les exercices avec poids, comparer les 1RM estimés
-            const prevRM = calculateRM(prevSet.weight_kg || 0, prevSet.reps || 0)
-            if (prevRM >= bestRM) {
-              isPR = false
-            }
-            if (prevRM > previousBestRM) {
-              previousBestRM = prevRM
-              const prevValue = calculateSetValue(prevSet, exerciseType)
-              previousBest = {
-                weight: prevSet.weight_kg || 0,
-                reps: prevSet.reps || 0,
-                duration_seconds: prevSet.duration_seconds || 0,
-                distance_meters: prevSet.distance_meters || 0,
-                value: prevValue,
-                rm: prevRM,
-                measurementType: exerciseType
-              }
-            }
-          } else {
-            // Pour les autres types, comparer les valeurs brutes
-            const prevValue = calculateSetValue(prevSet, exerciseType)
-            if (prevValue >= bestValue) {
-              isPR = false
-            }
-            if (!previousBest || prevValue > previousBest.value) {
-              previousBest = {
-                weight: prevSet.weight_kg || 0,
-                reps: prevSet.reps || 0,
-                duration_seconds: prevSet.duration_seconds || 0,
-                distance_meters: prevSet.distance_meters || 0,
-                value: prevValue,
-                measurementType: exerciseType
-              }
+        if (exerciseType === 'reps') {
+          // Pour les exercices de répétition, comparer uniquement avec la dernière séance précédente
+          const currentMaxReps = Math.max(...exerciseSets.map(set => set.reps || 0))
+          
+          // Toujours chercher la dernière valeur dans toutes les séances précédentes pour l'affichage
+          const allPreviousSetsForExercise = allPreviousSets?.filter(set => set.exercise_id === exerciseId) || []
+          let previousMaxRepsAll = 0
+          if (allPreviousSetsForExercise.length > 0) {
+            previousMaxRepsAll = Math.max(...allPreviousSetsForExercise.map(set => set.reps || 0))
+            const previousBestSetAll = allPreviousSetsForExercise.find(set => (set.reps || 0) === previousMaxRepsAll) || allPreviousSetsForExercise[0]
+            previousBest = {
+              weight: previousBestSetAll.weight_kg || 0,
+              reps: previousBestSetAll.reps || 0,
+              duration_seconds: previousBestSetAll.duration_seconds || 0,
+              distance_meters: previousBestSetAll.distance_meters || 0,
+              value: previousMaxRepsAll,
+              measurementType: exerciseType
             }
           }
-        })
+          
+          // Pour déterminer si c'est un PR, comparer uniquement avec la dernière séance du même type
+          if (lastSameSession) {
+            const previousSetsForExercise = allPreviousSets?.filter(set => {
+              if (set.exercise_id !== exerciseId) return false
+              const setDate = new Date(set.created_at)
+              return setDate >= new Date(lastSameSession.started_at) && setDate <= new Date(lastSameSession.ended_at)
+            }) || []
+            
+            // Trouver le max reps sur une série dans la dernière séance précédente
+            const previousMaxReps = previousSetsForExercise.length > 0 
+              ? Math.max(...previousSetsForExercise.map(set => set.reps || 0))
+              : 0
+            
+            // Comparer avec le max reps de la séance actuelle pour déterminer le PR
+            if (previousMaxReps >= currentMaxReps) {
+              isPR = false
+            }
+          } else {
+            // Si pas de séance précédente du même type, comparer avec toutes les séances précédentes
+            if (previousMaxRepsAll >= currentMaxReps) {
+              isPR = false
+            }
+          }
+        } else {
+          // Pour les autres types, comparer avec toutes les séries précédentes
+          const previousSetsForExercise = allPreviousSets?.filter(set => set.exercise_id === exerciseId) || []
+
+          previousSetsForExercise.forEach(prevSet => {
+            if (exerciseType === 'weight_reps' || exerciseType === 'weight_only') {
+              // Pour les exercices avec poids, comparer les 1RM estimés
+              const prevRM = calculateRM(prevSet.weight_kg || 0, prevSet.reps || 0)
+              if (prevRM >= bestRM) {
+                isPR = false
+              }
+              if (prevRM > previousBestRM) {
+                previousBestRM = prevRM
+                const prevValue = calculateSetValue(prevSet, exerciseType)
+                previousBest = {
+                  weight: prevSet.weight_kg || 0,
+                  reps: prevSet.reps || 0,
+                  duration_seconds: prevSet.duration_seconds || 0,
+                  distance_meters: prevSet.distance_meters || 0,
+                  value: prevValue,
+                  rm: prevRM,
+                  measurementType: exerciseType
+                }
+              }
+            } else {
+              // Pour les autres types (time, etc.), comparer les valeurs brutes
+              const prevValue = calculateSetValue(prevSet, exerciseType)
+              if (prevValue >= bestValue) {
+                isPR = false
+              }
+              if (!previousBest || prevValue > previousBest.value) {
+                previousBest = {
+                  weight: prevSet.weight_kg || 0,
+                  reps: prevSet.reps || 0,
+                  duration_seconds: prevSet.duration_seconds || 0,
+                  distance_meters: prevSet.distance_meters || 0,
+                  value: prevValue,
+                  measurementType: exerciseType
+                }
+              }
+            }
+          })
+        }
 
         bestSetsMap[exerciseId] = {
           exerciseId,
