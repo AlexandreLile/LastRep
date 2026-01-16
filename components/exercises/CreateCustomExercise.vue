@@ -210,26 +210,6 @@ const measurementTypes = [
     value: 'time',
     label: 'Temps',
     description: 'Ex: Gainage, Planche'
-  },
-  {
-    value: 'time_reps',
-    label: 'Temps + Répétitions',
-    description: 'Ex: Gainage 3x 30s'
-  },
-  {
-    value: 'time_distance',
-    label: 'Temps + Distance',
-    description: 'Ex: Course, Vélo'
-  },
-  {
-    value: 'distance',
-    label: 'Distance uniquement',
-    description: 'Ex: Marche'
-  },
-  {
-    value: 'weight_only',
-    label: 'Poids uniquement',
-    description: 'Ex: Charge maximale (1RM)'
   }
 ]
 
