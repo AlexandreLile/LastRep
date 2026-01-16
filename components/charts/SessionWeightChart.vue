@@ -99,11 +99,14 @@ const loadSessionWeightData = async () => {
     if (sessionsError) throw sessionsError
     if (!sessions?.length) return
 
-    // 2. Pour chaque séance, récupérer tous les sets associés et calculer le volume
+    // 2. Limiter aux 12 dernières séances
+    const last12Sessions = sessions.slice(-12)
+
+    // 3. Pour chaque séance, récupérer tous les sets associés et calculer le volume
     const tempVolumes = []
     const tempLabels = []
 
-    for (const session of sessions) {
+    for (const session of last12Sessions) {
       const { data: sets, error: setsError } = await supabase
         .from('exerciseset')
         .select('weight_kg, reps')
@@ -117,7 +120,7 @@ const loadSessionWeightData = async () => {
       tempLabels.push(new Date(session.started_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }))
     }
 
-    // 3. Mettre à jour les données du graphique
+    // 4. Mettre à jour les données du graphique
     volumes.value = tempVolumes
     labels.value = tempLabels
   } catch (error) {
