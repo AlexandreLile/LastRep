@@ -110,20 +110,17 @@ export default defineNuxtConfig({
       '/': { ssr: false },
       '/**': { ssr: false },
       // Bloquer les routes admin en production
-      '/admin/**': process.env.NODE_ENV === 'production' 
-        ? { redirect: { to: '/', statusCode: 404 } }
-        : { ssr: false },
-      '/api/admin/**': process.env.NODE_ENV === 'production'
-        ? { redirect: { to: '/', statusCode: 404 } }
-        : {}
+      ...(process.env.NODE_ENV === 'production' ? {
+        '/admin/**': { redirect: { to: '/', statusCode: 404 } },
+        '/api/admin/**': { redirect: { to: '/', statusCode: 404 } }
+      } : {
+        '/admin/**': { ssr: false },
+        '/api/admin/**': {}
+      })
     },
     prerender: {
       crawlLinks: false,
-      routes: [],
-      // Exclure les routes admin du build en production
-      exclude: process.env.NODE_ENV === 'production' 
-        ? ['/admin/**', '/api/admin/**']
-        : []
+      routes: []
     }
   },
   
