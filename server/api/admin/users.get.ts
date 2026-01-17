@@ -89,6 +89,14 @@ export default defineEventHandler(async (event) => {
       .from('account_deletion_log')
       .select('email, deleted_at, user_id')
     
+    // Debug : afficher les résultats
+    console.log('🔍 Debug account_deletion_log:', {
+      hasData: !!deletedAccounts,
+      count: deletedAccounts?.length || 0,
+      error: deletedError?.message || null,
+      sample: deletedAccounts?.slice(0, 2) || []
+    })
+    
     if (workoutError) {
       console.warn('Erreur lors du comptage des séances créées:', workoutError)
     }
@@ -98,7 +106,11 @@ export default defineEventHandler(async (event) => {
     }
     
     if (deletedError) {
-      console.warn('Erreur lors de la récupération des comptes supprimés:', deletedError)
+      console.error('❌ Erreur lors de la récupération des comptes supprimés:', deletedError)
+      // Si la table n'existe pas, c'est normal (migration non appliquée)
+      if (deletedError.message?.includes('does not exist') || deletedError.message?.includes('relation') || deletedError.code === '42P01') {
+        console.warn('⚠️ La table account_deletion_log n\'existe pas encore. Applique la migration 20260117120000_add_account_deletion_tracking.sql')
+      }
     }
     
     // Créer des maps pour un accès rapide O(1)
@@ -124,14 +136,17 @@ export default defineEventHandler(async (event) => {
     
     // Map des comptes supprimés (par email et user_id)
     const deletedAccountsMap = new Map()
-    if (deletedAccounts) {
+    if (deletedAccounts && deletedAccounts.length > 0) {
+      console.log('📋 Comptes supprimés trouvés:', deletedAccounts.length)
       deletedAccounts.forEach(deleted => {
         // Indexer par email (principal)
         if (deleted.email) {
-          deletedAccountsMap.set(deleted.email.toLowerCase(), {
+          const emailLower = deleted.email.toLowerCase()
+          deletedAccountsMap.set(emailLower, {
             deleted_at: deleted.deleted_at,
             user_id: deleted.user_id
           })
+          console.log('  - Email supprimé:', emailLower, 'User ID:', deleted.user_id)
         }
         // Indexer aussi par user_id si disponible
         if (deleted.user_id) {
@@ -141,12 +156,23 @@ export default defineEventHandler(async (event) => {
           })
         }
       })
+    } else {
+      console.log('ℹ️ Aucun compte supprimé trouvé dans account_deletion_log')
     }
 
     // Formater les données pour l'affichage
     const formattedUsers = users.map(user => {
       const userEmail = user.email?.toLowerCase() || ''
       const deletedInfo = deletedAccountsMap.get(userEmail) || deletedAccountsMap.get(user.id)
+      
+      // Debug pour les utilisateurs supprimés
+      if (deletedInfo) {
+        console.log('✅ Utilisateur supprimé détecté:', {
+          email: user.email,
+          user_id: user.id,
+          deleted_at: deletedInfo.deleted_at
+        })
+      }
       
       return {
         id: user.id,
