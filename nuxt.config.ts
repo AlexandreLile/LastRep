@@ -47,6 +47,12 @@ export default defineNuxtConfig({
 
   // Configuration runtime pour exposer les variables d'environnement
   runtimeConfig: {
+    // Variables privées (côté serveur uniquement)
+    supabase: {
+      serviceKey: process.env.SUPABASE_SERVICE_KEY,
+      url: process.env.SUPABASE_URL || process.env.NUXT_PUBLIC_SUPABASE_URL,
+    },
+    // Variables publiques (accessibles côté client)
     public: {
       supabase: {
         url: process.env.NUXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
@@ -90,7 +96,10 @@ export default defineNuxtConfig({
         // Ne pas spécifier storage explicitement - laisser Supabase utiliser localStorage par défaut
         // storage: typeof window !== 'undefined' ? window.localStorage : undefined,
         // storageKey: 'sb-auth-token', // Laisser la clé par défaut
-        flowType: 'pkce'
+        flowType: 'pkce',
+        // Gérer les erreurs de refresh token
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        storageKey: 'sb-auth-token'
       }
     },
     serviceKey: process.env.SUPABASE_SERVICE_KEY,
@@ -99,12 +108,29 @@ export default defineNuxtConfig({
   nitro: {
     routeRules: {
       '/': { ssr: false },
-      '/**': { ssr: false }
+      '/**': { ssr: false },
+      // Bloquer les routes admin en production
+      '/admin/**': process.env.NODE_ENV === 'production' 
+        ? { redirect: { to: '/', statusCode: 404 } }
+        : { ssr: false },
+      '/api/admin/**': process.env.NODE_ENV === 'production'
+        ? { redirect: { to: '/', statusCode: 404 } }
+        : {}
     },
     prerender: {
       crawlLinks: false,
-      routes: []
-    }
+      routes: [],
+      // Exclure les routes admin du build en production
+      exclude: process.env.NODE_ENV === 'production' 
+        ? ['/admin/**', '/api/admin/**']
+        : []
+    },
+    // Exclure les fichiers admin du build en production
+    ...(process.env.NODE_ENV === 'production' ? {
+      publicAssets: {
+        exclude: ['admin/**']
+      }
+    } : {})
   },
   
   ssr: false,

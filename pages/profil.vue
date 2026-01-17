@@ -85,7 +85,7 @@
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive" class="w-full">
+            <Button variant="destructive" class="w-full" @click="trackDeleteIntent">
               <Trash2 class="h-4 w-4 mr-2" />
               Supprimer mon compte
             </Button>
@@ -207,6 +207,24 @@ const updateProfile = async () => {
   }
 }
 
+// Track quand l'utilisateur clique sur "Supprimer mon compte" (ouverture du dialog)
+const trackDeleteIntent = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      console.log('[TRACKING] User clicked delete account button:', {
+        user_id: user.id,
+        email: user.email,
+        timestamp: new Date().toISOString()
+      })
+      // Optionnel : tu peux aussi envoyer à un service d'analytics ici
+      // Exemple : analytics.track('delete_account_intent', { userId: user.id })
+    }
+  } catch (e) {
+    console.error('Error tracking delete intent:', e)
+  }
+}
+
 const deleteAccount = async () => {
   deleting.value = true
   error.value = ''
@@ -217,7 +235,15 @@ const deleteAccount = async () => {
     
     const userId = user.id
     
+    // Log avant suppression (pour debug)
+    console.log('[TRACKING] User confirmed account deletion:', {
+      user_id: userId,
+      email: user.email,
+      timestamp: new Date().toISOString()
+    })
+    
     // Appeler la fonction SQL qui supprime toutes les données en cascade
+    // La fonction SQL logge automatiquement dans account_deletion_log
     const { error: deleteError } = await supabase.rpc('delete_user_account', {
       user_uuid: userId
     })
