@@ -124,13 +124,7 @@ export default defineNuxtConfig({
       exclude: process.env.NODE_ENV === 'production' 
         ? ['/admin/**', '/api/admin/**']
         : []
-    },
-    // Exclure les fichiers admin du build en production
-    ...(process.env.NODE_ENV === 'production' ? {
-      publicAssets: {
-        exclude: ['admin/**']
-      }
-    } : {})
+    }
   },
   
   ssr: false,
