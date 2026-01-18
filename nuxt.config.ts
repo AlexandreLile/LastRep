@@ -32,7 +32,7 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
   },
 
-  modules: ["shadcn-nuxt", "@nuxtjs/supabase"],
+  modules: ["shadcn-nuxt", "@nuxtjs/supabase", "@vite-pwa/nuxt"],
   shadcn: {
     /**
      * Prefix for all the imported component
@@ -94,6 +94,49 @@ export default defineNuxtConfig({
       }
     },
     serviceKey: process.env.SUPABASE_SERVICE_KEY,
+  },
+
+  pwa: {
+    registerType: 'autoUpdate',
+    manifest: {
+      name: 'LastRep',
+      short_name: 'LastRep',
+      description: "Votre compagnon d'entraînement pour suivre vos progrès",
+      start_url: '/',
+      display: 'standalone',
+      background_color: '#ffffff',
+      theme_color: '#FE751C',
+      orientation: 'portrait',
+      icons: [
+        {
+          src: '/favicon.png',
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'any'
+        },
+        {
+          src: '/favicon.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any'
+        },
+        {
+          src: '/favicon.png',
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'maskable'
+        },
+        {
+          src: '/favicon.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'maskable'
+        }
+      ]
+    },
+    workbox: {
+      navigateFallback: '/',
+    }
   },
 
   nitro: {
