@@ -18,7 +18,7 @@
         v-for="session in sortedSessions" 
         :key="session.id" 
         class="bg-card rounded-xl p-6 cursor-pointer relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
-        @click="navigateToSession(session.id)"
+        @click="viewSession(session.id)"
       >
         <!-- Effet de bordure néon -->
         <div class="absolute inset-0 rounded-xl bg-primary/20 blur-md transition-all duration-300 group-hover:bg-primary/30 group-hover:blur-lg"></div>
@@ -37,7 +37,16 @@
                 <p class="text-xs text-muted-foreground">Dernière modification: {{ formatDate(session.updated_at) }}</p>
               </div>
             </div>
-            <div class="hidden sm:flex items-center">
+            <div class="hidden sm:flex items-center gap-2">
+              <Button 
+                variant="default" 
+                size="sm" 
+                class="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground" 
+                @click.stop="navigateToSession(session.id)"
+              >
+                <Play class="h-4 w-4" />
+                <span class="text-sm font-medium">Démarrer</span>
+              </Button>
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -65,7 +74,16 @@
           </div>
 
           <!-- Actions visibles seulement sur mobile -->
-          <div class="sm:hidden flex justify-end mt-4">
+          <div class="sm:hidden flex justify-end gap-2 mt-4">
+            <Button 
+              variant="default" 
+              size="sm" 
+              class="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1 font-medium" 
+              @click.stop="navigateToSession(session.id)"
+            >
+              <Play class="h-3.5 w-3.5" />
+              <span class="text-xs">Démarrer</span>
+            </Button>
             <Button 
               variant="ghost" 
               size="sm" 
@@ -83,13 +101,14 @@
 </template>
 
 <script setup>
-import { Pencil, Dumbbell } from 'lucide-vue-next';
+import { Pencil, Dumbbell, Play } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
 import { computed, onMounted } from 'vue';
 
 
 const router = useRouter();
 const user = useSupabaseUser();
+const supabase = useSupabaseClient();
 const { 
   workoutSessions, 
   loading, 
@@ -110,9 +129,20 @@ onMounted(async () => {
   console.log('Workout sessions:', workoutSessions.value);
 });
 
-const navigateToSession = (sessionId) => {
-  console.log('Navigating to session:', sessionId);
+const viewSession = (sessionId) => {
   router.push(`/seances/${sessionId}/train`);
+};
+
+const navigateToSession = async (sessionId) => {
+  try {
+    const supabase = useSupabaseClient()
+    const { prepareSession } = usePerformedSession(supabase)
+    const userId = (await supabase.auth.getUser()).data.user.id
+    prepareSession(sessionId, userId)
+    router.push(`/seances/${sessionId}/start`)
+  } catch (e) {
+    console.error('Erreur lors du démarrage de la séance:', e)
+  }
 };
 
 // Gérer l'édition d'une séance

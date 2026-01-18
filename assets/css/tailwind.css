@@ -135,3 +135,32 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fixes spécifiques pour Safari (desktop et mobile) */
+@supports (-webkit-touch-callout: none) {
+  /* Fix pour le DialogClose qui disparaît sur Safari mobile */
+  [data-slot="dialog-content"] button[class*="absolute"] {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999 !important;
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    transform: translateZ(0);
+    will-change: opacity;
+  }
+  
+  /* Force le rendu des SVG dans les boutons de dialog */
+  [data-slot="dialog-content"] button[class*="absolute"] svg {
+    display: block !important;
+    pointer-events: none;
+    width: 1rem;
+    height: 1rem;
+  }
+  
+  /* Fix pour les modals en général sur Safari mobile */
+  [data-slot="dialog-content"] {
+    -webkit-overflow-scrolling: touch;
+    transform: translateZ(0);
+  }
+}
