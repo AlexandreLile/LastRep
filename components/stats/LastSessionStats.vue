@@ -54,8 +54,8 @@
             <span>Voir le récapitulatif</span>
           </Button>
         </DialogTrigger>
-        <DialogContent class="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent class="max-w-4xl max-h-[90vh] overflow-y-auto pt-16">
+          <DialogHeader class="pr-8">
             <DialogTitle class="text-2xl font-bold">Récapitulatif de la séance</DialogTitle>
             <DialogDescription>
               Détails de votre dernière séance : records battus, meilleures séries et évolutions
