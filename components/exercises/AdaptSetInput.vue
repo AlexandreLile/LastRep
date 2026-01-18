@@ -146,11 +146,58 @@
         <Input
           v-model="setData.rest_seconds"
           type="number"
-          placeholder="60"
+          placeholder="0"
         />
       </div>
       <div class="space-y-2">
-        <Label>RPE (1-10)</Label>
+        <div class="flex items-center gap-1.5">
+          <Label>RPE (1-10)</Label>
+          <Dialog v-model:open="showRpeInfo">
+            <DialogTrigger asChild>
+              <button
+                type="button"
+                class="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Info class="h-4 w-4" />
+              </button>
+            </DialogTrigger>
+            <DialogContent class="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Qu'est-ce que le RPE ?</DialogTitle>
+                <DialogDescription>
+                  Rating of Perceived Exertion (Échelle de difficulté perçue)
+                </DialogDescription>
+              </DialogHeader>
+              <div class="space-y-3">
+                <p class="text-sm text-foreground">
+                  Le RPE est une échelle de 1 à 10 qui mesure la difficulté ressentie pendant une série :
+                </p>
+                <div class="space-y-2 text-sm">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-primary">1-3</span>
+                    <span class="text-muted-foreground">Très facile</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-primary">4-6</span>
+                    <span class="text-muted-foreground">Modéré</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-primary">7-8</span>
+                    <span class="text-muted-foreground">Difficile (2-3 reps en réserve)</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-primary">9</span>
+                    <span class="text-muted-foreground">Très difficile (1 rep en réserve)</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-primary">10</span>
+                    <span class="text-muted-foreground">Maximum absolu (échec musculaire)</span>
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
         <Input
           v-model="setData.rpe"
           type="number"
@@ -173,10 +220,14 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Info } from 'lucide-vue-next'
+
+const showRpeInfo = ref(false)
 
 const props = defineProps({
   exercise: {
