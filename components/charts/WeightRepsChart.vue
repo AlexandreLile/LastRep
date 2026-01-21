@@ -1,6 +1,5 @@
 <template>
   <div>
-    <ChartPeriodFilter v-model="selectedPeriod" />
     <div class="h-64">
       <Bar
         v-if="chartData"
@@ -16,7 +15,6 @@ import { ref, onMounted, watch } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { Bar } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
-import ChartPeriodFilter from './ChartPeriodFilter.vue'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
@@ -26,8 +24,6 @@ const props = defineProps({
     required: true
   }
 })
-
-const selectedPeriod = ref('week')
 
 const chartData = ref(null)
 const chartOptions = ref(null)
@@ -60,13 +56,8 @@ const loadData = async () => {
   }
 }
 
-// Filtrer les données pour la vue "jour" (12 dernières séances)
-const filterDataByPeriod = (data, period) => {
-  if (period !== 'day') {
-    return data
-  }
-
-  // Prendre les 12 dernières séances (jours distincts)
+// Limiter aux 12 dernières séances (jours distincts)
+const limitToLast12Days = data => {
   const daySet = new Set()
   const sorted = [...data].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
 
@@ -92,11 +83,10 @@ const updateChart = () => {
     return
   }
 
-  // Filtrer les données pour la vue "jour" (12 dernières séances)
-  const filteredData = filterDataByPeriod(data, selectedPeriod.value)
+  const limitedData = limitToLast12Days(data)
 
   // Trouver le maximum de répétitions pour chaque poids
-  let maxRepsByWeight = filteredData.reduce((acc, curr) => {
+  let maxRepsByWeight = limitedData.reduce((acc, curr) => {
     const weight = `${curr.weight_kg}kg`
     if (!acc[weight] || curr.reps > acc[weight]) {
       acc[weight] = curr.reps
@@ -230,11 +220,6 @@ const updateChart = () => {
 // Mettre à jour le graphique quand la période change
 onMounted(loadData)
 watch(() => props.exerciseId, loadData)
-watch(selectedPeriod, () => {
-  if (allData.value.length) {
-    updateChart()
-  }
-})
 </script>
 
 <style scoped>
