@@ -257,6 +257,7 @@ import { useWorkoutExercise } from '~/composables/useWorkoutExercise'
 import { usePerformedSession } from '~/composables/usePerformedSession'
 import { 
   addSessionSet, 
+  cacheUser,
   cachePersonalBest, 
   clearSessionSets, 
   getSessionSets, 
@@ -583,19 +584,22 @@ let unbindRoute = null
 const loadSession = async () => {
   try {
     loading.value = true
-    const { data, error: sessionError } = await getWorkoutSession(route.params.id)
-    if (sessionError) throw sessionError
-    session.value = data
-    await getWorkoutExercises(route.params.id)
-    await preloadPersonalBests()
-    
-    // Vérifier si une session est en cours
     currentSession.value = getCurrentSession()
     if (!currentSession.value) {
       isLeavingPage.value = true
       router.push(`/seances/${route.params.id}/train`)
       return
     }
+
+    if (currentSession.value?.user_id) {
+      cacheUser({ id: currentSession.value.user_id })
+    }
+
+    const { data, error: sessionError } = await getWorkoutSession(route.params.id)
+    if (sessionError) throw sessionError
+    session.value = data
+    await getWorkoutExercises(route.params.id)
+    await preloadPersonalBests()
     
     // Charger les stats de la session
     updateSessionStats()

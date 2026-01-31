@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 import { useSupabaseClient } from '#imports';
-import { cacheWorkoutSession, cacheWorkoutSessions, getCachedWorkoutSession, getCachedWorkoutSessions, isOnline } from '~/utils/offlineTraining';
+import { cacheWorkoutSession, cacheWorkoutSessions, getCachedWorkoutSession, getCachedWorkoutSessions, getCachedUser, isOnline } from '~/utils/offlineTraining';
 
 export function useWorkoutSessions(user) {
     const workoutSessions = ref([]);
@@ -15,7 +15,12 @@ export function useWorkoutSessions(user) {
     };
 
     const getWorkoutSession = async (sessionId) => {
-        if (!user?.value?.id) {
+        const cachedSession = getCachedWorkoutSession(sessionId);
+        const userId = user?.value?.id || getCachedUser()?.id;
+        if (!userId) {
+            if (!isOnline() && cachedSession) {
+                return { data: cachedSession, error: null };
+            }
             error.value = 'Utilisateur non connecté';
             return { data: null, error: error.value };
         }
@@ -25,7 +30,6 @@ export function useWorkoutSessions(user) {
 
         try {
             if (!isOnline()) {
-                const cachedSession = getCachedWorkoutSession(sessionId);
                 if (cachedSession) {
                     return { data: cachedSession, error: null };
                 }
@@ -44,7 +48,6 @@ export function useWorkoutSessions(user) {
             return { data, error: null };
         } catch (err) {
             console.error('Erreur lors de la récupération de la séance:', err);
-            const cachedSession = getCachedWorkoutSession(sessionId);
             if (cachedSession) {
                 return { data: cachedSession, error: null };
             }
