@@ -8,7 +8,7 @@
       Aucune donnée disponible
     </div>
     <div v-else class="h-64">
-      <Bar
+      <Line
         :data="chartData"
         :options="chartOptions"
       />
@@ -19,11 +19,11 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useSupabaseClient } from '#imports'
-import { Bar } from 'vue-chartjs'
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
+import { Line } from 'vue-chartjs'
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
 import ChartPeriodFilter from './ChartPeriodFilter.vue'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 const props = defineProps({
   exerciseId: {
@@ -148,16 +148,22 @@ const updateChart = () => {
   const maxVolume = Math.max(...volumes)
   const minVolume = Math.min(...volumes)
   
+  // Calculer la taille des points selon le nombre de données
+  const pointRadius = labels.length > 20 ? 3 : 5
+  const pointHoverRadius = labels.length > 20 ? 5 : 7
+  
   chartData.value = {
     labels: labels,
     datasets: [{
       label: 'Volume (kg)',
       data: volumes,
-      backgroundColor: '#FE751C',
       borderColor: '#FE751C',
-      borderWidth: 1,
-      borderRadius: 4,
-      barThickness: labels.length > 10 ? 'flex' : 20
+      backgroundColor: 'rgba(254, 117, 28, 0.1)',
+      tension: 0.4,
+      fill: true,
+      pointRadius: pointRadius,
+      pointHoverRadius: pointHoverRadius,
+      pointBackgroundColor: '#FE751C'
     }]
   }
 
