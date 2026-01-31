@@ -106,6 +106,20 @@
               <WeightProgressionChart :exercise-id="route.params.id" />
             </div>
           </div>
+          <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <BarChart class="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold">Progression du volume</h3>
+                <p class="text-sm text-muted-foreground">Volume total (poids × reps) par séance</p>
+              </div>
+            </div>
+            <div class="flex-1">
+              <VolumeProgressionChart :exercise-id="route.params.id" />
+            </div>
+          </div>
         </template>
 
         <!-- Graphiques pour exercices en répétitions (reps) -->
@@ -502,6 +516,7 @@ import { ref, onMounted } from 'vue'
 import { useSupabaseClient } from '#imports'
 import WeightRepsChart from '~/components/charts/WeightRepsChart.vue'
 import WeightProgressionChart from '~/components/charts/WeightProgressionChart.vue'
+import VolumeProgressionChart from '~/components/charts/VolumeProgressionChart.vue'
 import RepsProgressionChart from '~/components/charts/RepsProgressionChart.vue'
 import RepsPerSetChart from '~/components/charts/RepsPerSetChart.vue'
 import TimeProgressionChart from '~/components/charts/TimeProgressionChart.vue'
