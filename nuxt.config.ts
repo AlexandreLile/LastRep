@@ -98,13 +98,15 @@ export default defineNuxtConfig({
 
   pwa: {
     registerType: 'autoUpdate',
+    // Inclure tous les assets dans le SW
+    includeAssets: ['favicon.png', 'logo.png', 'apple-touch-icon.png'],
     manifest: {
       name: 'LastRep',
       short_name: 'LastRep',
       description: "Votre compagnon d'entraînement pour suivre vos progrès",
       start_url: '/',
       display: 'standalone',
-      background_color: '#ffffff',
+      background_color: '#0a0a0a',
       theme_color: '#FE751C',
       orientation: 'portrait',
       icons: [
@@ -135,52 +137,76 @@ export default defineNuxtConfig({
       ]
     },
     workbox: {
-      navigateFallback: '/',
-      // Pré-cacher les fichiers essentiels
-      globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
-      // Stratégies de cache pour les requêtes runtime
+      // Pré-cacher TOUS les fichiers générés par le build
+      globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+      // Fallback pour toutes les navigations SPA
+      navigateFallback: '/index.html',
+      // Ne pas appliquer le fallback aux appels API
+      navigateFallbackDenylist: [
+        /^\/api/,
+        /supabase\.co/,
+        /\.json$/
+      ],
+      // Activer immédiatement le nouveau SW
+      skipWaiting: true,
+      clientsClaim: true,
+      // Nettoyer les anciens caches
+      cleanupOutdatedCaches: true,
+      // Runtime caching pour les ressources externes
       runtimeCaching: [
         {
-          // Cache les pages navigées (SPA)
-          urlPattern: /^https:\/\/.*\.(html|js|css)$/,
-          handler: 'StaleWhileRevalidate',
+          // Requêtes de navigation - Network First avec fallback cache
+          urlPattern: ({ request }) => request.mode === 'navigate',
+          handler: 'NetworkFirst',
           options: {
-            cacheName: 'app-cache',
+            cacheName: 'pages-cache',
+            networkTimeoutSeconds: 3,
             expiration: {
               maxEntries: 50,
-              maxAgeSeconds: 60 * 60 * 24 * 7 // 7 jours
+              maxAgeSeconds: 60 * 60 * 24 * 7
             }
           }
         },
         {
-          // Cache les images
-          urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
-          handler: 'CacheFirst',
+          // Assets statiques
+          urlPattern: /\.(?:js|css)$/i,
+          handler: 'StaleWhileRevalidate',
           options: {
-            cacheName: 'image-cache',
+            cacheName: 'static-assets',
             expiration: {
               maxEntries: 100,
-              maxAgeSeconds: 60 * 60 * 24 * 30 // 30 jours
+              maxAgeSeconds: 60 * 60 * 24 * 30
             }
           }
         },
         {
-          // Cache les polices
-          urlPattern: /\.(?:woff|woff2|ttf|eot)$/,
+          // Images
+          urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
           handler: 'CacheFirst',
           options: {
-            cacheName: 'font-cache',
+            cacheName: 'images-cache',
             expiration: {
-              maxEntries: 20,
-              maxAgeSeconds: 60 * 60 * 24 * 365 // 1 an
+              maxEntries: 100,
+              maxAgeSeconds: 60 * 60 * 24 * 30
+            }
+          }
+        },
+        {
+          // Polices
+          urlPattern: /\.(?:woff|woff2|ttf|eot)$/i,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'fonts-cache',
+            expiration: {
+              maxEntries: 30,
+              maxAgeSeconds: 60 * 60 * 24 * 365
             }
           }
         }
       ]
     },
-    // Page offline personnalisée (optionnel)
     devOptions: {
-      enabled: false // Désactiver en dev pour éviter les problèmes de cache
+      enabled: false
     }
   },
 
