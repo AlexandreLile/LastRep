@@ -32,17 +32,42 @@ const props = defineProps({
   }
 })
 
-const selectedPeriod = ref('week')
+const selectedPeriod = ref('day') // Sera auto-ajusté
 const chartData = ref(null)
 const chartOptions = ref(null)
 const allData = ref([])
 const loading = ref(true)
+
+const MAX_POINTS = 12 // Nombre max de points pour rester lisible
 
 // Calcul du volume pour un set: poids × reps
 const calculateVolume = (set) => {
   const weight = set.weight_kg || 0
   const reps = set.reps || 0
   return weight * reps
+}
+
+// Auto-sélection intelligente de la période selon l'historique
+const autoSelectPeriod = (data) => {
+  if (!data.length) return 'day'
+  
+  const dates = data.map(d => new Date(d.created_at))
+  const minDate = new Date(Math.min(...dates))
+  const maxDate = new Date(Math.max(...dates))
+  const daysDiff = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24))
+  
+  // Compter le nombre de jours uniques d'entraînement
+  const uniqueDays = new Set(data.map(d => 
+    new Date(d.created_at).toLocaleDateString()
+  )).size
+  
+  if (uniqueDays <= MAX_POINTS) {
+    return 'day' // Peu de séances → afficher par jour
+  } else if (daysDiff <= 90) {
+    return 'week' // 2 semaines à 3 mois → par semaine
+  } else {
+    return 'month' // Plus de 3 mois → par mois
+  }
 }
 
 // Regrouper les données par période et calculer le volume total
@@ -118,6 +143,10 @@ const loadData = async () => {
     if (error) throw error
     
     allData.value = data || []
+    
+    // Auto-sélection de la période optimale
+    selectedPeriod.value = autoSelectPeriod(data || [])
+    
     updateChart()
   } catch (e) {
     console.error('Erreur lors du chargement des données:', e)
@@ -137,11 +166,11 @@ const updateChart = () => {
   const grouped = groupDataByPeriod(data, selectedPeriod.value)
   let { labels, volumes, sets } = grouped
 
-  // Pour la vue "jour", limiter aux 12 dernières séances
-  if (selectedPeriod.value === 'day' && labels.length > 12) {
-    labels = labels.slice(-12)
-    volumes = volumes.slice(-12)
-    sets = sets.slice(-12)
+  // Limiter aux X derniers points pour rester lisible (toutes périodes)
+  if (labels.length > MAX_POINTS) {
+    labels = labels.slice(-MAX_POINTS)
+    volumes = volumes.slice(-MAX_POINTS)
+    sets = sets.slice(-MAX_POINTS)
   }
   
   // Calculer min/max pour l'échelle
