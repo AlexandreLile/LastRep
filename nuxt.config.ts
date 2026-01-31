@@ -111,25 +111,25 @@ export default defineNuxtConfig({
       orientation: 'portrait',
       icons: [
         {
-          src: '/favicon.png',
+          src: '/logo-192.png',
           sizes: '192x192',
           type: 'image/png',
           purpose: 'any'
         },
         {
-          src: '/favicon.png',
+          src: '/logo-512.png',
           sizes: '512x512',
           type: 'image/png',
           purpose: 'any'
         },
         {
-          src: '/favicon.png',
+          src: '/logo-192.png',
           sizes: '192x192',
           type: 'image/png',
           purpose: 'maskable'
         },
         {
-          src: '/favicon.png',
+          src: '/logo-512.png',
           sizes: '512x512',
           type: 'image/png',
           purpose: 'maskable'
@@ -254,8 +254,8 @@ export default defineNuxtConfig({
         { rel: 'apple-touch-icon', sizes: '76x76', href: '/apple-touch-icon.png' },
         { rel: 'apple-touch-icon', sizes: '72x72', href: '/apple-touch-icon.png' },
         { rel: 'apple-touch-icon', sizes: '60x60', href: '/apple-touch-icon.png' },
-        { rel: 'apple-touch-icon', sizes: '57x57', href: '/apple-touch-icon.png' },
-        { rel: 'manifest', href: '/manifest.json' }
+        { rel: 'apple-touch-icon', sizes: '57x57', href: '/apple-touch-icon.png' }
+        // manifest géré automatiquement par @vite-pwa/nuxt
       ]
     },
     pageTransition: false,
