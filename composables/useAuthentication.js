@@ -1,6 +1,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { useRouter, useRoute } from 'vue-router'
+import { clearCachedUser, clearAllOfflineData } from '~/utils/offlineTraining'
 
 export const useAuthentication = () => {
   const supabase = useSupabaseClient()
@@ -119,10 +120,14 @@ export const useAuthentication = () => {
       
       user.value = null
       
-      // Effacer l'état d'authentification
+      // Effacer l'état d'authentification et le cache offline
       if (process.client && window.localStorage) {
         localStorage.removeItem('authenticated')
         localStorage.removeItem('auth_timestamp')
+        // Effacer le cache utilisateur pour le mode offline
+        clearCachedUser()
+        // Optionnel: effacer toutes les données offline (sessions en cours, etc.)
+        // clearAllOfflineData()
       }
       
       // Rediriger vers la page de connexion

@@ -1,3 +1,5 @@
+import { cacheUser, clearCachedUser } from '~/utils/offlineTraining'
+
 export const useAuth = () => {
   const supabase = useSupabaseClient();
   const router = useRouter();
@@ -71,6 +73,10 @@ export const useAuth = () => {
         const { data: { session: confirmedSession } } = await supabase.auth.getSession();
         
         if (confirmedSession) {
+          // Mettre en cache l'utilisateur pour le mode offline
+          if (confirmedSession.user) {
+            cacheUser(confirmedSession.user);
+          }
           // Utiliser navigateTo au lieu de router.push pour une meilleure intégration avec Nuxt
           await navigateTo("/");
           loading.value = false;
@@ -78,6 +84,10 @@ export const useAuth = () => {
           // Si la session n'est pas confirmée, écouter l'événement SIGNED_IN comme fallback
           const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN' && session) {
+              // Mettre en cache l'utilisateur pour le mode offline
+              if (session.user) {
+                cacheUser(session.user);
+              }
               subscription.unsubscribe();
               navigateTo("/").then(() => {
                 loading.value = false;
@@ -98,6 +108,10 @@ export const useAuth = () => {
         // Si pas de session immédiate, écouter l'événement SIGNED_IN
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
           if (event === 'SIGNED_IN' && session) {
+            // Mettre en cache l'utilisateur pour le mode offline
+            if (session.user) {
+              cacheUser(session.user);
+            }
             subscription.unsubscribe();
             // Ne pas rediriger si on est sur /update-password (réinitialisation de mot de passe)
             // Vérifier la route actuelle pour éviter de rediriger pendant la réinitialisation

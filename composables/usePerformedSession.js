@@ -1,93 +1,352 @@
 import { ref } from 'vue'
 
+// ============================================
+// COMPOSABLE: usePerformedSession
+// Pattern Local-First pour les séances d'entraînement
+// ============================================
+
+// État global pour éviter les syncs multiples
+let syncInProgress = false
+let syncListenerRegistered = false
+
 export const usePerformedSession = (supabase) => {
   const performedSession = ref(null)
   const error = ref(null)
   const localSession = ref(null)
+  const saving = ref(false)
 
-  // Charger la session depuis le localStorage au démarrage
+  // ============================================
+  // INITIALISATION: Charger la session depuis localStorage
+  // ============================================
   if (process.client) {
-    const storedSession = localStorage.getItem('currentSession')
-    if (storedSession) {
+    const stored = localStorage.getItem('currentSession')
+    if (stored) {
       try {
-        const parsedSession = JSON.parse(storedSession)
-        // Vérifier si la session n'est pas terminée
-        if (parsedSession.started_at && !parsedSession.ended_at) {
-          localSession.value = parsedSession
+        const parsed = JSON.parse(stored)
+        // Vérifier que la session est encore active (pas terminée)
+        if (parsed.started_at && !parsed.ended_at) {
+          localSession.value = parsed
         } else {
-          // Si la session est terminée, la nettoyer
           localStorage.removeItem('currentSession')
         }
       } catch (e) {
-        console.error('Erreur lors du chargement de la session:', e)
         localStorage.removeItem('currentSession')
       }
     }
   }
 
+  // ============================================
+  // PRÉPARER UNE NOUVELLE SESSION
+  // ============================================
   const prepareSession = (workoutSessionId, userId) => {
     localSession.value = {
       workout_session_id: workoutSessionId,
       user_id: userId,
       started_at: new Date().toISOString(),
-      ended_at: null // Explicitement définir ended_at comme null
+      ended_at: null
     }
-    // Sauvegarder dans le localStorage
     if (process.client) {
       localStorage.setItem('currentSession', JSON.stringify(localSession.value))
     }
     return localSession.value
   }
 
-  const saveSession = async () => {
+  // ============================================
+  // UTILITAIRES LOCALSTORAGE
+  // ============================================
+  const getSessionSets = (sessionId) => {
+    if (!process.client) return []
     try {
-      if (!localSession.value) {
-        throw new Error('Aucune session en cours')
-      }
+      const data = localStorage.getItem(`offline:sessionSets:${sessionId}`)
+      return data ? JSON.parse(data) : []
+    } catch (e) {
+      return []
+    }
+  }
 
-      // Créer un objet sans temp_id
+  const clearSessionSets = (sessionId) => {
+    if (process.client) {
+      localStorage.removeItem(`offline:sessionSets:${sessionId}`)
+    }
+  }
+
+  const getPendingSessions = () => {
+    if (!process.client) return []
+    try {
+      const data = localStorage.getItem('offline:pendingPerformedSessions')
+      return data ? JSON.parse(data) : []
+    } catch (e) {
+      return []
+    }
+  }
+
+  const savePendingSessions = (sessions) => {
+    if (process.client) {
+      localStorage.setItem('offline:pendingPerformedSessions', JSON.stringify(sessions))
+    }
+  }
+
+  // ============================================
+  // NORMALISER UN SET POUR LA DB
+  // ============================================
+  const normalizeSetForDB = (set, performedSessionId, userId) => {
+    // Copier et nettoyer les propriétés locales
+    const { 
+      id, offline, local_only, localId, synced, 
+      pendingSync, queuedAt, attempts, workoutSessionId,
+      ...cleanSet 
+    } = set
+    
+    return {
+      ...cleanSet,
+      performed_session_id: performedSessionId,
+      user_id: userId
+    }
+  }
+
+  // ============================================
+  // VÉRIFICATION DE CONNECTIVITÉ RÉELLE
+  // ============================================
+  const checkConnectivity = async () => {
+    if (!process.client) return true
+    if (!navigator.onLine) return false
+    
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 2000)
+      
+      const response = await fetch(`${window.location.origin}/favicon.png?_=${Date.now()}`, {
+        method: 'HEAD',
+        cache: 'no-store',
+        signal: controller.signal
+      })
+      
+      clearTimeout(timeoutId)
+      return response.ok
+    } catch (e) {
+      return false
+    }
+  }
+
+  // ============================================
+  // RÉCUPÉRER L'UTILISATEUR (cache prioritaire)
+  // ============================================
+  const getUserId = async () => {
+    // 1. Priorité au user_id stocké dans la session locale
+    if (localSession.value?.user_id) {
+      return localSession.value.user_id
+    }
+    
+    // 2. Cache localStorage
+    if (process.client) {
+      try {
+        const cached = localStorage.getItem('offline:cachedUser')
+        if (cached) {
+          const user = JSON.parse(cached)
+          if (user?.id) return user.id
+        }
+      } catch (e) {}
+    }
+    
+    // 3. Supabase (avec timeout court)
+    try {
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('TIMEOUT')), 2000)
+      )
+      
+      const result = await Promise.race([
+        supabase.auth.getUser(),
+        timeoutPromise
+      ])
+      
+      if (result?.data?.user?.id) {
+        // Mettre en cache pour usage futur
+        if (process.client) {
+          localStorage.setItem('offline:cachedUser', JSON.stringify({
+            id: result.data.user.id,
+            email: result.data.user.email,
+            cachedAt: new Date().toISOString()
+          }))
+        }
+        return result.data.user.id
+      }
+    } catch (e) {}
+    
+    return null
+  }
+
+  // ============================================
+  // SAUVEGARDER LA SESSION (fin d'entraînement)
+  // ============================================
+  const saveSession = async () => {
+    if (saving.value) return { inProgress: true }
+    if (!localSession.value) throw new Error('Aucune session en cours')
+
+    saving.value = true
+    
+    try {
+      // Récupérer l'ID utilisateur
+      const userId = await getUserId()
+      if (!userId) throw new Error('Utilisateur non authentifié')
+
+      // Préparer les données de session
       const sessionData = {
         workout_session_id: localSession.value.workout_session_id,
-        user_id: localSession.value.user_id,
+        user_id: userId,
         started_at: localSession.value.started_at,
         ended_at: new Date().toISOString()
       }
 
-      const { data, error: saveError } = await supabase
+      // Récupérer les sets locaux (filtrer les marquages manuels)
+      const localSets = getSessionSets(localSession.value.workout_session_id)
+      const realSets = localSets.filter(set => !set.manually_marked)
+
+      // Vérifier la connectivité
+      const isConnected = await checkConnectivity()
+
+      if (!isConnected) {
+        // MODE OFFLINE: Mettre en queue pour sync ultérieure
+        const pending = getPendingSessions()
+        const exists = pending.some(s => 
+          s.workout_session_id === sessionData.workout_session_id && 
+          s.started_at === sessionData.started_at
+        )
+        
+        if (!exists) {
+          pending.push(sessionData)
+          savePendingSessions(pending)
+        }
+        
+        // Ne PAS effacer les sets (on en a besoin pour la sync)
+        localSession.value = null
+        if (process.client) localStorage.removeItem('currentSession')
+        
+        return { offline: true, setsCount: realSets.length }
+      }
+
+      // MODE ONLINE: Sync immédiate
+      // D'abord sync les sessions en attente
+      await syncPendingSessions()
+
+      // Créer la session performée
+      const { data: createdSession, error: sessionError } = await supabase
         .from('performedsession')
         .insert([sessionData])
         .select()
         .single()
 
-      if (saveError) throw saveError
-      performedSession.value = data
-      
-      // Mettre à jour tous les exerciseSets avec le performed_session_id
-      if (data && data.id) {
-        const { updateExerciseSetsWithSessionId } = useExerciseSet()
-        await updateExerciseSetsWithSessionId(data.id)
+      if (sessionError) throw sessionError
+      performedSession.value = createdSession
+
+      // Insérer les séries en batch
+      if (realSets.length > 0) {
+        const setsPayload = realSets.map(set => 
+          normalizeSetForDB(set, createdSession.id, userId)
+        )
+        
+        const { error: setsError } = await supabase
+          .from('exerciseset')
+          .insert(setsPayload)
+
+        if (setsError) throw setsError
       }
-      
+
+      // Nettoyage complet
+      const workoutSessionId = localSession.value.workout_session_id
+      clearSessionSets(workoutSessionId)
       localSession.value = null
-      // Supprimer du localStorage
+      
       if (process.client) {
         localStorage.removeItem('currentSession')
+        localStorage.removeItem('tempSessionSets')
       }
-      return data
+
+      return performedSession.value
+      
     } catch (e) {
       error.value = e.message
       throw e
+    } finally {
+      saving.value = false
     }
   }
 
-  const getCurrentSession = () => {
-    return localSession.value
+  // ============================================
+  // SYNC DES SESSIONS EN ATTENTE
+  // ============================================
+  const syncPendingSessions = async () => {
+    if (syncInProgress) return
+    
+    const pending = getPendingSessions()
+    if (!pending.length) return
+
+    syncInProgress = true
+    const remaining = []
+
+    try {
+      for (const sessionData of pending) {
+        try {
+          // Créer la session
+          const { data: created, error: err } = await supabase
+            .from('performedsession')
+            .insert([sessionData])
+            .select()
+            .single()
+
+          if (err) throw err
+
+          // Récupérer et insérer les sets
+          const sets = getSessionSets(sessionData.workout_session_id)
+          const realSets = sets.filter(s => !s.manually_marked)
+          
+          if (realSets.length > 0) {
+            const payload = realSets.map(s => 
+              normalizeSetForDB(s, created.id, sessionData.user_id)
+            )
+            
+            await supabase.from('exerciseset').insert(payload)
+          }
+
+          // Nettoyer les sets de cette session
+          clearSessionSets(sessionData.workout_session_id)
+          
+        } catch (e) {
+          // Garder pour réessayer plus tard
+          remaining.push(sessionData)
+        }
+      }
+
+      savePendingSessions(remaining)
+    } finally {
+      syncInProgress = false
+    }
   }
 
-  // Nouvelle fonction pour vérifier si une session est en cours
+  // ============================================
+  // CONFIGURATION SYNC AUTOMATIQUE
+  // ============================================
+  const setupOfflineSync = () => {
+    if (!process.client || syncListenerRegistered) return
+    syncListenerRegistered = true
+    
+    window.addEventListener('online', () => {
+      // Délai court pour que la connexion soit stable
+      setTimeout(syncPendingSessions, 1000)
+    })
+    
+    // Sync au démarrage si online
+    if (navigator.onLine) {
+      syncPendingSessions()
+    }
+  }
+
+  // ============================================
+  // GETTERS
+  // ============================================
+  const getCurrentSession = () => localSession.value
+
   const hasActiveSession = () => {
-    if (!localSession.value) return false
-    return localSession.value.started_at && !localSession.value.ended_at
+    return localSession.value?.started_at && !localSession.value?.ended_at
   }
 
   return {
@@ -96,6 +355,8 @@ export const usePerformedSession = (supabase) => {
     prepareSession,
     saveSession,
     getCurrentSession,
-    hasActiveSession
+    hasActiveSession,
+    syncPendingSessions,
+    setupOfflineSync
   }
-} 
+}

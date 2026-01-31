@@ -11,6 +11,15 @@
       Retour
     </Button>
     
+    <!-- Indicateur de séries locales (en haut à droite) -->
+    <div 
+      v-if="localSetsCount > 0" 
+      class="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-full shadow-lg backdrop-blur-sm bg-primary/90 text-white"
+    >
+      <Dumbbell class="w-4 h-4" />
+      <span class="text-sm font-medium">{{ localSetsCount }} série{{ localSetsCount > 1 ? 's' : '' }}</span>
+    </div>
+    
     <Toaster />
     <Dialog :open="showRestModal" @update:open="handleRestModalChange">
       <DialogContent class="sm:max-w-md" @pointer-down-outside.prevent @escape-key-down.prevent>
@@ -543,6 +552,18 @@ import { useRoute, useRouter } from 'vue-router'
 import { useWorkoutExercise } from '~/composables/useWorkoutExercise'
 import { usePerformedSession } from '~/composables/usePerformedSession'
 import { useExerciseSet } from '~/composables/useExerciseSet'
+import { 
+  addSessionSet, 
+  cachePersonalBest, 
+  getCachedPersonalBest, 
+  getSessionSets, 
+  removeSessionSet, 
+  saveSessionSets, 
+  updateSessionSet,
+  generateLocalId,
+  isLocalId,
+  getOfflineUser
+} from '~/utils/offlineTraining'
 import AdaptSetInput from '~/components/exercises/AdaptSetInput.vue'
 import { toast } from 'vue-sonner'
 import { Toaster } from '@/components/ui/sonner'
@@ -577,7 +598,7 @@ const route = useRoute()
 const router = useRouter()
 const supabase = useSupabaseClient()
 const { getWorkoutExercise } = useWorkoutExercise()
-const { getCurrentSession } = usePerformedSession(supabase)
+const { getCurrentSession, setupOfflineSync } = usePerformedSession(supabase)
 const { exerciseSets, error: exerciseSetError, loading: exerciseSetLoading, addExerciseSet } = useExerciseSet()
 
 const exercise = ref(null)
@@ -588,6 +609,19 @@ const isLeavingPage = ref(false)
 const bestSet = ref(null)
 // Créer un ref local pour les séries
 const localExerciseSets = ref([])
+
+// État local (tout se passe en localStorage pendant la séance)
+const localSetsCount = ref(0)
+
+const mergeSessionSets = (sessionId, setsToMerge) => {
+  const existing = getSessionSets(sessionId)
+  const mergedById = new Map()
+  existing.forEach((set) => mergedById.set(set.id, set))
+  setsToMerge.forEach((set) => mergedById.set(set.id, set))
+  const merged = Array.from(mergedById.values())
+  saveSessionSets(sessionId, merged)
+  return merged
+}
 
 const newSet = ref({
   weight_kg: null,
@@ -617,6 +651,7 @@ const deleting = ref(false)
 
 // Variables pour la modale de champs manquants
 const showMissingFieldsModal = ref(false)
+const isSavingSet = ref(false)
 const missingFields = ref([])
 const missingOptionalFields = ref([])
 const pendingSetData = ref(null)
@@ -808,9 +843,73 @@ const loadBestSet = async () => {
       console.warn('Impossible de charger le meilleur set: données de l\'exercice non disponibles')
       return
     }
+
+    if (!isOnline()) {
+      const cachedBest = getCachedPersonalBest(exercise.value.exercise.id)
+      if (cachedBest) {
+        bestSet.value = cachedBest
+        return
+      }
+
+      const currentSession = getCurrentSession()
+      if (!currentSession) return
+      const measurementType = exercise.value.exercise.measurement_type || 'weight_reps'
+      const offlineSets = getSessionSets(currentSession.workout_session_id).filter(
+        (set) => set.exercise_id === exercise.value.exercise.id
+      )
+
+      if (offlineSets.length === 0) {
+        bestSet.value = null
+        return
+      }
+
+      const bestOfflineSet = offlineSets.reduce((best, candidate) => {
+        if (!best) return candidate
+        if (measurementType === 'time') {
+          return (candidate.duration_seconds || 0) > (best.duration_seconds || 0) ? candidate : best
+        }
+        if (measurementType === 'reps') {
+          return (candidate.reps || 0) > (best.reps || 0) ? candidate : best
+        }
+        if (measurementType === 'distance') {
+          return (candidate.distance_meters || 0) > (best.distance_meters || 0) ? candidate : best
+        }
+        if (measurementType === 'time_distance') {
+          const candidateDist = candidate.distance_meters || 0
+          const bestDist = best.distance_meters || 0
+          if (candidateDist !== bestDist) {
+            return candidateDist > bestDist ? candidate : best
+          }
+          return (candidate.duration_seconds || 0) > (best.duration_seconds || 0) ? candidate : best
+        }
+        if (measurementType === 'time_reps') {
+          const candidateReps = candidate.reps || 0
+          const bestReps = best.reps || 0
+          if (candidateReps !== bestReps) {
+            return candidateReps > bestReps ? candidate : best
+          }
+          return (candidate.duration_seconds || 0) > (best.duration_seconds || 0) ? candidate : best
+        }
+        if (measurementType === 'weight_only') {
+          return (candidate.weight_kg || 0) > (best.weight_kg || 0) ? candidate : best
+        }
+        if ((candidate.weight_kg || 0) > (best.weight_kg || 0)) return candidate
+        if ((candidate.weight_kg || 0) === (best.weight_kg || 0) && (candidate.reps || 0) > (best.reps || 0)) {
+          return candidate
+        }
+        return best
+      }, null)
+
+      bestSet.value = bestOfflineSet
+      return
+    }
     
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    const user = await getOfflineUser(supabase)
+    if (!user) {
+      // Fallback aux données locales si pas d'utilisateur
+      console.warn('loadBestSet: pas d\'utilisateur, utilisation cache local')
+      return
+    }
     
     const measurementType = exercise.value.exercise.measurement_type || 'weight_reps'
     
@@ -908,6 +1007,9 @@ const loadBestSet = async () => {
       bestSet.value = data && data.length > 0 ? data[0] : null
     }
     
+    if (bestSet.value && exercise.value?.exercise?.id) {
+      cachePersonalBest(exercise.value.exercise.id, bestSet.value)
+    }
     console.log('Meilleur set chargé:', bestSet.value)
   } catch (e) {
     console.error('Erreur lors du chargement du meilleur set:', e.message)
@@ -1109,156 +1211,112 @@ const fillMissingFields = () => {
   }, 100)
 }
 
-// Fonction qui fait réellement l'enregistrement
+// Fonction qui fait réellement l'enregistrement (PATTERN LOCAL-FIRST)
+// Tout se passe en localStorage pendant la séance, sync à la fin uniquement
 const actuallyAddSet = async () => {
-  try {
-    const measurementType = exercise.value?.exercise?.measurement_type || 'weight_reps'
-    
-    const setData = pendingSetData.value || {
-      exercise_id: exercise.value.exercise.id,
-      weight_kg: newSet.value.weight_kg ? parseFloat(newSet.value.weight_kg) : 0, // Valeur par défaut 0 si non rempli
-      reps: newSet.value.reps ? parseInt(newSet.value.reps) : (measurementType === 'weight_reps' || measurementType === 'reps' || measurementType === 'time_reps' ? 1 : 0), // Valeur par défaut 1 pour les types qui nécessitent reps, 0 pour time
-      duration_seconds: newSet.value.duration_seconds ? parseInt(newSet.value.duration_seconds) : null,
-      distance_meters: newSet.value.distance_meters ? parseFloat(newSet.value.distance_meters) : null,
-      rest_seconds: newSet.value.rest_seconds ? parseInt(newSet.value.rest_seconds) : 0, // Valeur par défaut 0 si non rempli
-      rpe: newSet.value.rpe ? parseFloat(newSet.value.rpe) : null,
-      note: newSet.value.note || null
-    }
-    
-    // S'assurer que rest_seconds n'est jamais null (même si pendingSetData était défini)
-    if (setData.rest_seconds === null || setData.rest_seconds === undefined) {
-      setData.rest_seconds = 0
-    }
-    
-    // S'assurer que weight_kg n'est jamais null (même si pendingSetData était défini)
-    if (setData.weight_kg === null || setData.weight_kg === undefined) {
-      setData.weight_kg = 0
-    }
-    
-    // S'assurer que reps n'est jamais null (même si pendingSetData était défini)
-    // Pour les exercices time, on met 0 au lieu de null
-    if (setData.reps === null || setData.reps === undefined) {
-      const requiresReps = ['weight_reps', 'reps', 'time_reps'].includes(measurementType)
-      setData.reps = requiresReps ? 1 : 0
-    }
-    
-    // Faire l'appel directement à Supabase pour un meilleur contrôle
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      throw new Error('Utilisateur non authentifié')
-    }
-    
-    // Ajouter l'utilisateur à setData
-    setData.user_id = user.id
-    
-    // Insérer dans la base de données
-    const { data: addedSet, error: insertError } = await supabase
-      .from('exerciseset')
-      .insert([setData])
-      .select()
-      .single()
-    
-    if (insertError) throw insertError
-    
-    console.log('Série ajoutée avec succès:', addedSet)
-    
-    // Ajouter la série à localExerciseSets pour une mise à jour immédiate
-    localExerciseSets.value = [addedSet, ...localExerciseSets.value]
-    
-    // Mettre à jour la liste des tempSessionSets dans le localStorage
-    if (typeof window !== 'undefined' && addedSet && addedSet.id) {
-      const storedSets = localStorage.getItem('tempSessionSets')
-      const tempSets = storedSets ? JSON.parse(storedSets) : []
-      tempSets.push(addedSet.id)
-      localStorage.setItem('tempSessionSets', JSON.stringify(tempSets))
-    }
-    
-    // Vérifier si c'est un meilleur set en utilisant la nouvelle fonction de comparaison
-    if (isBetterSet(addedSet, bestSet.value)) {
-      // Pour les exercices en temps et en répétitions, recharger les données pour avoir les stats complètes
-      if (exercise.value.exercise.measurement_type === 'time' || exercise.value.exercise.measurement_type === 'reps') {
-        await loadBestSet()
-      } else {
-        bestSet.value = addedSet
-      }
-      console.log('Nouveau record personnel!')
-      
-      // Message adaptatif selon le type d'exercice
-      let description = ''
-      if (exercise.value.exercise.measurement_type === 'weight_reps' || !exercise.value.exercise.measurement_type) {
-        description = `Vous avez battu votre ancien record avec ${addedSet.weight_kg || 0}kg x ${addedSet.reps || 0} répétitions`
-      } else if (exercise.value.exercise.measurement_type === 'reps') {
-        const weightText = addedSet.weight_kg && parseFloat(addedSet.weight_kg) > 0 ? ` (lesté +${addedSet.weight_kg}kg)` : ''
-        description = `Vous avez battu votre ancien record avec ${addedSet.reps || 0} répétitions${weightText}`
-      } else if (exercise.value.exercise.measurement_type === 'time') {
-        description = `Vous avez battu votre ancien record avec ${formatDuration(addedSet.duration_seconds || 0)}`
-      } else if (exercise.value.exercise.measurement_type === 'time_distance') {
-        description = `Vous avez battu votre ancien record avec ${formatDuration(addedSet.duration_seconds || 0)} sur ${((addedSet.distance_meters || 0) / 1000).toFixed(2)} km`
-      } else {
-        description = 'Nouveau record personnel !'
-      }
-      
-      toast.success('Félicitations ! 🏆', { description })
-    } else {
-      // Message adaptatif selon le type d'exercice
-      let description = ''
-      if (exercise.value.exercise.measurement_type === 'weight_reps' || !exercise.value.exercise.measurement_type) {
-        description = `${addedSet.weight_kg || 0}kg x ${addedSet.reps || 0} répétitions`
-      } else if (exercise.value.exercise.measurement_type === 'reps') {
-        const weightText = addedSet.weight_kg && parseFloat(addedSet.weight_kg) > 0 ? ` (lesté +${addedSet.weight_kg}kg)` : ''
-        description = `${addedSet.reps || 0} répétitions${weightText}`
-      } else if (exercise.value.exercise.measurement_type === 'time') {
-        description = `${formatDuration(addedSet.duration_seconds || 0)}`
-      } else if (exercise.value.exercise.measurement_type === 'time_distance') {
-        description = `${formatDuration(addedSet.duration_seconds || 0)} sur ${((addedSet.distance_meters || 0) / 1000).toFixed(2)} km`
-      } else {
-        description = 'Série ajoutée'
-      }
-      
-      toast.success('Série ajoutée avec succès!', { description })
-    }
-    
-    // Réinitialiser les erreurs du formulaire en cas de succès
-    resetFormErrors()
-    
-    // Préremplir le formulaire avec la dernière série (celle qu'on vient d'ajouter)
-    if (addedSet) {
-      newSet.value = {
-        weight_kg: addedSet.weight_kg,
-        reps: addedSet.reps,
-        duration_seconds: addedSet.duration_seconds,
-        distance_meters: addedSet.distance_meters,
-        rest_seconds: addedSet.rest_seconds,
-        rpe: addedSet.rpe || null,
-        note: addedSet.note || null
-      }
-    }
-
-    // Démarrer le timer de repos
-    if (newSet.value.rest_seconds && parseInt(newSet.value.rest_seconds) > 0) {
-      startRestTimer(parseInt(newSet.value.rest_seconds))
-    }
-    
-    // Réinitialiser pendingSetData
-    pendingSetData.value = null
-  } catch (e) {
-    const friendlyMessage = getUserFriendlyError(e.message)
-    error.value = friendlyMessage
-    console.error('Erreur lors de l\'ajout d\'une série:', e)
-    
-    // Détecter si c'est une erreur de validation et mettre en évidence le formulaire
-    scrollToFormAndHighlightErrors(e.message)
-    
-    toast.error('Erreur', {
-      description: friendlyMessage
-    })
-    pendingSetData.value = null
+  if (isSavingSet.value) return
+  isSavingSet.value = true
+  
+  const measurementType = exercise.value?.exercise?.measurement_type || 'weight_reps'
+  const currentSession = getCurrentSession()
+  
+  if (!currentSession) {
+    toast.error('Erreur', { description: 'Aucune session en cours' })
+    isSavingSet.value = false
+    return
   }
+  
+  // Préparer les données du set
+  const setData = pendingSetData.value || {
+    exercise_id: exercise.value.exercise.id,
+    weight_kg: newSet.value.weight_kg ? parseFloat(newSet.value.weight_kg) : 0,
+    reps: newSet.value.reps ? parseInt(newSet.value.reps) : (measurementType === 'weight_reps' || measurementType === 'reps' || measurementType === 'time_reps' ? 1 : 0),
+    duration_seconds: newSet.value.duration_seconds ? parseInt(newSet.value.duration_seconds) : null,
+    distance_meters: newSet.value.distance_meters ? parseFloat(newSet.value.distance_meters) : null,
+    rest_seconds: newSet.value.rest_seconds ? parseInt(newSet.value.rest_seconds) : 0,
+    rpe: newSet.value.rpe ? parseFloat(newSet.value.rpe) : null,
+    note: newSet.value.note || null
+  }
+  
+  // Normaliser les valeurs
+  if (setData.rest_seconds === null || setData.rest_seconds === undefined) setData.rest_seconds = 0
+  if (setData.weight_kg === null || setData.weight_kg === undefined) setData.weight_kg = 0
+  if (setData.reps === null || setData.reps === undefined) {
+    setData.reps = ['weight_reps', 'reps', 'time_reps'].includes(measurementType) ? 1 : 0
+  }
+  
+  // ============================================
+  // SAUVEGARDE LOCALE UNIQUEMENT (sync à la fin de la séance)
+  // ============================================
+  const localId = generateLocalId()
+  const localSet = {
+    ...setData,
+    id: localId,
+    user_id: currentSession.user_id,
+    created_at: new Date().toISOString()
+  }
+  
+  // Sauvegarder en localStorage
+  addSessionSet(currentSession.workout_session_id, localSet)
+  localExerciseSets.value = [localSet, ...localExerciseSets.value]
+  
+  // Mettre à jour le compteur
+  localSetsCount.value = getSessionSets(currentSession.workout_session_id).length
+  
+  // Mise à jour UI (record personnel local)
+  const isNewRecord = isBetterSet(localSet, bestSet.value)
+  if (isNewRecord) {
+    bestSet.value = localSet
+  }
+  
+  // Réinitialiser le formulaire et démarrer le timer de repos
+  resetFormErrors()
+  if (newSet.value.rest_seconds && parseInt(newSet.value.rest_seconds) > 0) {
+    startRestTimer(parseInt(newSet.value.rest_seconds))
+  }
+  
+  // Préremplir le formulaire pour la prochaine série
+  newSet.value = {
+    weight_kg: localSet.weight_kg,
+    reps: localSet.reps,
+    duration_seconds: localSet.duration_seconds,
+    distance_meters: localSet.distance_meters,
+    rest_seconds: localSet.rest_seconds,
+    rpe: localSet.rpe || null,
+    note: null
+  }
+  
+  pendingSetData.value = null
+  
+  // Toast de succès
+  const description = getSetDescription(localSet, measurementType)
+  if (isNewRecord) {
+    toast.success('Félicitations ! 🏆', { description: `Nouveau record ! ${description}` })
+  } else {
+    toast.success('Série enregistrée', { description })
+  }
+  
+  isSavingSet.value = false
+}
+
+// Helper pour générer la description d'un set selon son type
+const getSetDescription = (set, measurementType) => {
+  if (measurementType === 'weight_reps' || !measurementType) {
+    return `${set.weight_kg || 0}kg x ${set.reps || 0} répétitions`
+  } else if (measurementType === 'reps') {
+    const weightText = set.weight_kg && parseFloat(set.weight_kg) > 0 ? ` (lesté +${set.weight_kg}kg)` : ''
+    return `${set.reps || 0} répétitions${weightText}`
+  } else if (measurementType === 'time') {
+    return formatDuration(set.duration_seconds || 0)
+  } else if (measurementType === 'time_distance') {
+    return `${formatDuration(set.duration_seconds || 0)} sur ${((set.distance_meters || 0) / 1000).toFixed(2)} km`
+  }
+  return 'Série ajoutée'
 }
 
 const handleAddSet = async () => {
   try {
+    if (isSavingSet.value) return
     // Créer la donnée de la série à envoyer à la base de données
     const measurementType = exercise.value?.exercise?.measurement_type || 'weight_reps'
     
@@ -1339,36 +1397,30 @@ const handleAddSet = async () => {
   }
 }
 
-const loadExerciseSets = async () => {
+// Charger les séries depuis localStorage uniquement (pattern local-first)
+const loadExerciseSets = () => {
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    
-    // Récupérer la session en cours
     const currentSession = getCurrentSession()
     if (!currentSession) return
     
-    // S'assurer que exercise.value existe et contient exercise.id
     if (!exercise.value || !exercise.value.exercise || !exercise.value.exercise.id) {
       console.error('Exercise data is not available yet')
       return
     }
-    
-    // Charger uniquement les séries de la session en cours
-    const { data, error: setsError } = await supabase
-      .from('exerciseset')
-      .select('*')
-      .eq('exercise_id', exercise.value.exercise.id)
-      .eq('user_id', user.id)
-      .gte('created_at', currentSession.started_at)
-      .lte('created_at', currentSession.ended_at || new Date().toISOString())
-      .order('created_at', { ascending: false })
 
-    if (setsError) throw setsError
+    // Charger depuis localStorage uniquement
+    const localSets = getSessionSets(currentSession.workout_session_id).filter(
+      (set) => set.exercise_id === exercise.value.exercise.id
+    )
     
-    // Mettre à jour directement la référence locale pour déclencher la réactivité
-    localExerciseSets.value = data || []
-    console.log('Séries chargées:', localExerciseSets.value)
+    localExerciseSets.value = localSets.sort(
+      (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
+    )
+    
+    // Mettre à jour le compteur global
+    localSetsCount.value = getSessionSets(currentSession.workout_session_id).length
+    
+    console.log('Séries chargées depuis localStorage:', localExerciseSets.value.length)
   } catch (e) {
     const friendlyMessage = getUserFriendlyError(e.message)
     console.error('Erreur lors du chargement des séries:', e)
@@ -1430,48 +1482,20 @@ const loadExercise = async () => {
   }
 }
 
-const deleteSet = async (setId) => {
-  try {
-    // Supprimer localement la série de l'interface avant même la requête serveur pour une réactivité immédiate
-    localExerciseSets.value = localExerciseSets.value.filter(set => set.id !== setId)
-    
-    // Supprimer la série de la base de données
-    const { error: deleteError } = await supabase
-      .from('exerciseset')
-      .delete()
-      .eq('id', setId)
-
-    if (deleteError) throw deleteError
-
-    console.log('Série supprimée avec succès')
-    toast.info('Série supprimée', {
-      description: 'La série a été supprimée avec succès'
-    })
-    
-    // Mettre à jour la liste des tempSessionSets dans le localStorage
-    if (typeof window !== 'undefined') {
-      const storedSets = localStorage.getItem('tempSessionSets')
-      if (storedSets) {
-        const tempSets = JSON.parse(storedSets)
-        const updatedSets = tempSets.filter(id => id !== setId)
-        localStorage.setItem('tempSessionSets', JSON.stringify(updatedSets))
-      }
-    }
-    
-    // Recharger le meilleur set si nécessaire
-    if (bestSet.value && bestSet.value.id === setId) {
-      await loadBestSet()
-    }
-  } catch (e) {
-    const friendlyMessage = getUserFriendlyError(e.message)
-    error.value = friendlyMessage
-    console.error('Erreur lors de la suppression d\'une série:', e)
-    toast.error('Erreur', {
-      description: friendlyMessage
-    })
-    // En cas d'erreur, recharger les séries pour rétablir l'état correct
-    await loadExerciseSets()
+// Fonction de suppression simplifiée (local-first)
+const deleteSet = (setId) => {
+  const currentSession = getCurrentSession()
+  if (!currentSession) return
+  
+  localExerciseSets.value = localExerciseSets.value.filter(set => set.id !== setId)
+  removeSessionSet(currentSession.workout_session_id, setId)
+  localSetsCount.value = getSessionSets(currentSession.workout_session_id).length
+  
+  if (bestSet.value && bestSet.value.id === setId) {
+    loadBestSet()
   }
+  
+  toast.info('Série supprimée')
 }
 
 // Fonction pour gérer le retour à la page de démarrage
@@ -1487,90 +1511,74 @@ const openEditModal = (set) => {
   showEditModal.value = true
 }
 
-// Fonction pour mettre à jour une série
+// Fonction pour mettre à jour une série (PATTERN LOCAL-FIRST)
+// Mise à jour uniquement en localStorage, sync à la fin de la séance
 const handleUpdateSet = async () => {
-  try {
-    updating.value = true
-    
-    const measurementType = exercise.value?.exercise?.measurement_type || 'weight_reps'
-    const updateData = {
-      rest_seconds: editingSet.value.rest_seconds ? parseInt(editingSet.value.rest_seconds) : 0,
-      rpe: editingSet.value.rpe ? parseFloat(editingSet.value.rpe) : null,
-      note: editingSet.value.note || null
-    }
-    
-    // Ajouter les champs selon le type d'exercice
-    if (measurementType === 'time' || measurementType === 'time_reps' || measurementType === 'time_distance') {
-      updateData.duration_seconds = editingSet.value.duration_seconds ? parseInt(editingSet.value.duration_seconds) : null
-    }
-    
-    // Pour reps : toujours définir une valeur (0 pour time, la valeur pour les autres)
-    if (measurementType === 'time') {
-      updateData.reps = 0 // Pour les exercices time, on met 0 car il n'y a pas de répétitions
-    } else if (measurementType === 'time_reps' || measurementType === 'weight_reps' || measurementType === 'reps') {
-      updateData.reps = editingSet.value.reps ? parseInt(editingSet.value.reps) : (measurementType === 'time_reps' || measurementType === 'weight_reps' || measurementType === 'reps' ? 1 : 0)
-    } else {
-      updateData.reps = 0 // Par défaut pour les autres types
-    }
-    
-    if (measurementType === 'weight_reps' || measurementType === 'weight_only' || measurementType === 'reps') {
-      updateData.weight_kg = editingSet.value.weight_kg ? parseFloat(editingSet.value.weight_kg) : 0
-    }
-    
-    const { data: updatedSet, error: updateError } = await supabase
-      .from('exerciseset')
-      .update(updateData)
-      .eq('id', editingSet.value.id)
-      .select()
-      .single()
-
-    if (updateError) throw updateError
-
-    // Mettre à jour la liste locale
-    const index = localExerciseSets.value.findIndex(set => set.id === editingSet.value.id)
-    if (index !== -1) {
-      localExerciseSets.value[index] = updatedSet
-    }
-
-    // Vérifier si c'est un nouveau record
-    if (isBetterSet(updatedSet, bestSet.value)) {
-      // Pour les exercices en temps et en répétitions, recharger les données pour avoir les stats complètes
-      if (measurementType === 'time' || measurementType === 'reps') {
-        await loadBestSet()
-      } else {
-        bestSet.value = updatedSet
-      }
-      
-      let description = ''
-      if (measurementType === 'weight_reps' || !measurementType) {
-        description = `Vous avez battu votre ancien record avec ${updatedSet.weight_kg}kg x ${updatedSet.reps} répétitions`
-      } else if (measurementType === 'time') {
-        description = `Vous avez battu votre ancien record avec ${formatDuration(updatedSet.duration_seconds || 0)}`
-      } else if (measurementType === 'reps') {
-        description = `Vous avez battu votre ancien record avec ${updatedSet.reps} répétitions`
-      } else {
-        description = 'Nouveau record personnel !'
-      }
-      
-      toast.success('Félicitations ! 🏆', { description })
-    } else {
-      // Pour les exercices en temps et en répétitions, recharger quand même pour mettre à jour les stats
-      if (measurementType === 'time' || measurementType === 'reps') {
-        await loadBestSet()
-      }
-      toast.success('Série mise à jour avec succès!')
-    }
-
-    showEditModal.value = false
-  } catch (e) {
-    const friendlyMessage = getUserFriendlyError(e.message)
-    console.error('Erreur lors de la mise à jour de la série:', e)
-    toast.error('Erreur', {
-      description: friendlyMessage
-    })
-  } finally {
+  if (updating.value) return
+  updating.value = true
+  
+  const measurementType = exercise.value?.exercise?.measurement_type || 'weight_reps'
+  const currentSession = getCurrentSession()
+  const setId = editingSet.value?.id
+  
+  if (!setId) {
+    toast.error('Erreur', { description: 'Aucune série sélectionnée' })
     updating.value = false
+    return
   }
+  
+  // Préparer les données de mise à jour
+  const updateData = {
+    rest_seconds: editingSet.value.rest_seconds ? parseInt(editingSet.value.rest_seconds) : 0,
+    rpe: editingSet.value.rpe ? parseFloat(editingSet.value.rpe) : null,
+    note: editingSet.value.note || null
+  }
+  
+  // Ajouter les champs selon le type d'exercice
+  if (measurementType === 'time' || measurementType === 'time_reps' || measurementType === 'time_distance') {
+    updateData.duration_seconds = editingSet.value.duration_seconds ? parseInt(editingSet.value.duration_seconds) : null
+  }
+  
+  if (measurementType === 'time') {
+    updateData.reps = 0
+  } else if (['time_reps', 'weight_reps', 'reps'].includes(measurementType)) {
+    updateData.reps = editingSet.value.reps ? parseInt(editingSet.value.reps) : 1
+  } else {
+    updateData.reps = 0
+  }
+  
+  if (['weight_reps', 'weight_only', 'reps'].includes(measurementType)) {
+    updateData.weight_kg = editingSet.value.weight_kg ? parseFloat(editingSet.value.weight_kg) : 0
+  }
+  
+  // ============================================
+  // MISE À JOUR LOCALE UNIQUEMENT
+  // ============================================
+  const previousSetData = localExerciseSets.value.find(set => set.id === setId)
+  
+  // Mettre à jour en localStorage
+  if (currentSession) {
+    updateSessionSet(currentSession.workout_session_id, setId, updateData)
+  }
+  localExerciseSets.value = localExerciseSets.value.map(set =>
+    set.id === setId ? { ...set, ...updateData } : set
+  )
+  
+  // Vérifier si c'est un nouveau record
+  const updatedLocalSet = { ...previousSetData, ...updateData }
+  const isNewRecord = isBetterSet(updatedLocalSet, bestSet.value)
+  if (isNewRecord) {
+    bestSet.value = updatedLocalSet
+    toast.success('Félicitations ! 🏆', { 
+      description: `Nouveau record ! ${getSetDescription(updatedLocalSet, measurementType)}` 
+    })
+  } else {
+    toast.success('Série modifiée')
+  }
+  
+  // Fermer la modale
+  showEditModal.value = false
+  updating.value = false
 }
 
 // Fonction pour confirmer la suppression
@@ -1578,53 +1586,52 @@ const confirmDelete = () => {
   showDeleteModal.value = true
 }
 
-// Nouvelle fonction pour gérer la suppression
+// Fonction pour gérer la suppression (PATTERN LOCAL-FIRST)
+// Suppression uniquement en localStorage, sync à la fin de la séance
 const handleDelete = async () => {
-  try {
-    deleting.value = true
-    
-    const { error: deleteError } = await supabase
-      .from('exerciseset')
-      .delete()
-      .eq('id', editingSet.value.id)
-
-    if (deleteError) throw deleteError
-
-    // Mettre à jour la liste locale
-    localExerciseSets.value = localExerciseSets.value.filter(set => set.id !== editingSet.value.id)
-    
-    // Mettre à jour la liste des tempSessionSets dans le localStorage
-    if (typeof window !== 'undefined') {
-      const storedSets = localStorage.getItem('tempSessionSets')
-      if (storedSets) {
-        const tempSets = JSON.parse(storedSets)
-        const updatedSets = tempSets.filter(id => id !== editingSet.value.id)
-        localStorage.setItem('tempSessionSets', JSON.stringify(updatedSets))
-      }
-    }
-
-    // Recharger le meilleur set si nécessaire
-    if (bestSet.value && bestSet.value.id === editingSet.value.id) {
-      await loadBestSet()
-    }
-
-    // Fermer les deux modales
-    showDeleteModal.value = false
-    showEditModal.value = false
-    
-    toast.success('Série supprimée avec succès')
-  } catch (e) {
-    const friendlyMessage = getUserFriendlyError(e.message)
-    console.error('Erreur lors de la suppression de la série:', e)
-    toast.error('Erreur', {
-      description: friendlyMessage
-    })
-  } finally {
+  if (deleting.value) return
+  deleting.value = true
+  
+  const setId = editingSet.value?.id
+  const currentSession = getCurrentSession()
+  
+  if (!setId) {
+    toast.error('Erreur', { description: 'Aucune série sélectionnée' })
     deleting.value = false
+    return
   }
+  
+  // ============================================
+  // SUPPRESSION LOCALE UNIQUEMENT
+  // ============================================
+  const wasRecord = bestSet.value && bestSet.value.id === setId
+  
+  // Supprimer du localStorage
+  localExerciseSets.value = localExerciseSets.value.filter(set => set.id !== setId)
+  if (currentSession) {
+    removeSessionSet(currentSession.workout_session_id, setId)
+  }
+  
+  // Mettre à jour le compteur
+  localSetsCount.value = getSessionSets(currentSession.workout_session_id).length
+  
+  // Recharger le meilleur set si nécessaire
+  if (wasRecord) {
+    await loadBestSet()
+  }
+  
+  // Fermer les modales
+  showDeleteModal.value = false
+  showEditModal.value = false
+  
+  toast.success('Série supprimée')
+  deleting.value = false
 }
 
+let unbindRouteExercise = null
+
 onMounted(() => {
+  setupOfflineSync()
   loadExercise()
   
   // Ajouter l'écouteur d'événement pour la fermeture du navigateur/onglet
@@ -1632,14 +1639,7 @@ onMounted(() => {
     window.addEventListener('beforeunload', beforeUnloadHandler)
     
     // Configurer le garde de route
-    const unbindRoute = router.beforeEach(routeLeaveGuard)
-    
-    // Stocker la fonction pour désactiver l'écouteur
-    onBeforeUnmount(() => {
-      window.removeEventListener('beforeunload', beforeUnloadHandler)
-      // Supprimer le garde de route
-      unbindRoute()
-    })
+    unbindRouteExercise = router.beforeEach(routeLeaveGuard)
   }
 })
 
@@ -1677,36 +1677,47 @@ watch([() => newSet.value.weight_kg, () => newSet.value.reps, () => newSet.value
 }, { deep: true })
 
 // Gérer la visibilité de la page pour recalculer le timer quand l'utilisateur revient
-if (process.client) {
-  const handleVisibilityChange = () => {
-    // Si la page redevient visible et qu'un timer de repos est actif, recalculer le temps restant
-    if (!document.hidden && restTimer.value && restTimerStartTime.value) {
-      const elapsed = Math.floor((Date.now() - restTimerStartTime.value) / 1000)
-      const remaining = Math.max(0, restTimerDuration.value - elapsed)
-      restTimeRemaining.value = remaining
-      
-      // Si le temps est écoulé pendant que l'app était en arrière-plan
-      if (remaining <= 0) {
-        clearInterval(restTimer.value)
-        restTimer.value = null
-        restTimerStartTime.value = null
-        restTimerDuration.value = 0
-        showRestModal.value = false
-        // Pas de toast, le timer continue silencieusement
-      }
+// Gestion de la visibilité (timer quand l'app passe en arrière-plan)
+const handleVisibilityChange = () => {
+  // Si la page redevient visible et qu'un timer de repos est actif, recalculer le temps restant
+  if (!document.hidden && restTimer.value && restTimerStartTime.value) {
+    const elapsed = Math.floor((Date.now() - restTimerStartTime.value) / 1000)
+    const remaining = Math.max(0, restTimerDuration.value - elapsed)
+    restTimeRemaining.value = remaining
+    
+    // Si le temps est écoulé pendant que l'app était en arrière-plan
+    if (remaining <= 0) {
+      clearInterval(restTimer.value)
+      restTimer.value = null
+      restTimerStartTime.value = null
+      restTimerDuration.value = 0
+      showRestModal.value = false
     }
   }
-  
-  document.addEventListener('visibilitychange', handleVisibilityChange)
-  
-  // Nettoyer l'écouteur lors du démontage
-  onBeforeUnmount(() => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange)
-  })
 }
 
-// Nettoyer le timer lors du démontage du composant
+if (process.client) {
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+}
+
+// Nettoyer tous les listeners et timers au démontage (doit être au niveau racine)
 onBeforeUnmount(() => {
+  // Nettoyer le listener beforeunload
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('beforeunload', beforeUnloadHandler)
+  }
+  
+  // Supprimer le garde de route
+  if (unbindRouteExercise) {
+    unbindRouteExercise()
+  }
+  
+  // Nettoyer le listener de visibilité
+  if (process.client) {
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }
+  
+  // Nettoyer le timer de repos
   if (restTimer.value) {
     clearInterval(restTimer.value)
     restTimer.value = null

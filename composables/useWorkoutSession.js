@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import { useSupabaseClient } from '#imports';
+import { cacheWorkoutSession, cacheWorkoutSessions, getCachedWorkoutSession, getCachedWorkoutSessions, isOnline } from '~/utils/offlineTraining';
 
 export function useWorkoutSessions(user) {
     const workoutSessions = ref([]);
@@ -23,6 +24,13 @@ export function useWorkoutSessions(user) {
         error.value = null;
 
         try {
+            if (!isOnline()) {
+                const cachedSession = getCachedWorkoutSession(sessionId);
+                if (cachedSession) {
+                    return { data: cachedSession, error: null };
+                }
+            }
+
             const supabase = useSupabaseClient();
             const { data, error: supabaseError } = await supabase
                 .from('workoutsession')
@@ -32,9 +40,14 @@ export function useWorkoutSessions(user) {
 
             if (supabaseError) throw supabaseError;
 
+            cacheWorkoutSession(sessionId, data);
             return { data, error: null };
         } catch (err) {
             console.error('Erreur lors de la récupération de la séance:', err);
+            const cachedSession = getCachedWorkoutSession(sessionId);
+            if (cachedSession) {
+                return { data: cachedSession, error: null };
+            }
             return { data: null, error: err.message };
         } finally {
             loading.value = false;
@@ -51,6 +64,11 @@ export function useWorkoutSessions(user) {
         error.value = null;
 
         try {
+            if (!isOnline()) {
+                workoutSessions.value = getCachedWorkoutSessions(user.value.id) || [];
+                return;
+            }
+
             const supabase = useSupabaseClient();
             const { data, error: supabaseError } = await supabase
                 .from('workoutsession')
@@ -71,9 +89,15 @@ export function useWorkoutSessions(user) {
             if (supabaseError) throw supabaseError;
 
             workoutSessions.value = data || [];
+            cacheWorkoutSessions(user.value.id, workoutSessions.value);
         } catch (err) {
             console.error('Erreur lors de la récupération des séances:', err);
-            error.value = err.message;
+            const cachedSessions = getCachedWorkoutSessions(user.value.id);
+            if (cachedSessions && cachedSessions.length > 0) {
+                workoutSessions.value = cachedSessions;
+            } else {
+                error.value = err.message;
+            }
         } finally {
             loading.value = false;
         }

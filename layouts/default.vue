@@ -119,12 +119,14 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { LayoutDashboard, Timer, Dumbbell, LogOut, Menu, X, History, User, HelpCircle } from 'lucide-vue-next'
 import { useSupabaseClient } from '#imports'
 import { Button } from '@/components/ui/button'
 import WelcomeModal from '@/components/onboarding/WelcomeModal.vue'
+import { usePerformedSession } from '~/composables/usePerformedSession'
+import { clearCachedUser } from '~/utils/offlineTraining'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,6 +142,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const supabase = useSupabaseClient()
+const { setupOfflineSync } = usePerformedSession(supabase)
 
 const currentPath = computed(() => route.path)
 const isMenuOpen = ref(false)
@@ -159,9 +162,15 @@ const handleShowWelcomeModal = () => {
 const logout = async () => {
   try {
     await supabase.auth.signOut()
+    // Effacer le cache utilisateur offline
+    clearCachedUser()
     router.push('/login')
   } catch (error) {
     console.error('Erreur lors de la déconnexion:', error)
   }
 }
+
+onMounted(() => {
+  setupOfflineSync()
+})
 </script>

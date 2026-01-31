@@ -173,6 +173,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useWorkoutSessions } from '~/composables/useWorkoutSession'
 import { useWorkoutExercise } from '~/composables/useWorkoutExercise'
 import { usePerformedSession } from '~/composables/usePerformedSession'
+import { getOfflineUser, getCachedUser } from '~/utils/offlineTraining'
 import RMCalculator from '@/components/charts/RMCalculator.vue'
 import SessionWeightChart from '@/components/charts/SessionWeightChart.vue'
 import MuscleDistributionChart from '@/components/charts/MuscleDistributionChart.vue'
@@ -192,7 +193,7 @@ const router = useRouter()
 const supabase = useSupabaseClient()
 const { getWorkoutSession } = useWorkoutSessions(useSupabaseUser())
 const { workoutExercises: exercises, getWorkoutExercises } = useWorkoutExercise()
-const { prepareSession, error: performedSessionError } = usePerformedSession(supabase)
+const { prepareSession, error: performedSessionError, setupOfflineSync } = usePerformedSession(supabase)
 
 const session = ref(null)
 const loading = ref(true)
@@ -229,15 +230,31 @@ const editSession = () => {
 
 const startSession = async () => {
   try {
-    const userId = (await supabase.auth.getUser()).data.user.id
-    prepareSession(route.params.id, userId)
+    // Utiliser getOfflineUser qui gère les erreurs réseau
+    const user = await getOfflineUser(supabase)
+    
+    if (!user) {
+      // Essayer le cache comme fallback
+      const cachedUser = getCachedUser()
+      if (cachedUser) {
+        prepareSession(route.params.id, cachedUser.id)
+        router.push(`/seances/${route.params.id}/start`)
+        return
+      }
+      throw new Error('Impossible de démarrer la séance sans connexion utilisateur')
+    }
+    
+    prepareSession(route.params.id, user.id)
     router.push(`/seances/${route.params.id}/start`)
   } catch (e) {
     error.value = e.message || performedSessionError.value
   }
 }
 
-onMounted(loadSession)
+onMounted(() => {
+  setupOfflineSync()
+  loadSession()
+})
 </script>
 
 <style scoped>

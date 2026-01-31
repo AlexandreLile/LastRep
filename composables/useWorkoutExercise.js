@@ -1,4 +1,5 @@
 import { ref } from 'vue';
+import { cacheWorkoutExercise, cacheWorkoutExercises, getCachedWorkoutExercise, getCachedWorkoutExercises, isOnline } from '~/utils/offlineTraining';
 
 export const useWorkoutExercise = () => {
   const workoutExercises = ref([]);
@@ -10,6 +11,12 @@ export const useWorkoutExercise = () => {
     try {
       loading.value = true;
       error.value = null;
+
+      if (!isOnline()) {
+        const cachedExercises = getCachedWorkoutExercises(sessionId);
+        workoutExercises.value = cachedExercises || [];
+        return { data: workoutExercises.value, error: null };
+      }
 
       const { data, error: fetchError } = await useSupabaseClient()
         .from('workoutexercise')
@@ -29,8 +36,21 @@ export const useWorkoutExercise = () => {
       if (fetchError) throw fetchError;
 
       workoutExercises.value = data;
+      cacheWorkoutExercises(sessionId, data);
+      if (Array.isArray(data)) {
+        data.forEach((exercise) => {
+          if (exercise?.id) {
+            cacheWorkoutExercise(exercise.id, exercise);
+          }
+        });
+      }
       return { data, error: null };
     } catch (e) {
+      const cachedExercises = getCachedWorkoutExercises(sessionId);
+      if (cachedExercises && cachedExercises.length > 0) {
+        workoutExercises.value = cachedExercises;
+        return { data: workoutExercises.value, error: null };
+      }
       error.value = e.message;
       return { data: null, error: e };
     } finally {
@@ -119,6 +139,12 @@ export const useWorkoutExercise = () => {
   const getWorkoutExercise = async (exerciseId) => {
     try {
       loading.value = true;
+      if (!isOnline()) {
+        const cachedExercise = getCachedWorkoutExercise(exerciseId);
+        if (cachedExercise) {
+          return { data: cachedExercise, error: null };
+        }
+      }
       const { data, error: fetchError } = await useSupabaseClient()
         .from('workoutexercise')
         .select(`
@@ -135,9 +161,14 @@ export const useWorkoutExercise = () => {
         .single();
 
       if (fetchError) throw fetchError;
+      cacheWorkoutExercise(exerciseId, data);
       return { data, error: null };
     } catch (e) {
       console.error('Error fetching exercise:', e);
+      const cachedExercise = getCachedWorkoutExercise(exerciseId);
+      if (cachedExercise) {
+        return { data: cachedExercise, error: null };
+      }
       error.value = e.message;
       return { data: null, error: e };
     } finally {

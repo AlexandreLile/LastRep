@@ -16,21 +16,6 @@
     <!-- Padding supplémentaire pour le contenu sous le badge MODE ENTRAINEMENT -->
     <div class="pt-16 sm:pt-0"></div>
 
-    <!-- Animation de célébration -->
-    <div v-if="showCelebration" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div class="bg-card rounded-xl p-8 max-w-md w-full mx-4 text-center">
-        <div class="confetti-explosion">
-          <div v-for="n in 20" :key="n" class="confetti"></div>
-        </div>
-        <div class="text-5xl mb-4">🏆</div>
-        <h3 class="text-2xl font-bold text-foreground mb-2">Félicitations !</h3>
-        <p class="text-muted-foreground mb-6">Vous avez terminé votre séance avec succès !</p>
-        <Button @click="showCelebration = false" class="w-full">
-          Continuer
-        </Button>
-      </div>
-    </div>
-
     <div v-if="loading" class="flex justify-center items-center h-64">
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
     </div>
@@ -270,6 +255,14 @@
 import { useWorkoutSessions } from '~/composables/useWorkoutSession'
 import { useWorkoutExercise } from '~/composables/useWorkoutExercise'
 import { usePerformedSession } from '~/composables/usePerformedSession'
+import { 
+  addSessionSet, 
+  cachePersonalBest, 
+  clearSessionSets, 
+  getSessionSets, 
+  saveSessionSets, 
+  getOfflineUser 
+} from '~/utils/offlineTraining'
 import { Button } from '@/components/ui/button'
 import { 
   Dumbbell, 
@@ -304,17 +297,17 @@ const router = useRouter()
 const supabase = useSupabaseClient()
 const { getWorkoutSession } = useWorkoutSessions(useSupabaseUser())
 const { workoutExercises: exercisesRaw, getWorkoutExercises } = useWorkoutExercise()
-const { performedSession, error: performedSessionError, saveSession, getCurrentSession } = usePerformedSession(supabase)
+const { performedSession, error: performedSessionError, saveSession, getCurrentSession, setupOfflineSync } = usePerformedSession(supabase)
 
 const session = ref(null)
 const currentSession = ref(null)
 const loading = ref(true)
 const error = ref(null)
-const showCelebration = ref(false)
 const isLeavingPage = ref(false)
 const completedExercisesCount = ref(0)
 const totalSets = ref(0)
 const elapsedTime = ref(0)
+const isSavingSession = ref(false)
 let timer = null
 
 // Tracker les exercices qui ont au moins une série complétée
@@ -369,72 +362,170 @@ const stopTimer = () => {
   }
 }
 
-const updateSessionStats = async () => {
+const computeBestSet = (sets, measurementType) => {
+  if (!sets.length) return null
+  const normalizedType = measurementType || 'weight_reps'
+
+  if (normalizedType === 'time') {
+    const bestTimeSet = sets.reduce((best, candidate) => {
+      if (!best) return candidate
+      return (candidate.duration_seconds || 0) > (best.duration_seconds || 0) ? candidate : best
+    }, null)
+
+    const setsByDate = {}
+    sets.forEach((set) => {
+      const date = new Date(set.created_at).toLocaleDateString('fr-FR')
+      setsByDate[date] = (setsByDate[date] || 0) + 1
+    })
+
+    const maxSetsInSession = Math.max(...Object.values(setsByDate))
+    const dateWithMaxSets = Object.keys(setsByDate).find(
+      (date) => setsByDate[date] === maxSetsInSession
+    )
+
+    return {
+      ...bestTimeSet,
+      maxTime: bestTimeSet.duration_seconds || 0,
+      maxSetsInSession,
+      dateWithMaxSets,
+      isTimeExercise: true
+    }
+  }
+
+  if (normalizedType === 'reps') {
+    const bestRepsSet = sets.reduce((best, candidate) => {
+      if (!best) return candidate
+      return (candidate.reps || 0) > (best.reps || 0) ? candidate : best
+    }, null)
+
+    const repsByDate = {}
+    sets.forEach((set) => {
+      const date = new Date(set.created_at).toLocaleDateString('fr-FR')
+      repsByDate[date] = (repsByDate[date] || 0) + (set.reps || 0)
+    })
+
+    const maxTotalRepsInSession = Math.max(...Object.values(repsByDate))
+    const dateWithMaxReps = Object.keys(repsByDate).find(
+      (date) => repsByDate[date] === maxTotalRepsInSession
+    )
+
+    return {
+      ...bestRepsSet,
+      maxReps: bestRepsSet.reps || 0,
+      maxTotalRepsInSession,
+      dateWithMaxReps,
+      isRepsExercise: true
+    }
+  }
+
+  if (normalizedType === 'weight_only') {
+    return sets.reduce((best, candidate) => {
+      if (!best) return candidate
+      return (candidate.weight_kg || 0) > (best.weight_kg || 0) ? candidate : best
+    }, null)
+  }
+
+  return sets.reduce((best, candidate) => {
+    if (!best) return candidate
+    if ((candidate.weight_kg || 0) > (best.weight_kg || 0)) return candidate
+    if ((candidate.weight_kg || 0) === (best.weight_kg || 0) && (candidate.reps || 0) > (best.reps || 0)) {
+      return candidate
+    }
+    return best
+  }, null)
+}
+
+const preloadPersonalBests = async () => {
   try {
-    // Requête pour récupérer tous les sets de la session actuelle
+    // Ne pas bloquer si offline - les caches existants seront utilisés
+    if (!navigator.onLine) return
+    
+    const exerciseList = exercisesRaw.value || []
+    const exerciseIds = exerciseList.map(ex => ex.exercise_id).filter(Boolean)
+    if (!exerciseIds.length) return
+
+    const user = await getOfflineUser(supabase)
+    if (!user) return
+
     const { data: setsData, error: setsError } = await supabase
       .from('exerciseset')
-      .select('exercise_id, id')
-      .gte('created_at', currentSession.value.started_at)
-      .lte('created_at', new Date().toISOString())
-    
-    if (setsError) throw setsError
-    
-    // Mise à jour du nombre total de séries
-    totalSets.value = setsData.length
-    
-    // Mise à jour des exercices complétés
-    exercisesWithSets.value = new Set(setsData.map(set => set.exercise_id))
-    completedExercisesCount.value = exercisesWithSets.value.size
+      .select('id, exercise_id, weight_kg, reps, duration_seconds, distance_meters, created_at')
+      .eq('user_id', user.id)
+      .in('exercise_id', exerciseIds)
+
+    if (setsError) return // Silencieux si erreur
+
+    const setsByExercise = new Map()
+    ;(setsData || []).forEach((set) => {
+      if (!setsByExercise.has(set.exercise_id)) {
+        setsByExercise.set(set.exercise_id, [])
+      }
+      setsByExercise.get(set.exercise_id).push(set)
+    })
+
+    exerciseList.forEach((exercise) => {
+      const sets = setsByExercise.get(exercise.exercise_id) || []
+      if (!sets.length) return
+      const measurementType = exercise.exercise?.measurement_type || 'weight_reps'
+      const bestSet = computeBestSet(sets, measurementType)
+      if (bestSet) {
+        cachePersonalBest(exercise.exercise_id, bestSet)
+      }
+    })
   } catch (e) {
-    console.error('Erreur de récupération des statistiques:', e)
+    // Silencieux - les records seront chargés plus tard si besoin
   }
+}
+
+// Stats calculées depuis localStorage uniquement (pattern local-first)
+const updateSessionStats = () => {
+  if (!currentSession.value) return
+  
+  const localSets = getSessionSets(currentSession.value.workout_session_id)
+  totalSets.value = localSets.length
+  exercisesWithSets.value = new Set(localSets.map(set => set.exercise_id))
+  completedExercisesCount.value = exercisesWithSets.value.size
 }
 
 const handleEndSession = async () => {
   try {
-    const sessionData = await saveSession()
+    if (isSavingSession.value) return
+    isSavingSession.value = true
     
-    if (sessionData) {
+    const result = await saveSession()
+    
+    if (result) {
+      // Nettoyage géré par saveSession() sauf pour le mode offline
+      // où les sets doivent rester pour la sync ultérieure
       stopTimer()
-      showCelebration.value = true
-      setTimeout(() => {
-        isLeavingPage.value = true
-        router.push(`/seances/${route.params.id}/train`)
-      }, 3000)
+      isLeavingPage.value = true
+      router.push({ path: '/', query: { celebrate: '1' } })
     }
   } catch (e) {
     error.value = e.message || performedSessionError.value
+  } finally {
+    isSavingSession.value = false
   }
 }
 
-const handleCancelSession = async () => {
-  try {
-    const currentSession = getCurrentSession()
-    if (currentSession) {
-      // Supprimer toutes les séries de la session
-      const { error: deleteError } = await supabase
-        .from('exerciseset')
-        .delete()
-        .gte('created_at', currentSession.started_at)
-        .lte('created_at', currentSession.ended_at || new Date().toISOString())
-
-      if (deleteError) throw deleteError
-    }
-    
-    // Supprimer la session du localStorage
-    if (process.client) {
-      localStorage.removeItem('currentSession')
-    }
-    
-    stopTimer()
-    
-    // Rediriger vers la page d'entraînement
-    isLeavingPage.value = true
-    router.push(`/seances/${route.params.id}/train`)
-  } catch (e) {
-    error.value = e.message || 'Erreur lors de l\'annulation de la séance'
+// Annuler la session (local-first: rien n'a été envoyé en DB, juste nettoyer localStorage)
+const handleCancelSession = () => {
+  const session = getCurrentSession()
+  if (session) {
+    // Nettoyer les sets locaux
+    clearSessionSets(session.workout_session_id)
   }
+  
+  // Supprimer la session du localStorage
+  if (process.client) {
+    localStorage.removeItem('currentSession')
+  }
+  
+  stopTimer()
+  
+  // Rediriger vers la page d'entraînement
+  isLeavingPage.value = true
+  router.push(`/seances/${route.params.id}/train`)
 }
 
 const goToExercise = (exerciseId) => {
@@ -442,87 +533,52 @@ const goToExercise = (exerciseId) => {
   router.push(`/seances/${route.params.id}/exercises/${exerciseId}`)
 }
 
-// Permettre de marquer manuellement un exercice comme complété/à faire
-const toggleExerciseStatus = async (exerciseId) => {
-  try {
-    if (exercisesWithSets.value.has(exerciseId)) {
-      // Déjà complété - Retirer de la liste des exercices complétés
-      exercisesWithSets.value.delete(exerciseId)
-    } else {
-      // Pas encore complété - Ajouter à la liste des exercices complétés
-      exercisesWithSets.value.add(exerciseId)
-    }
+// Permettre de marquer manuellement un exercice comme complété/à faire (local-first)
+const toggleExerciseStatus = (exerciseId) => {
+  const sessionId = currentSession.value?.workout_session_id
+  if (!sessionId) return
+  
+  if (exercisesWithSets.value.has(exerciseId)) {
+    // Déjà complété - Retirer
+    exercisesWithSets.value.delete(exerciseId)
     
-    // Mettre à jour le compteur d'exercices complétés
-    completedExercisesCount.value = exercisesWithSets.value.size
+    // Supprimer les sets marqués manuellement pour cet exercice
+    const offlineSets = getSessionSets(sessionId)
+    const updated = offlineSets.filter(
+      (set) => !(set.exercise_id === exerciseId && set.manually_marked)
+    )
+    saveSessionSets(sessionId, updated)
+  } else {
+    // Pas encore complété - Ajouter
+    exercisesWithSets.value.add(exerciseId)
     
-    // Si l'utilisateur marque un exercice comme complété sans avoir de séries,
-    // créer une série factice pour indiquer que l'exercice est complété
-    // (ou supprimer les séries existantes si on le marque comme "à faire")
-    if (exercisesWithSets.value.has(exerciseId)) {
-      // Vérifier si l'exercice a déjà des séries
-      const { data: existingSets, error: checkError } = await supabase
-        .from('exerciseset')
-        .select('id')
-        .eq('exercise_id', exerciseId)
-        .gte('created_at', currentSession.value.started_at)
-        .lte('created_at', new Date().toISOString())
-        .limit(1)
-      
-      if (checkError) throw checkError
-        
-      // Si pas de séries existantes, créer une série factice
-      if (existingSets.length === 0) {
-        const { error: insertError } = await supabase
-          .from('exerciseset')
-          .insert({
-            exercise_id: exerciseId,
-            weight_kg: 0,
-            reps: 0,
-            rest_seconds: 0,
-            user_id: (await supabase.auth.getUser()).data.user.id,
-            created_at: new Date().toISOString(),
-            manually_marked: true // Indiquer que c'est manuellement marqué
-          })
-          
-        if (insertError) throw insertError
+    // Créer une série factice si pas de vraie série
+    const offlineSets = getSessionSets(sessionId)
+    const hasRealSet = offlineSets.some(
+      (set) => set.exercise_id === exerciseId && !set.manually_marked
+    )
+    if (!hasRealSet) {
+      const manualSet = {
+        id: `local-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        exercise_id: exerciseId,
+        weight_kg: 0,
+        reps: 0,
+        rest_seconds: 0,
+        manually_marked: true,
+        created_at: new Date().toISOString(),
+        user_id: currentSession.value.user_id
       }
-    } else {
-      // Supprimer toutes les séries marquées manuellement pour cet exercice
-      const { error: deleteError } = await supabase
-        .from('exerciseset')
-        .delete()
-        .eq('exercise_id', exerciseId)
-        .eq('manually_marked', true)
-        .gte('created_at', currentSession.value.started_at)
-        .lte('created_at', new Date().toISOString())
-        
-      if (deleteError) throw deleteError
-      
-      // Revérifier s'il reste des séries non-marquées manuellement
-      const { data: remainingSets, error: checkError } = await supabase
-        .from('exerciseset')
-        .select('id')
-        .eq('exercise_id', exerciseId)
-        .gte('created_at', currentSession.value.started_at)
-        .lte('created_at', new Date().toISOString())
-        .limit(1)
-        
-      if (checkError) throw checkError
-      
-      // S'il reste des séries non-marquées, remettre l'exercice dans la liste des complétés
-      if (remainingSets.length > 0) {
-        exercisesWithSets.value.add(exerciseId)
-        completedExercisesCount.value = exercisesWithSets.value.size
-      }
+      addSessionSet(sessionId, manualSet)
     }
-    
-    // Mettre à jour les statistiques de la session
-    await updateSessionStats()
-  } catch (e) {
-    console.error('Erreur lors du changement de statut de l\'exercice:', e)
   }
+  
+  // Mettre à jour le compteur
+  completedExercisesCount.value = exercisesWithSets.value.size
+  updateSessionStats()
 }
+
+let statsInterval = null
+let unbindRoute = null
 
 const loadSession = async () => {
   try {
@@ -531,6 +587,7 @@ const loadSession = async () => {
     if (sessionError) throw sessionError
     session.value = data
     await getWorkoutExercises(route.params.id)
+    await preloadPersonalBests()
     
     // Vérifier si une session est en cours
     currentSession.value = getCurrentSession()
@@ -541,13 +598,13 @@ const loadSession = async () => {
     }
     
     // Charger les stats de la session
-    await updateSessionStats()
+    updateSessionStats()
     
     // Démarrer le timer
     startTimer()
     
-    // Actualiser les statistiques périodiquement
-    setInterval(updateSessionStats, 30000) // Toutes les 30 secondes
+    // Actualiser les statistiques périodiquement (avec nettoyage)
+    statsInterval = setInterval(updateSessionStats, 10000) // Toutes les 10 secondes
   } catch (e) {
     error.value = e.message || performedSessionError.value
   } finally {
@@ -587,6 +644,7 @@ const routeLeaveGuard = (to, from, next) => {
 }
 
 onMounted(() => {
+  setupOfflineSync()
   loadSession()
   
   // Ajouter l'écouteur d'événement pour la fermeture du navigateur/onglet
@@ -594,16 +652,25 @@ onMounted(() => {
     window.addEventListener('beforeunload', beforeUnloadHandler)
     
     // Configurer le garde de route
-    const unbindRoute = router.beforeEach(routeLeaveGuard)
-    
-    // Stocker la fonction pour désactiver l'écouteur
-    onBeforeUnmount(() => {
-      window.removeEventListener('beforeunload', beforeUnloadHandler)
-      // Supprimer le garde de route
-      unbindRoute()
-      // Arrêter le timer
-      stopTimer()
-    })
+    unbindRoute = router.beforeEach(routeLeaveGuard)
+  }
+})
+
+// Nettoyage au démontage (doit être au niveau racine du setup)
+onBeforeUnmount(() => {
+  if (process.client) {
+    window.removeEventListener('beforeunload', beforeUnloadHandler)
+  }
+  // Supprimer le garde de route
+  if (unbindRoute) {
+    unbindRoute()
+  }
+  // Arrêter le timer
+  stopTimer()
+  // Arrêter le refresh des stats
+  if (statsInterval) {
+    clearInterval(statsInterval)
+    statsInterval = null
   }
 })
 </script>

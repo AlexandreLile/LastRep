@@ -7,6 +7,16 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
+import { useSupabaseClient } from '#imports'
+import { usePerformedSession } from '~/composables/usePerformedSession'
+
+const supabase = useSupabaseClient()
+const { setupOfflineSync } = usePerformedSession(supabase)
+
+onMounted(() => {
+  setupOfflineSync()
+})
 defineOptions({
   name: 'StartSessionLayout'
 })
