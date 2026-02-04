@@ -599,7 +599,7 @@ const loadSession = async () => {
     if (sessionError) throw sessionError
     session.value = data
     await getWorkoutExercises(route.params.id)
-    await preloadPersonalBests()
+    preloadPersonalBests()
     
     // Charger les stats de la session
     updateSessionStats()

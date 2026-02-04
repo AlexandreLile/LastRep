@@ -836,6 +836,106 @@ const routeLeaveGuard = (to, from, next) => {
   }
 }
 
+const fetchBestSetOnline = async () => {
+  const user = await getOfflineUser(supabase)
+  if (!user) {
+    console.warn('loadBestSet: pas d\'utilisateur, utilisation cache local')
+    return
+  }
+
+  const measurementType = exercise.value.exercise.measurement_type || 'weight_reps'
+
+  // Pour les exercices en temps (isométrie), charger le meilleur temps et le nombre max de séries dans une séance
+  if (measurementType === 'time') {
+    const { data: allSets, error: allSetsError } = await supabase
+      .from('exerciseset')
+      .select('duration_seconds, created_at')
+      .eq('exercise_id', exercise.value.exercise.id)
+      .eq('user_id', user.id)
+      .not('duration_seconds', 'is', null)
+      .order('duration_seconds', { ascending: false })
+
+    if (allSetsError) throw allSetsError
+
+    if (allSets && allSets.length > 0) {
+      const bestTimeSet = allSets[0]
+      const setsByDate = {}
+      allSets.forEach(set => {
+        const date = new Date(set.created_at).toLocaleDateString('fr-FR')
+        if (!setsByDate[date]) {
+          setsByDate[date] = 0
+        }
+        setsByDate[date]++
+      })
+
+      const maxSetsInSession = Math.max(...Object.values(setsByDate))
+      const dateWithMaxSets = Object.keys(setsByDate).find(date => setsByDate[date] === maxSetsInSession)
+
+      bestSet.value = {
+        ...bestTimeSet,
+        maxTime: bestTimeSet.duration_seconds,
+        maxSetsInSession: maxSetsInSession,
+        dateWithMaxSets: dateWithMaxSets,
+        isTimeExercise: true
+      }
+    } else {
+      bestSet.value = null
+    }
+  } else if (measurementType === 'reps') {
+    const { data: allSets, error: allSetsError } = await supabase
+      .from('exerciseset')
+      .select('reps, created_at')
+      .eq('exercise_id', exercise.value.exercise.id)
+      .eq('user_id', user.id)
+      .not('reps', 'is', null)
+      .order('reps', { ascending: false })
+
+    if (allSetsError) throw allSetsError
+
+    if (allSets && allSets.length > 0) {
+      const bestRepsSet = allSets[0]
+      const repsByDate = {}
+      allSets.forEach(set => {
+        const date = new Date(set.created_at).toLocaleDateString('fr-FR')
+        if (!repsByDate[date]) {
+          repsByDate[date] = 0
+        }
+        repsByDate[date] += set.reps || 0
+      })
+
+      const maxTotalRepsInSession = Math.max(...Object.values(repsByDate))
+      const dateWithMaxReps = Object.keys(repsByDate).find(date => repsByDate[date] === maxTotalRepsInSession)
+
+      bestSet.value = {
+        ...bestRepsSet,
+        maxReps: bestRepsSet.reps,
+        maxTotalRepsInSession: maxTotalRepsInSession,
+        dateWithMaxReps: dateWithMaxReps,
+        isRepsExercise: true
+      }
+    } else {
+      bestSet.value = null
+    }
+  } else {
+    const { data, error: bestSetError } = await supabase
+      .from('exerciseset')
+      .select('*')
+      .eq('exercise_id', exercise.value.exercise.id)
+      .eq('user_id', user.id)
+      .order('weight_kg', { ascending: false })
+      .order('reps', { ascending: false })
+      .limit(1)
+
+    if (bestSetError) throw bestSetError
+    bestSet.value = data && data.length > 0 ? data[0] : null
+  }
+
+  if (bestSet.value && exercise.value?.exercise?.id) {
+    cachePersonalBest(exercise.value.exercise.id, bestSet.value)
+  }
+  console.log('Meilleur set chargé:', bestSet.value)
+}
+
 const loadBestSet = async () => {
   try {
     // Vérifier que les données de l'exercice sont disponibles
@@ -844,13 +944,18 @@ const loadBestSet = async () => {
       return
     }
 
-    if (!isOnline()) {
-      const cachedBest = getCachedPersonalBest(exercise.value.exercise.id)
-      if (cachedBest) {
-        bestSet.value = cachedBest
-        return
+    const cachedBest = getCachedPersonalBest(exercise.value.exercise.id)
+    if (cachedBest) {
+      bestSet.value = cachedBest
+      if (isOnline()) {
+        fetchBestSetOnline().catch((e) => {
+          console.error('Erreur lors du refresh du meilleur set:', e.message)
+        })
       }
+      return
+    }
 
+    if (!isOnline()) {
       const currentSession = getCurrentSession()
       if (!currentSession) return
       const measurementType = exercise.value.exercise.measurement_type || 'weight_reps'
@@ -903,114 +1008,8 @@ const loadBestSet = async () => {
       bestSet.value = bestOfflineSet
       return
     }
-    
-    const user = await getOfflineUser(supabase)
-    if (!user) {
-      // Fallback aux données locales si pas d'utilisateur
-      console.warn('loadBestSet: pas d\'utilisateur, utilisation cache local')
-      return
-    }
-    
-    const measurementType = exercise.value.exercise.measurement_type || 'weight_reps'
-    
-    // Pour les exercices en temps (isométrie), charger le meilleur temps et le nombre max de séries dans une séance
-    if (measurementType === 'time') {
-      // Récupérer toutes les séries de cet exercice
-      const { data: allSets, error: allSetsError } = await supabase
-        .from('exerciseset')
-        .select('duration_seconds, created_at')
-        .eq('exercise_id', exercise.value.exercise.id)
-        .eq('user_id', user.id)
-        .not('duration_seconds', 'is', null)
-        .order('duration_seconds', { ascending: false })
 
-      if (allSetsError) throw allSetsError
-      
-      if (allSets && allSets.length > 0) {
-        // Trouver le meilleur temps (max duration_seconds)
-        const bestTimeSet = allSets[0] // Déjà trié par duration_seconds desc
-        
-        // Grouper par date pour trouver le nombre max de séries dans une séance
-        const setsByDate = {}
-        allSets.forEach(set => {
-          const date = new Date(set.created_at).toLocaleDateString('fr-FR')
-          if (!setsByDate[date]) {
-            setsByDate[date] = 0
-          }
-          setsByDate[date]++
-        })
-        
-        const maxSetsInSession = Math.max(...Object.values(setsByDate))
-        const dateWithMaxSets = Object.keys(setsByDate).find(date => setsByDate[date] === maxSetsInSession)
-        
-        bestSet.value = {
-          ...bestTimeSet,
-          maxTime: bestTimeSet.duration_seconds,
-          maxSetsInSession: maxSetsInSession,
-          dateWithMaxSets: dateWithMaxSets,
-          isTimeExercise: true
-        }
-      } else {
-        bestSet.value = null
-      }
-    } else if (measurementType === 'reps') {
-      // Pour les exercices en répétitions, charger le max reps en une série et le meilleur total de reps dans une séance
-      const { data: allSets, error: allSetsError } = await supabase
-        .from('exerciseset')
-        .select('reps, created_at')
-        .eq('exercise_id', exercise.value.exercise.id)
-        .eq('user_id', user.id)
-        .not('reps', 'is', null)
-        .order('reps', { ascending: false })
-
-      if (allSetsError) throw allSetsError
-      
-      if (allSets && allSets.length > 0) {
-        // Trouver le max reps en une série
-        const bestRepsSet = allSets[0] // Déjà trié par reps desc
-        
-        // Grouper par date pour trouver le meilleur total de répétitions dans une séance
-        const repsByDate = {}
-        allSets.forEach(set => {
-          const date = new Date(set.created_at).toLocaleDateString('fr-FR')
-          if (!repsByDate[date]) {
-            repsByDate[date] = 0
-          }
-          repsByDate[date] += set.reps || 0
-        })
-        
-        const maxTotalRepsInSession = Math.max(...Object.values(repsByDate))
-        const dateWithMaxReps = Object.keys(repsByDate).find(date => repsByDate[date] === maxTotalRepsInSession)
-        
-        bestSet.value = {
-          ...bestRepsSet,
-          maxReps: bestRepsSet.reps,
-          maxTotalRepsInSession: maxTotalRepsInSession,
-          dateWithMaxReps: dateWithMaxReps,
-          isRepsExercise: true
-        }
-      } else {
-        bestSet.value = null
-      }
-    } else {
-      // Pour les autres types d'exercices, logique classique
-      const { data, error: bestSetError } = await supabase
-        .from('exerciseset')
-        .select('*')
-        .eq('exercise_id', exercise.value.exercise.id)
-        .eq('user_id', user.id)
-        .order('weight_kg', { ascending: false })
-        .order('reps', { ascending: false })
-        .limit(1)
-
-      if (bestSetError) throw bestSetError
-      bestSet.value = data && data.length > 0 ? data[0] : null
-    }
-    
-    if (bestSet.value && exercise.value?.exercise?.id) {
-      cachePersonalBest(exercise.value.exercise.id, bestSet.value)
-    }
-    console.log('Meilleur set chargé:', bestSet.value)
+    await fetchBestSetOnline()
   } catch (e) {
     console.error('Erreur lors du chargement du meilleur set:', e.message)
   }
@@ -1260,8 +1259,8 @@ const actuallyAddSet = async () => {
   addSessionSet(currentSession.workout_session_id, localSet)
   localExerciseSets.value = [localSet, ...localExerciseSets.value]
   
-  // Mettre à jour le compteur
-  localSetsCount.value = getSessionSets(currentSession.workout_session_id).length
+  // Mettre à jour le compteur (uniquement cet exercice)
+  localSetsCount.value = localExerciseSets.value.length
   
   // Mise à jour UI (record personnel local)
   const isNewRecord = isBetterSet(localSet, bestSet.value)
@@ -1417,8 +1416,8 @@ const loadExerciseSets = () => {
       (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
     )
     
-    // Mettre à jour le compteur global
-    localSetsCount.value = getSessionSets(currentSession.workout_session_id).length
+    // Mettre à jour le compteur (uniquement cet exercice)
+    localSetsCount.value = localSets.length
     
     console.log('Séries chargées depuis localStorage:', localExerciseSets.value.length)
   } catch (e) {
@@ -1489,7 +1488,7 @@ const deleteSet = (setId) => {
   
   localExerciseSets.value = localExerciseSets.value.filter(set => set.id !== setId)
   removeSessionSet(currentSession.workout_session_id, setId)
-  localSetsCount.value = getSessionSets(currentSession.workout_session_id).length
+  localSetsCount.value = localExerciseSets.value.length
   
   if (bestSet.value && bestSet.value.id === setId) {
     loadBestSet()
@@ -1612,8 +1611,8 @@ const handleDelete = async () => {
     removeSessionSet(currentSession.workout_session_id, setId)
   }
   
-  // Mettre à jour le compteur
-  localSetsCount.value = getSessionSets(currentSession.workout_session_id).length
+  // Mettre à jour le compteur (uniquement cet exercice)
+  localSetsCount.value = localExerciseSets.value.length
   
   // Recharger le meilleur set si nécessaire
   if (wasRecord) {

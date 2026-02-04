@@ -14,6 +14,20 @@ export function useWorkoutSessions(user) {
         return requiredFields.every(field => sessionData[field]);
     };
 
+    const fetchWorkoutSession = async (sessionId) => {
+        const supabase = useSupabaseClient();
+        const { data, error: supabaseError } = await supabase
+            .from('workoutsession')
+            .select('*')
+            .eq('id', sessionId)
+            .single();
+
+        if (supabaseError) throw supabaseError;
+
+        cacheWorkoutSession(sessionId, data);
+        return data;
+    };
+
     const getWorkoutSession = async (sessionId) => {
         const cachedSession = getCachedWorkoutSession(sessionId);
         const userId = user?.value?.id || getCachedUser()?.id;
@@ -29,22 +43,20 @@ export function useWorkoutSessions(user) {
         error.value = null;
 
         try {
-            if (!isOnline()) {
-                if (cachedSession) {
-                    return { data: cachedSession, error: null };
+            if (cachedSession) {
+                if (isOnline()) {
+                    fetchWorkoutSession(sessionId).catch((err) => {
+                        console.error('Erreur lors du refresh de la séance:', err);
+                    });
                 }
+                return { data: cachedSession, error: null };
             }
 
-            const supabase = useSupabaseClient();
-            const { data, error: supabaseError } = await supabase
-                .from('workoutsession')
-                .select('*')
-                .eq('id', sessionId)
-                .single();
+            if (!isOnline()) {
+                return { data: null, error: 'Aucune donnée en cache' };
+            }
 
-            if (supabaseError) throw supabaseError;
-
-            cacheWorkoutSession(sessionId, data);
+            const data = await fetchWorkoutSession(sessionId);
             return { data, error: null };
         } catch (err) {
             console.error('Erreur lors de la récupération de la séance:', err);

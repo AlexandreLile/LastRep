@@ -7,43 +7,58 @@ export const useWorkoutExercise = () => {
   const loading = ref(false);
 
   // Récupérer tous les exercices d'une séance
+  const fetchWorkoutExercises = async (sessionId) => {
+    const { data, error: fetchError } = await useSupabaseClient()
+      .from('workoutexercise')
+      .select(`
+        *,
+        exercise:exercise_id (
+          id,
+          name,
+          primary_muscle,
+          measurement_type,
+          is_custom
+        )
+      `)
+      .eq('session_id', sessionId)
+      .order('order', { ascending: true });
+
+    if (fetchError) throw fetchError;
+
+    workoutExercises.value = data;
+    cacheWorkoutExercises(sessionId, data);
+    if (Array.isArray(data)) {
+      data.forEach((exercise) => {
+        if (exercise?.id) {
+          cacheWorkoutExercise(exercise.id, exercise);
+        }
+      });
+    }
+    return data;
+  };
+
   const getWorkoutExercises = async (sessionId) => {
     try {
       loading.value = true;
       error.value = null;
 
-      if (!isOnline()) {
-        const cachedExercises = getCachedWorkoutExercises(sessionId);
-        workoutExercises.value = cachedExercises || [];
+      const cachedExercises = getCachedWorkoutExercises(sessionId);
+      if (cachedExercises && cachedExercises.length > 0) {
+        workoutExercises.value = cachedExercises;
+        if (isOnline()) {
+          fetchWorkoutExercises(sessionId).catch((err) => {
+            console.error('Erreur lors du refresh des exercices:', err);
+          });
+        }
         return { data: workoutExercises.value, error: null };
       }
 
-      const { data, error: fetchError } = await useSupabaseClient()
-        .from('workoutexercise')
-        .select(`
-          *,
-          exercise:exercise_id (
-            id,
-            name,
-            primary_muscle,
-            measurement_type,
-            is_custom
-          )
-        `)
-        .eq('session_id', sessionId)
-        .order('order', { ascending: true });
-
-      if (fetchError) throw fetchError;
-
-      workoutExercises.value = data;
-      cacheWorkoutExercises(sessionId, data);
-      if (Array.isArray(data)) {
-        data.forEach((exercise) => {
-          if (exercise?.id) {
-            cacheWorkoutExercise(exercise.id, exercise);
-          }
-        });
+      if (!isOnline()) {
+        workoutExercises.value = [];
+        return { data: workoutExercises.value, error: null };
       }
+
+      const data = await fetchWorkoutExercises(sessionId);
       return { data, error: null };
     } catch (e) {
       const cachedExercises = getCachedWorkoutExercises(sessionId);
