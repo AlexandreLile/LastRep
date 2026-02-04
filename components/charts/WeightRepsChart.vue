@@ -14,9 +14,9 @@
 import { ref, onMounted, watch } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { Bar } from 'vue-chartjs'
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend)
 
 const props = defineProps({
   exerciseId: {
@@ -166,8 +166,30 @@ const updateChart = () => {
       backgroundColor: '#FE751C',
       borderColor: '#FE751C',
       borderWidth: 1,
+      order: 1,
       barThickness: barThickness,
       maxBarThickness: maxBarThickness
+    }, {
+      type: 'line',
+      label: 'Repère 10 reps',
+      data: sortedWeights.map(() => 10),
+      borderColor: '#22c55e',
+      borderWidth: 3,
+      order: 999,
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      fill: false
+    }, {
+      type: 'line',
+      label: 'Repère 5 reps',
+      data: sortedWeights.map(() => 5),
+      borderColor: '#22c55e',
+      borderWidth: 3,
+      borderDash: [6, 6],
+      order: 999,
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      fill: false
     }]
   }
   
