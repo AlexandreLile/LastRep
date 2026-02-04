@@ -65,7 +65,7 @@ export const useUserStats = () => {
    */
   const getSessionCount = async (userId) => {
     return withCache('session_count', userId, async () => {
-      const { data, error: sessionError } = await supabase
+      const { count, error: sessionError } = await supabase
         .from('performedsession')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
@@ -73,7 +73,7 @@ export const useUserStats = () => {
       if (sessionError) throw sessionError
 
       return {
-        count: data?.length || 0
+        count: count || 0
       }
     })
   }

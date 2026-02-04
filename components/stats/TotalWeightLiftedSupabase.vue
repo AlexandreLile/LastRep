@@ -55,7 +55,16 @@ const loadData = async () => {
     ])
 
     totalWeight.value = weightData.totalWeight || 0
-    sessionCount.value = sessionCountData.count || 1 // Éviter la division par zéro
+    sessionCount.value = sessionCountData.count || 0
+
+    // Fallback si le cache renvoie 0 mais qu'on a un poids total
+    if (sessionCount.value === 0 && totalWeight.value > 0) {
+      const { count } = await supabase
+        .from('performedsession')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+      sessionCount.value = count || 0
+    }
   } catch (e) {
     // Erreur silencieuse pour ne pas perturber l'UX
   } finally {

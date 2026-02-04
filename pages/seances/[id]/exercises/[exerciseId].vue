@@ -411,6 +411,30 @@
         </form>
       </div>
 
+      <!-- Volume dernière séance -->
+      <div v-if="lastSessionVolume !== null" class="bg-card rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+            <BarChart3 class="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold">Volume vs dernière séance</h3>
+            <p class="text-sm text-muted-foreground">Comparaison sur cet exercice</p>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-sm text-muted-foreground mb-2">
+          <span>Actuel: {{ formattedCurrentVolume }}</span>
+          <span>Dernière: {{ formattedLastVolume }}</span>
+        </div>
+        <div class="w-full bg-muted rounded-full h-2.5">
+          <div
+            class="bg-primary h-2.5 rounded-full transition-all"
+            :style="{ width: `${volumeProgress}%` }"
+          ></div>
+        </div>
+      </div>
+
       <!-- Liste des séries -->
       <div class="bg-card rounded-xl p-6">
         <div class="flex items-center gap-3 mb-6">
@@ -547,7 +571,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useWorkoutExercise } from '~/composables/useWorkoutExercise'
 import { usePerformedSession } from '~/composables/usePerformedSession'
@@ -562,7 +586,8 @@ import {
   updateSessionSet,
   generateLocalId,
   isLocalId,
-  getOfflineUser
+  getOfflineUser,
+  isOnline
 } from '~/utils/offlineTraining'
 import AdaptSetInput from '~/components/exercises/AdaptSetInput.vue'
 import { toast } from 'vue-sonner'
@@ -586,7 +611,8 @@ import {
   ArrowLeft,
   CheckSquare,
   Lightbulb,
-  Trophy
+  Trophy,
+  BarChart3
 } from 'lucide-vue-next'
 
 
@@ -607,6 +633,7 @@ const error = ref(null)
 const sessionId = ref(null)
 const isLeavingPage = ref(false)
 const bestSet = ref(null)
+const lastSessionVolume = ref(null)
 // Créer un ref local pour les séries
 const localExerciseSets = ref([])
 
@@ -668,6 +695,73 @@ const formatDate = (dateString) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
+
+const formatWeight = (weight) => {
+  return Number(weight || 0).toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+}
+
+const calculateSetValue = (set, measurementType) => {
+  switch (measurementType) {
+    case 'weight_reps':
+    case 'weight_only':
+      return (set.weight_kg || 0) * (set.reps || 1)
+    case 'reps':
+      if (set.weight_kg && set.weight_kg > 0) {
+        return (set.weight_kg || 0) * (set.reps || 0)
+      }
+      return set.reps || 0
+    case 'time':
+      return (set.duration_seconds || 0) * (set.reps || 1)
+    case 'time_reps':
+      return (set.duration_seconds || 0) * (set.reps || 0)
+    case 'distance':
+      return set.distance_meters || 0
+    case 'time_distance':
+      return set.distance_meters || (set.duration_seconds || 0)
+    default:
+      return (set.weight_kg || 0) * (set.reps || 0)
+  }
+}
+
+const formatSetValue = (value, measurementType) => {
+  switch (measurementType) {
+    case 'time':
+    case 'time_reps': {
+      const minutes = Math.floor(value / 60)
+      const seconds = Math.round(value % 60)
+      if (minutes > 0) {
+        return `${minutes}min ${seconds}s`
+      }
+      return `${seconds}s`
+    }
+    case 'distance':
+    case 'time_distance':
+      if (value >= 1000) {
+        return `${(value / 1000).toFixed(2)} km`
+      }
+      return `${value.toFixed(0)} m`
+    case 'reps':
+      return `${value.toFixed(0)} reps`
+    default:
+      return `${formatWeight(value)} kg`
+  }
+}
+
+const measurementType = computed(() => exercise.value?.exercise?.measurement_type || 'weight_reps')
+const currentVolume = computed(() => {
+  return localExerciseSets.value.reduce((total, set) => {
+    return total + calculateSetValue(set, measurementType.value)
+  }, 0)
+})
+const formattedCurrentVolume = computed(() => formatSetValue(currentVolume.value, measurementType.value))
+const formattedLastVolume = computed(() => {
+  if (lastSessionVolume.value === null) return '-'
+  return formatSetValue(lastSessionVolume.value, measurementType.value)
+})
+const volumeProgress = computed(() => {
+  if (!lastSessionVolume.value) return 0
+  return Math.min(100, Math.round((currentVolume.value / lastSessionVolume.value) * 100))
+})
 
 // Fonction pour extraire les champs manquants depuis un message d'erreur
 const extractMissingFields = (errorMessage) => {
@@ -1012,6 +1106,58 @@ const loadBestSet = async () => {
     await fetchBestSetOnline()
   } catch (e) {
     console.error('Erreur lors du chargement du meilleur set:', e.message)
+  }
+}
+
+const loadLastSessionVolume = async () => {
+  try {
+    lastSessionVolume.value = null
+    if (!isOnline()) return
+
+    if (!exercise.value?.exercise?.id) return
+
+    const user = await getOfflineUser(supabase)
+    if (!user) return
+
+    const { data: sessionsData, error } = await supabase
+      .from('performedsession')
+      .select(`
+        id,
+        ended_at,
+        exerciseset:exerciseset!inner(
+          id,
+          exercise_id,
+          weight_kg,
+          reps,
+          duration_seconds,
+          distance_meters,
+          created_at
+        )
+      `)
+      .eq('user_id', user.id)
+      .not('ended_at', 'is', null)
+      .order('ended_at', { ascending: false })
+      .limit(10)
+
+    if (error) throw error
+
+    const filteredSessions = (sessionsData || [])
+      .map(session => ({
+        ...session,
+        sets: (session.exerciseset || []).filter(
+          set => set.exercise_id === exercise.value.exercise.id
+        )
+      }))
+      .filter(session => session.sets.length > 0)
+
+    const lastSets = filteredSessions[0]?.sets || []
+    if (!lastSets.length) return
+
+    lastSessionVolume.value = lastSets.reduce((total, set) => {
+      return total + calculateSetValue(set, measurementType.value)
+    }, 0)
+  } catch (e) {
+    console.error('Erreur lors du chargement du volume dernière séance:', e.message)
   }
 }
 
@@ -1457,6 +1603,9 @@ const loadExercise = async () => {
     
       // Charger le meilleur set (record personnel)
       await loadBestSet()
+      
+      // Charger le volume de la dernière séance (non bloquant)
+      loadLastSessionVolume()
 
       // Préremplir le formulaire avec la dernière série
       if (localExerciseSets.value && localExerciseSets.value.length > 0) {

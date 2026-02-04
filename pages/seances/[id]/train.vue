@@ -109,16 +109,6 @@
                       </span>
                     </div>
                   </div>
-                  <div class="flex items-center">
-                    <div class="text-sm font-medium text-primary transition-all duration-300 group-hover:scale-105">
-                      <div class="text-sm text-muted-foreground transition-colors duration-300 group-hover:text-foreground">
-                        1 RM estimé
-                      </div>
-                      <div class="text-right">
-                        <RMCalculator :exercise-id="exercise.exercise_id" />
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -174,7 +164,6 @@ import { useWorkoutSessions } from '~/composables/useWorkoutSession'
 import { useWorkoutExercise } from '~/composables/useWorkoutExercise'
 import { usePerformedSession } from '~/composables/usePerformedSession'
 import { getOfflineUser, getCachedUser } from '~/utils/offlineTraining'
-import RMCalculator from '@/components/charts/RMCalculator.vue'
 import SessionWeightChart from '@/components/charts/SessionWeightChart.vue'
 import MuscleDistributionChart from '@/components/charts/MuscleDistributionChart.vue'
 import { 

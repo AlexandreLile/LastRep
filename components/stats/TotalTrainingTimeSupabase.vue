@@ -65,7 +65,16 @@ const loadTotalDuration = async () => {
     ])
 
     totalDuration.value = trainingTime.totalMinutes || 0
-    sessionsCount.value = sessionCountData.count || 1 // Éviter la division par zéro
+    sessionsCount.value = sessionCountData.count || 0
+
+    // Fallback si le cache renvoie 0 mais qu'on a un temps total
+    if (sessionsCount.value === 0 && totalDuration.value > 0) {
+      const { count } = await supabase
+        .from('performedsession')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+      sessionsCount.value = count || 0
+    }
 
   } catch (e) {
     error.value = 'Erreur lors du chargement des données'
