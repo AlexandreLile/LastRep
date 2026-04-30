@@ -9,9 +9,12 @@ export default defineEventHandler(async (event) => {
   }
   const token = authHeader.slice(7)
 
+  const supabaseUrl = config.supabase?.url || process.env.SUPABASE_URL || process.env.NUXT_PUBLIC_SUPABASE_URL
+  const serviceKey = config.supabase?.serviceKey || process.env.SUPABASE_SERVICE_KEY
+
   const supabase = createClient(
-    config.supabase.url,
-    config.supabase.serviceKey,
+    supabaseUrl!,
+    serviceKey!,
     { auth: { persistSession: false } }
   )
 

@@ -17,9 +17,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'priceId requis' })
   }
 
+  const supabaseUrl = config.supabase?.url || process.env.SUPABASE_URL || process.env.NUXT_PUBLIC_SUPABASE_URL
+  const serviceKey = config.supabase?.serviceKey || process.env.SUPABASE_SERVICE_KEY
+
   const supabase = createClient(
-    config.supabase.url,
-    config.supabase.serviceKey,
+    supabaseUrl!,
+    serviceKey!,
     { auth: { persistSession: false } }
   )
 

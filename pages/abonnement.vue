@@ -108,9 +108,9 @@
           <p class="text-muted-foreground text-sm">Tout ce dont vous avez besoin</p>
         </div>
         <div class="mb-6">
-          <span class="text-4xl font-bold">{{ isYearlyToggle ? '6,66€' : '9,99€' }}</span>
+          <span class="text-4xl font-bold">{{ isYearlyToggle ? '5,02€' : '5,90€' }}</span>
           <span class="text-muted-foreground"> / mois</span>
-          <p v-if="isYearlyToggle" class="text-sm text-muted-foreground mt-1">Facturé 79,99€ / an</p>
+          <p v-if="isYearlyToggle" class="text-sm text-muted-foreground mt-1">Facturé 60,20€ / an</p>
         </div>
         <Button class="w-full mb-6" @click="handleCheckout" :disabled="checkoutLoading">
           <Loader2 v-if="checkoutLoading" class="h-4 w-4 animate-spin mr-2" />

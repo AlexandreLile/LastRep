@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { useSupabaseClient, useSupabaseUser } from '#imports'
+import { useSupabaseClient, useSupabaseUser, useSupabaseSession } from '#imports'
 
 const subscription = ref(null)
 const loading = ref(false)
@@ -8,6 +8,7 @@ const initialized = ref(false)
 export function useSubscription() {
   const supabase = useSupabaseClient()
   const user = useSupabaseUser()
+  const session = useSupabaseSession()
 
   const isPremium = computed(() => {
     const s = subscription.value
@@ -43,6 +44,9 @@ export function useSubscription() {
   }
 
   async function getAuthToken() {
+    if (session.value?.access_token) {
+      return session.value.access_token
+    }
     const { data } = await supabase.auth.getSession()
     return data.session?.access_token
   }
