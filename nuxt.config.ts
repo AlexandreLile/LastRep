@@ -52,6 +52,10 @@ export default defineNuxtConfig({
       serviceKey: process.env.SUPABASE_SERVICE_KEY,
       url: process.env.SUPABASE_URL || process.env.NUXT_PUBLIC_SUPABASE_URL,
     },
+    stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    stripePriceMonthly: process.env.STRIPE_PRICE_MONTHLY,
+    stripePriceYearly: process.env.STRIPE_PRICE_YEARLY,
     // Variables publiques (accessibles côté client)
     public: {
       supabase: {
@@ -61,6 +65,9 @@ export default defineNuxtConfig({
       // Fallback pour compatibilité
       supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
       supabaseAnonKey: process.env.NUXT_PUBLIC_SUPABASE_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY,
+      appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      stripePriceMonthly: process.env.STRIPE_PRICE_MONTHLY,
+      stripePriceYearly: process.env.STRIPE_PRICE_YEARLY,
     }
   },
 

@@ -60,14 +60,25 @@
         <span>Historique</span>
       </NuxtLink>
 
-      <NuxtLink 
-        to="/profil" 
+      <NuxtLink
+        to="/profil"
         class="flex items-center space-x-3 text-muted-foreground hover:text-foreground"
         :class="{ 'text-primary font-medium': currentPath === '/profil' }"
         @click="closeMenuOnMobile"
       >
         <User class="w-5 h-5" />
         <span>Profil</span>
+      </NuxtLink>
+
+      <NuxtLink
+        to="/abonnement"
+        class="flex items-center space-x-3 text-muted-foreground hover:text-foreground"
+        :class="{ 'text-primary font-medium': currentPath === '/abonnement' }"
+        @click="closeMenuOnMobile"
+      >
+        <Crown class="w-5 h-5" :class="isPremium ? 'text-primary' : ''" />
+        <span>{{ isPremium ? 'Premium' : 'Passer Premium' }}</span>
+        <span v-if="!isPremium" class="ml-auto bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full font-medium">Pro</span>
       </NuxtLink>
 
       <!-- Bouton pour réafficher le guide (temporaire, 1 semaine) -->
@@ -119,12 +130,13 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, Timer, Dumbbell, LogOut, Menu, X, History, User, HelpCircle } from 'lucide-vue-next'
+import { LayoutDashboard, Timer, Dumbbell, LogOut, Menu, X, History, User, HelpCircle, Crown } from 'lucide-vue-next'
 import { useSupabaseClient } from '#imports'
 import { Button } from '@/components/ui/button'
 import WelcomeModal from '@/components/onboarding/WelcomeModal.vue'
+import { useSubscription } from '@/composables/useSubscription'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,6 +152,9 @@ import {
 const route = useRoute()
 const router = useRouter()
 const supabase = useSupabaseClient()
+const { isPremium, fetchSubscription } = useSubscription()
+
+onMounted(() => fetchSubscription())
 
 const currentPath = computed(() => route.path)
 const isMenuOpen = ref(false)

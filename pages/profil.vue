@@ -123,6 +123,42 @@
         </AlertDialog>
       </div>
     </div>
+
+    <!-- Abonnement -->
+    <div class="bg-card rounded-xl p-6 max-w-lg mt-6 hover:shadow-md transition-all duration-300">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+          <Crown class="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold">Abonnement</h3>
+          <p class="text-sm text-muted-foreground">Gérez votre formule LastRep</p>
+        </div>
+      </div>
+      <div v-if="subscriptionLoading" class="flex items-center gap-2 text-muted-foreground text-sm">
+        <Loader2 class="h-4 w-4 animate-spin" />
+        Chargement...
+      </div>
+      <template v-else>
+        <div v-if="isPremium" class="flex items-center gap-2 mb-4">
+          <span class="inline-flex items-center gap-1.5 bg-primary/10 text-primary text-sm font-medium px-3 py-1 rounded-full">
+            <Crown class="h-3.5 w-3.5" />
+            Premium actif
+          </span>
+          <span v-if="isCanceling" class="text-xs text-amber-600">· Ne se renouvelle pas</span>
+        </div>
+        <div v-else class="flex items-center gap-2 mb-4">
+          <span class="inline-flex items-center gap-1.5 bg-muted text-muted-foreground text-sm px-3 py-1 rounded-full">
+            Gratuit
+          </span>
+        </div>
+        <NuxtLink to="/abonnement">
+          <Button variant="outline" class="w-full">
+            {{ isPremium ? 'Gérer mon abonnement' : 'Passer Premium' }}
+          </Button>
+        </NuxtLink>
+      </template>
+    </div>
   </div>
 </template>
 
@@ -133,15 +169,17 @@ import { useRouter } from 'vue-router'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { 
-  User, 
-  UserCog, 
-  Save, 
-  Loader2, 
-  CheckCircle, 
+import {
+  User,
+  UserCog,
+  Save,
+  Loader2,
+  CheckCircle,
   AlertTriangle,
-  Trash2
+  Trash2,
+  Crown,
 } from 'lucide-vue-next'
+import { useSubscription } from '@/composables/useSubscription'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -155,6 +193,7 @@ import {
 } from '@/components/ui/alert-dialog'
 
 const supabase = useSupabaseClient()
+const { isPremium, isCanceling, loading: subscriptionLoading, fetchSubscription } = useSubscription()
 const profile = ref({
   first_name: '',
   last_name: '',
@@ -268,7 +307,10 @@ const deleteAccount = async () => {
   }
 }
 
-onMounted(loadProfile)
+onMounted(() => {
+  loadProfile()
+  fetchSubscription()
+})
 </script>
 
 <style scoped>
