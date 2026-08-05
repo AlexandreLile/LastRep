@@ -24,3 +24,13 @@ logs
 !.env.example
 
 seed.sql
+seed_january.sql
+
+# Supabase local temp files (project ref, versions)
+supabase/.temp/
+
+# npm cache
+.npm-cache/
+
+# Vercel local config (contains org/project IDs)
+.vercel/
