@@ -228,12 +228,12 @@
 
     <!-- Modal d'ajout d'exercices - Full screen sur mobile -->
     <Dialog :open="showAddExercise" @update:open="handleModalClose">
-      <DialogContent 
+      <DialogContent
         :class="[
           'p-0',
-          isMobile 
-            ? 'fixed inset-0 !translate-x-0 !translate-y-0 !top-0 !left-0 w-full h-full max-w-full max-h-full rounded-none' 
-            : 'sm:max-w-2xl sm:p-6'
+          isMobile
+            ? 'fixed inset-0 !translate-x-0 !translate-y-0 !top-0 !left-0 w-full h-full max-w-full max-h-full rounded-none'
+            : 'sm:max-w-2xl sm:max-h-[85vh] sm:flex sm:flex-col sm:p-6'
         ]"
       >
         <!-- Header mobile avec bouton retour -->
@@ -260,7 +260,7 @@
           </DialogDescription>
         </DialogHeader>
         
-        <div class="flex-1 overflow-auto sm:overflow-visible h-full">
+        <div class="flex-1 overflow-hidden h-full">
           <AddExerciseToSession
             :session-id="route.params.id"
             @close="handleModalClose(false)"
