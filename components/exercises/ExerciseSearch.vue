@@ -1,341 +1,206 @@
 <template>
-  <div class="w-full overflow-hidden h-full flex flex-col">
-    <CardContent class="p-0 flex flex-col flex-1 overflow-hidden">
-      <!-- Formulaire de recherche mobile-first -->
-      <form ref="searchForm" class="space-y-4 px-2 pb-2">
-        <!-- Bouton créer exercice personnalisé -->
-        <div class="flex justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            @click="$emit('create-custom')"
-            class="flex items-center gap-2"
-          >
-            <Plus class="h-4 w-4" />
-            Créer un exercice
-          </Button>
-        </div>
-        <FormField name="search">
-          <Label for="search">Rechercher un exercice</Label>
-          <div class="relative">
-            <div class="flex items-center relative">
-              <Search class="absolute left-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="search"
-                ref="searchInput"
-                v-model="searchQuery"
-                type="text"
-                inputmode="search"
-                autocapitalize="none"
-                autocorrect="off"
-                spellcheck="false"
-                placeholder="Rechercher un exercice..."
-                @input="forceUpdate"
-                class="w-full pl-10 pr-8 search-input"
-                autocomplete="off"
-              />
-              <button 
-                v-if="searchQuery" 
-                type="button" 
-                @click="clearSearch"
-                class="absolute right-3 text-muted-foreground hover:text-foreground"
-                aria-label="Effacer la recherche"
-              >
-                <X class="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </FormField>
-      </form>
+  <div class="w-full h-full flex flex-col gap-3 overflow-hidden">
 
-      <!-- Liste des exercices - toujours affichée sur mobile -->
+    <!-- Chips musculaires (priorité 1) -->
+    <div class="relative">
       <div
-        v-if="exercisesList.length > 0"
-        ref="exerciseList"
-        class="mt-2 bg-card border rounded-xl shadow-sm overflow-y-auto overflow-x-hidden transition-all duration-300 exercise-list flex-1"
-        :class="{ 'sm:max-h-60': !isMobile }"
+        ref="chipsContainer"
+        class="flex gap-2 overflow-x-auto pb-1 scrollbar-none px-0.5"
+        style="-webkit-overflow-scrolling: touch; scrollbar-width: none;"
       >
-        <div 
-          v-if="filteredExercises.length === 0 && searchQuery" 
-          class="p-4 text-center text-muted-foreground"
+        <button
+          v-for="muscle in muscleChips"
+          :key="muscle"
+          type="button"
+          @click="toggleMuscle(muscle)"
+          class="flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-150 border"
+          :class="selectedMuscle === muscle
+            ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+            : 'bg-muted/60 text-muted-foreground border-transparent hover:bg-muted active:bg-muted'"
         >
-          <div class="flex flex-col items-center">
-            <SearchX class="h-6 w-6 mb-2 text-muted-foreground" />
-            <p>Aucun exercice trouvé</p>
-          </div>
-        </div>
-        
-        <div
-          v-for="exercise in filteredExercises"
-          :key="exercise.id"
-          class="group relative hover:bg-primary/5 active:bg-primary/10 transition-all duration-200 p-3 flex flex-col md:flex-row md:items-center gap-3 border-b last:border-b-0 transform-gpu"
+          {{ muscle === 'Tout' ? 'Tout' : muscle }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Barre de recherche (priorité 2) -->
+    <div class="relative">
+      <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+      <input
+        ref="searchInput"
+        v-model="searchQuery"
+        type="text"
+        inputmode="search"
+        autocapitalize="none"
+        autocorrect="off"
+        spellcheck="false"
+        autocomplete="off"
+        placeholder="Rechercher..."
+        class="w-full h-9 rounded-md border border-input bg-transparent pl-9 pr-8 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        style="font-size: 16px;"
+      />
+      <button
+        v-if="searchQuery"
+        type="button"
+        @click="searchQuery = ''"
+        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+      >
+        <X class="h-3.5 w-3.5" />
+      </button>
+    </div>
+
+    <!-- Liste des exercices -->
+    <div
+      class="flex-1 overflow-y-auto overflow-x-hidden rounded-xl border bg-card"
+      style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;"
+    >
+      <!-- Vide avec filtre actif -->
+      <div
+        v-if="filteredExercises.length === 0"
+        class="flex flex-col items-center justify-center h-full py-12 text-center text-muted-foreground gap-2"
+      >
+        <SearchX class="h-8 w-8 opacity-40" />
+        <p class="text-sm">Aucun exercice trouvé</p>
+        <button
+          v-if="selectedMuscle !== 'Tout' || searchQuery"
+          type="button"
+          class="text-xs text-primary underline-offset-2 hover:underline mt-1"
+          @click="resetFilters"
         >
-          <!-- Indicateur visuel à gauche -->
-          <div class="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-primary/50 transition-all duration-300"></div>
-          
-          <div class="flex items-start gap-2 w-full">
-            <!-- Icône du muscle -->
-            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
-              <Dumbbell class="h-5 w-5 text-primary" />
-            </div>
-            
-            <div class="flex-1 min-w-0">
-              <div class="font-medium text-foreground break-words pr-1">{{ exercise.name }}</div>
-              <div class="text-sm text-muted-foreground mt-1 flex flex-wrap gap-1.5">
-                <span
-                  v-for="(muscle, index) in (exercise.muscles_names || [exercise.primary_muscle].filter(Boolean))"
-                  :key="index"
-                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-muted/80 text-muted-foreground border border-border/50 shadow-sm"
-                  :class="{ 'bg-primary/10 text-primary border-primary/30': index === 0 }"
-                >
-                  {{ muscle }}
-                  <span v-if="index === 0 && (exercise.muscles_names || []).length > 1" class="ml-1 text-[10px] opacity-70">
-                    (Principal)
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
-          
-          <Button
-            :variant="isExerciseAdded(exercise.id) ? 'outline' : 'default'"
-            size="sm"
-            :disabled="isExerciseAdded(exercise.id)"
-            @click="selectExercise(exercise)"
-            class="transition-all duration-200 mt-2 md:mt-0 w-full md:w-auto"
-          >
-            <span v-if="isExerciseAdded(exercise.id)" class="flex items-center justify-center gap-1">
-              <Check class="h-4 w-4" />
-              <span class="whitespace-nowrap">Ajouté</span>
-            </span>
-            <span v-else class="flex items-center justify-center gap-1">
-              <Plus class="h-4 w-4" />
-              <span class="whitespace-nowrap">Ajouter</span>
-            </span>
-          </Button>
-        </div>
+          Réinitialiser les filtres
+        </button>
       </div>
 
-      <!-- Message d'erreur -->
-      <div v-if="error" class="mt-2 -mx-1 text-sm text-red-500">
-        {{ error }}
+      <div
+        v-for="exercise in filteredExercises"
+        :key="exercise.id"
+        class="flex items-center gap-3 px-3 py-3 border-b last:border-b-0 active:bg-muted/60 transition-colors"
+      >
+        <!-- Icône muscle -->
+        <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <Dumbbell class="h-4 w-4 text-primary" />
+        </div>
+
+        <!-- Nom + muscles -->
+        <div class="flex-1 min-w-0">
+          <p class="font-medium text-sm text-foreground truncate">{{ exercise.name }}</p>
+          <div class="flex gap-1 mt-0.5 flex-wrap">
+            <span
+              v-for="(muscle, i) in (exercise.muscles_names?.length ? exercise.muscles_names : [exercise.primary_muscle]).filter(Boolean).slice(0, 2)"
+              :key="i"
+              class="text-[11px] px-1.5 py-0.5 rounded-full"
+              :class="i === 0 ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'"
+            >
+              {{ muscle }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Bouton ajouter -->
+        <button
+          type="button"
+          :disabled="isExerciseAdded(exercise.id)"
+          @click="selectExercise(exercise)"
+          class="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150"
+          :class="isExerciseAdded(exercise.id)
+            ? 'bg-muted text-muted-foreground cursor-default'
+            : 'bg-primary text-primary-foreground active:scale-95 hover:bg-primary/90'"
+        >
+          <Check v-if="isExerciseAdded(exercise.id)" class="h-4 w-4" />
+          <Plus v-else class="h-4 w-4" />
+        </button>
       </div>
-    </CardContent>
+    </div>
+
+    <!-- Créer un exercice custom -->
+    <button
+      type="button"
+      @click="$emit('create-custom')"
+      class="flex items-center justify-center gap-2 w-full h-9 rounded-md border border-dashed border-border text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors flex-shrink-0"
+    >
+      <Plus class="h-4 w-4" />
+      Créer un exercice personnalisé
+    </button>
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { FormField } from '@/components/ui/form';
-import { Button } from '@/components/ui/button';
-import { Search, X, SearchX, Dumbbell, Plus, Check } from 'lucide-vue-next';
-import { useExercise } from '@/composables/useExercise';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { Search, X, SearchX, Dumbbell, Plus, Check } from 'lucide-vue-next'
+import { useExercise } from '@/composables/useExercise'
 
 const props = defineProps({
-  addedExercises: {
-    type: Array,
-    required: true,
-    default: () => []
-  },
-  exercises: {
-    type: Array,
-    default: null
-  }
-});
+  addedExercises: { type: Array, required: true, default: () => [] },
+  exercises: { type: Array, default: null }
+})
 
-const emit = defineEmits(['add-exercise', 'create-custom']);
+const emit = defineEmits(['add-exercise', 'create-custom'])
 
-const searchForm = ref(null);
-const searchInput = ref(null);
-const exerciseList = ref(null);
-const searchQuery = ref('');
-const { exercises: localExercises, loading, error, getAllExercises } = useExercise();
-const isMobile = ref(false);
-const searchTimer = ref(null);
+const searchInput = ref(null)
+const searchQuery = ref('')
+const selectedMuscle = ref('Tout')
+const { exercises: localExercises, getAllExercises } = useExercise()
 
-// Utiliser les exercices passés en prop si disponibles, sinon utiliser ceux du composable local
-const exercises = computed(() => {
-  return props.exercises !== null ? props.exercises : localExercises.value;
-});
+const exercises = computed(() => props.exercises ?? localExercises.value ?? [])
 
-// Liste des exercices pour l'affichage (computed pour réactivité)
-const exercisesList = computed(() => {
-  return exercises.value || [];
-});
+// Chips : "Tout" + muscles uniques extraits des exercices
+const muscleChips = computed(() => {
+  const muscles = new Set()
+  exercises.value.forEach(ex => {
+    const list = ex.muscles_names?.length ? ex.muscles_names : [ex.primary_muscle]
+    list.filter(Boolean).forEach(m => muscles.add(m))
+  })
+  return ['Tout', ...Array.from(muscles).sort()]
+})
 
-// Fonction pour normaliser le texte (enlever les accents)
-const normalizeText = (text) => {
-  if (!text) return '';
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim();
-};
+const normalizeText = (t) =>
+  (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
-// Détecter si c'est un mobile - approche mobile-first
-const checkMobile = () => {
-  isMobile.value = window.innerWidth < 768 || ('ontouchstart' in window);
-};
-
-// Force la mise à jour du computed pour une réactivité immédiate
-const forceUpdate = (event) => {
-  // Capture la valeur actuelle du champ
-  const currentValue = event?.target?.value || searchQuery.value;
-  
-  // Forcer une mise à jour explicite
-  searchQuery.value = '';
-  nextTick(() => {
-    searchQuery.value = currentValue;
-    console.log('Recherche forcée:', searchQuery.value);
-  });
-};
-
-// Ajouter un watcher pour forcer la réactivité
-watch(searchQuery, (newVal) => {
-  // Cette fonction vide est juste là pour garantir que Vue 
-  // réagit immédiatement à tout changement de searchQuery
-  // même pour la première lettre
-  console.log('Recherche en cours:', newVal);
-}, { immediate: true });
-
-// Une version simplifiée mais efficace du filtrage
 const filteredExercises = computed(() => {
-  const query = (searchQuery.value || '').toLowerCase();
-  const exercisesArray = exercises.value || [];
-  
-  // Si requête vide, retourner tous les exercices
-  if (!query) return exercisesArray;
-  
-  // Sinon, filtrer explicitement
-  return exercisesArray.filter(ex => {
-    if (!ex) return false;
-    
-    const name = (ex.name || '').toLowerCase();
-    const primaryMuscle = (ex.primary_muscle || '').toLowerCase();
-    // Rechercher aussi dans tous les muscles si disponibles
-    const allMuscles = ex.muscles_names || [];
-    const musclesMatch = allMuscles.length > 0 && allMuscles.some(m => {
-      if (!m) return false;
-      return m.toLowerCase().includes(query);
-    });
-    
-    return name.includes(query) || primaryMuscle.includes(query) || musclesMatch;
-  });
-});
+  let list = exercises.value
 
-// Effacer la recherche
-const clearSearch = () => {
-  searchQuery.value = '';
-  // Donner un feedback tactile sur mobile
-  if (isMobile.value && window.navigator && window.navigator.vibrate) {
-    window.navigator.vibrate(50);
+  if (selectedMuscle.value !== 'Tout') {
+    list = list.filter(ex => {
+      const muscles = ex.muscles_names?.length ? ex.muscles_names : [ex.primary_muscle]
+      return muscles.some(m => m === selectedMuscle.value)
+    })
   }
-  // Redonner le focus à l'input
-  nextTick(() => {
-    focusSearchInput();
-  });
-};
 
-// Mettre le focus sur l'input de recherche
-const focusSearchInput = () => {
-  if (searchInput.value && searchInput.value.$el) {
-    const input = searchInput.value.$el.querySelector('input');
-    if (input) input.focus();
+  const q = normalizeText(searchQuery.value)
+  if (q) {
+    list = list.filter(ex => {
+      const name = normalizeText(ex.name)
+      const muscles = ex.muscles_names?.length ? ex.muscles_names : [ex.primary_muscle]
+      return name.includes(q) || muscles.some(m => normalizeText(m).includes(q))
+    })
   }
-};
 
-// Charger tous les exercices au montage seulement si pas de prop exercises
-onMounted(async () => {
-  if (props.exercises === null) {
-    await getAllExercises();
-  }
-  checkMobile();
-  window.addEventListener('resize', checkMobile);
-  
-  // Sur mobile, mettre le focus sur l'input de recherche
-  if (isMobile.value) {
-    // Délai court pour laisser le DOM se mettre à jour
-    setTimeout(focusSearchInput, 100);
-  }
-});
+  return list
+})
 
-// Nettoyer les événements
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', checkMobile);
-  if (searchTimer.value) {
-    clearTimeout(searchTimer.value);
-  }
-});
+const toggleMuscle = (muscle) => {
+  selectedMuscle.value = muscle
+}
 
-// Vérifier si un exercice est déjà ajouté
-const isExerciseAdded = (exerciseId) => {
-  return props.addedExercises.some(ex => ex.exercise_id === exerciseId);
-};
+const resetFilters = () => {
+  selectedMuscle.value = 'Tout'
+  searchQuery.value = ''
+}
 
-// Sélectionner un exercice
+const isExerciseAdded = (id) => props.addedExercises.some(ex => ex.exercise_id === id)
+
 const selectExercise = (exercise) => {
-  if (!isExerciseAdded(exercise.id)) {
-    // Feedback tactile sur mobile
-    if (isMobile.value && window.navigator && window.navigator.vibrate) {
-      window.navigator.vibrate(50);
-    }
-    
-    emit('add-exercise', exercise);
-  }
-};
+  if (isExerciseAdded(exercise.id)) return
+  if (window.navigator?.vibrate) window.navigator.vibrate(40)
+  emit('add-exercise', exercise)
+}
 
-// Fonction pour synchroniser l'input après la composition IME (important pour les claviers mobiles)
-const forceSyncInput = (event) => {
-  // Forcer la mise à jour après la fin de la composition (saisie prédictive ou IME)
-  if (event.target.value !== searchQuery.value) {
-    searchQuery.value = event.target.value;
-  }
-  // Force également une mise à jour explicite
-  forceUpdate();
-};
-
-
+onMounted(async () => {
+  if (props.exercises === null) await getAllExercises()
+})
 </script>
 
 <style scoped>
-/* Styles pour mobile-first */
-@media (max-width: 768px) {
-  /* Empêcher iOS de zoomer sur le focus */
-  input[type="text"] {
-    font-size: 16px;
-  }
-  
-  /* Optimisations pour le scroll sur mobile */
-  .exercise-list {
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: y proximity;
-    overscroll-behavior: contain;
-    /* Sur mobile full screen, la liste prend l'espace disponible */
-    max-height: none;
-    min-height: 0;
-  }
-  
-  /* Rendre les boutons et zones cliquables plus grands pour mobile */
-  button {
-    min-height: 44px;
-  }
-}
-
-/* Amélioration de l'espacement */
-.group {
-  scroll-snap-align: start;
-  padding: 12px 16px;
-}
-
-/* Desktop - limiter la hauteur */
-@media (min-width: 769px) {
-  .exercise-list {
-    max-height: 400px;
-  }
-}
-</style> 
+.scrollbar-none::-webkit-scrollbar { display: none; }
+</style>
