@@ -1,85 +1,55 @@
-# Nuxt Minimal Starter
+# LastRep
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Application web de suivi d'entraînement — enregistre tes séances, visualise ta progression, analyse tes performances.
 
-## Setup
+**Production** : [app.lastrep.fr](https://app.lastrep.fr)
 
-Make sure to install dependencies:
+## Stack
+
+- **Framework** : Nuxt 3 (SPA, SSR désactivé)
+- **UI** : Vue 3 + Shadcn-nuxt + Tailwind CSS v4
+- **Backend** : Supabase (Auth, PostgreSQL, RLS)
+- **Charts** : Chart.js + vue-chartjs
+- **Email** : Resend (via SMTP Supabase)
+- **Déploiement** : Vercel
+
+## Installation
 
 ```bash
-# npm
+# 1. Cloner le repo
+git clone https://github.com/AlexandreLile/LastRep.git
+cd LastRep
+
+# 2. Installer les dépendances
 npm install
 
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
+# 3. Configurer les variables d'environnement
+cp .env.example .env.local
+# Remplir .env.local avec les credentials Supabase DEV (voir docs/deployment.md)
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+## Démarrage
 
 ```bash
-# npm
-npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
+npm run dev        # Serveur de développement → http://localhost:3000
+npm run build      # Build de production
+npm run preview    # Prévisualiser le build
 ```
 
-## Production
-
-Build the application for production:
+## Base de données (Supabase CLI)
 
 ```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+npm run db:new <nom>   # Créer une migration
+npm run db:push        # Appliquer les migrations en production
+npm run db:status      # État des migrations
+npm run db:link        # Lier le projet Supabase local
 ```
 
-Locally preview production build:
+## Workflow
 
-```bash
-# npm
-npm run preview
+Toute contribution passe par une Pull Request. Voir [CONTRIBUTING.md](CONTRIBUTING.md) pour les conventions de branches et de commits.
 
-# pnpm
-pnpm preview
+## Documentation
 
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
-
-# Git commnd
-
-Créer une branche : git checkout -b nom-de-ta-branche
-
-Pousser la nouvelle branche : git push -u origin nom-de-ta-branche
-
-Changer de branch : git checkout nom-de-la-branche
-
-Pour merge : aller sur la branche qui recoit le code puis git merge nom-de-la-branche (qui a les changement)
+- [docs/architecture.md](docs/architecture.md) — structure technique, BDD, sécurité, performances
+- [docs/deployment.md](docs/deployment.md) — configuration des environnements, Vercel, Supabase, email

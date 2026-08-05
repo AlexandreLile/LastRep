@@ -1,7 +1,6 @@
 <template>
-  <div class="space-y-4 overflow-hidden sm:max-h-[75vh] h-full flex flex-col">
-    <!-- Composant de recherche avec flex-grow pour occuper l'espace disponible -->
-    <div class="flex-grow overflow-auto px-4 sm:px-0 pt-2 sm:pt-0">
+  <div class="min-h-0 h-full flex flex-col px-4 sm:px-0 pt-2 sm:pt-0">
+    <div class="flex-1 min-h-0">
       <ExerciseSearch
         :exercises="exercises"
         :added-exercises="currentExercises"
