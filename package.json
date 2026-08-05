@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@nuxtjs/supabase": "^1.4.0",
-    "@supabase/supabase-js": "^2.39.3",
+    "@supabase/supabase-js": "^2.112.1",
     "@tailwindcss/vite": "^4.1.4",
     "@tanstack/vue-table": "^8.21.3",
     "@vee-validate/zod": "^4.15.0",
