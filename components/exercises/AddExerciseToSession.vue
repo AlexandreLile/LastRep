@@ -1,6 +1,6 @@
 <template>
-  <div class="overflow-hidden h-full flex flex-col px-4 sm:px-0 pt-2 sm:pt-0">
-    <div class="flex-1 overflow-hidden">
+  <div class="min-h-0 h-full flex flex-col px-4 sm:px-0 pt-2 sm:pt-0">
+    <div class="flex-1 min-h-0">
       <ExerciseSearch
         :exercises="exercises"
         :added-exercises="currentExercises"

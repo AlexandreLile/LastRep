@@ -260,7 +260,7 @@
           </DialogDescription>
         </DialogHeader>
         
-        <div class="flex-1 overflow-hidden h-full">
+        <div class="flex-1 min-h-0 overflow-hidden">
           <AddExerciseToSession
             :session-id="route.params.id"
             @close="handleModalClose(false)"

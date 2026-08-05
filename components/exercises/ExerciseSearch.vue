@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full flex flex-col gap-3 overflow-hidden">
+  <div class="w-full h-full flex flex-col gap-3 min-h-0">
 
     <!-- Chips musculaires (priorité 1) -->
     <div class="relative">
@@ -51,7 +51,7 @@
 
     <!-- Liste des exercices -->
     <div
-      class="flex-1 overflow-y-auto overflow-x-hidden rounded-xl border bg-card"
+      class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden rounded-xl border bg-card"
       style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;"
     >
       <!-- Vide avec filtre actif -->
