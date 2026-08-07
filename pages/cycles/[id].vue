@@ -41,8 +41,7 @@
           </div>
         </div>
 
-        <!-- Clôturer le cycle -->
-        <div v-if="!cycle.ended_at" class="flex gap-2">
+        <div v-if="!cycle.ended_at">
           <Button variant="outline" size="sm" @click="showEndDialog = true" class="flex items-center gap-1.5">
             <CheckCircle2 class="h-4 w-4" />
             Clôturer le cycle
@@ -93,10 +92,7 @@
           </table>
         </div>
         <div v-if="!cycle.measurement_end && !cycle.ended_at" class="mt-3">
-          <button
-            class="text-sm text-primary hover:underline"
-            @click="showEndMeasurements = true"
-          >
+          <button class="text-sm text-primary hover:underline" @click="showEndDialog = true">
             + Ajouter des mensurations de fin
           </button>
         </div>
@@ -106,71 +102,59 @@
       <div v-else class="bg-card rounded-xl p-5">
         <button
           class="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-          @click="showStartMeasurements = true"
+          @click="showStartMeasurementsDialog = true"
         >
           <Ruler class="h-4 w-4" />
           Ajouter des mensurations de départ
         </button>
       </div>
 
-      <!-- Créneaux -->
+      <!-- Séances du cycle -->
       <div class="space-y-4">
         <div class="flex items-center justify-between px-1">
-          <h3 class="text-lg font-semibold">Créneaux</h3>
-          <Button variant="ghost" size="sm" @click="showAddSlot = true" class="flex items-center gap-1.5 text-sm">
-            <Plus class="h-4 w-4" /> Ajouter
+          <h3 class="text-lg font-semibold">Séances du cycle</h3>
+          <Button size="sm" @click="openAddSlot" class="flex items-center gap-1.5">
+            <Plus class="h-4 w-4" /> Ajouter une séance
           </Button>
         </div>
 
         <div v-if="!cycle.slots?.length" class="flex flex-col items-center justify-center py-10 bg-card rounded-xl text-muted-foreground">
           <LayoutGrid class="w-10 h-10 mb-2 opacity-30" />
-          <p class="text-sm">Aucun créneau — ajoutez vos séances</p>
+          <p class="text-sm">Aucune séance — ajoutez-en une pour commencer</p>
         </div>
 
         <div v-for="slot in cycle.slots" :key="slot.id" class="bg-card rounded-xl p-5">
           <div class="flex items-start justify-between gap-2 mb-3">
             <div>
-              <h4 class="font-semibold">{{ slot.name }}</h4>
-              <p v-if="slot.workout_session" class="text-xs text-muted-foreground mt-0.5">
-                {{ slot.workout_session.title }}
+              <h4 class="font-semibold">{{ slot.workout_session?.title || slot.name }}</h4>
+              <p v-if="slot.name !== slot.workout_session?.title && slot.workout_session" class="text-xs text-muted-foreground mt-0.5">
+                {{ slot.name }}
               </p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-shrink-0">
               <span class="text-xs text-muted-foreground">
                 {{ slot.performed_sessions?.length || 0 }} passage{{ slot.performed_sessions?.length !== 1 ? 's' : '' }}
               </span>
-              <Button
-                v-if="slot.workout_session_id"
-                size="sm"
-                @click="startSlot(slot)"
-                class="flex items-center gap-1.5"
-              >
+              <Button size="sm" @click="startSlot(slot)" class="flex items-center gap-1.5">
                 <Play class="h-3.5 w-3.5" />
                 Démarrer
               </Button>
-              <Button
-                v-else
-                size="sm"
-                variant="outline"
-                @click="linkSession(slot)"
-              >
-                Lier une séance
+              <Button size="icon" variant="ghost" class="h-8 w-8" @click="confirmDeleteSlot(slot)">
+                <X class="h-4 w-4 text-muted-foreground" />
               </Button>
             </div>
           </div>
 
-          <!-- Sessions réalisées pour ce créneau -->
+          <!-- Sessions réalisées dans ce cycle pour ce créneau -->
           <div v-if="slot.performed_sessions?.length" class="space-y-1.5">
             <div
-              v-for="(session, idx) in [...(slot.performed_sessions || [])].sort((a, b) => new Date(b.started_at) - new Date(a.started_at))"
+              v-for="(session, idx) in [...(slot.performed_sessions)].sort((a, b) => new Date(b.started_at) - new Date(a.started_at))"
               :key="session.id"
               class="flex items-center justify-between py-2 px-3 bg-muted/40 rounded-lg cursor-pointer hover:bg-muted/70 transition-colors"
               @click="navigateTo(`/cycles/${cycle.id}/seances/${session.id}`)"
             >
               <div class="flex items-center gap-2">
-                <span class="text-xs font-medium text-muted-foreground w-5 text-center">
-                  #{{ slot.performed_sessions.length - idx }}
-                </span>
+                <span class="text-xs font-medium text-muted-foreground w-5 text-center">#{{ slot.performed_sessions.length - idx }}</span>
                 <span class="text-sm">{{ formatDate(session.started_at) }}</span>
               </div>
               <div class="flex items-center gap-2">
@@ -182,25 +166,123 @@
             </div>
           </div>
           <div v-else class="text-xs text-muted-foreground py-1">
-            Pas encore réalisé
+            Pas encore réalisée dans ce cycle
           </div>
         </div>
       </div>
     </template>
 
-    <!-- Dialog clôturer -->
+    <!-- ── Dialog : Ajouter une séance au cycle ────────────────────────── -->
+    <Dialog :open="showAddSlot" @update:open="val => { if (!val) closeAddSlot() }">
+      <DialogContent class="max-w-md max-h-[85vh] flex flex-col p-0">
+        <DialogHeader class="p-6 pb-0">
+          <DialogTitle>Ajouter une séance au cycle</DialogTitle>
+          <DialogDescription>Choisissez une séance existante ou créez-en une nouvelle.</DialogDescription>
+        </DialogHeader>
+
+        <!-- Onglets -->
+        <div class="flex border-b mx-6 mt-4">
+          <button
+            class="flex-1 pb-2 text-sm font-medium border-b-2 transition-colors"
+            :class="addMode === 'existing' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'"
+            @click="addMode = 'existing'"
+          >
+            Séance existante
+          </button>
+          <button
+            class="flex-1 pb-2 text-sm font-medium border-b-2 transition-colors"
+            :class="addMode === 'new' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'"
+            @click="addMode = 'new'"
+          >
+            Nouvelle séance
+          </button>
+        </div>
+
+        <!-- Contenu scrollable -->
+        <div class="flex-1 min-h-0 overflow-y-auto p-6 pt-4">
+
+          <!-- Mode : séance existante -->
+          <div v-if="addMode === 'existing'" class="space-y-3">
+            <div class="relative">
+              <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input v-model="sessionSearch" placeholder="Rechercher une séance…" class="pl-10" />
+            </div>
+
+            <div v-if="loadingSessions" class="flex justify-center py-6">
+              <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
+            </div>
+
+            <div v-else-if="filteredSessions.length === 0" class="text-sm text-muted-foreground text-center py-6">
+              Aucune séance trouvée
+            </div>
+
+            <button
+              v-for="s in filteredSessions"
+              :key="s.id"
+              class="w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left"
+              :class="selectedSessionId === s.id
+                ? 'border-primary bg-primary/5'
+                : 'border-transparent bg-muted/40 hover:bg-muted/70'"
+              @click="selectedSessionId = s.id"
+            >
+              <div
+                class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                :class="selectedSessionId === s.id ? 'bg-primary/20' : 'bg-muted'"
+              >
+                <Check v-if="selectedSessionId === s.id" class="h-4 w-4 text-primary" />
+                <Dumbbell v-else class="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div class="min-w-0">
+                <p class="font-medium text-sm truncate">{{ s.title }}</p>
+                <p class="text-xs text-muted-foreground">{{ s.exercises?.length || 0 }} exercice{{ s.exercises?.length !== 1 ? 's' : '' }}</p>
+              </div>
+            </button>
+
+            <p class="text-xs text-muted-foreground pt-1 pb-1 bg-muted/30 rounded-lg px-3 py-2">
+              Les séances déjà réalisées hors cycle ne sont pas comptées — seules les prochaines séances faites depuis ce cycle apparaîtront dans les stats.
+            </p>
+          </div>
+
+          <!-- Mode : nouvelle séance -->
+          <div v-else class="space-y-4">
+            <div class="space-y-1.5">
+              <label class="text-sm font-medium">Nom de la séance</label>
+              <Input v-model="newSessionTitle" placeholder="ex: Push, Jambes, Full Body A…" />
+            </div>
+            <p class="text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
+              Une séance vide sera créée et ajoutée au cycle. Vous pourrez y ajouter des exercices juste après.
+            </p>
+          </div>
+        </div>
+
+        <div class="p-6 pt-0 flex gap-2 justify-end border-t">
+          <Button variant="outline" @click="closeAddSlot">Annuler</Button>
+          <Button
+            @click="handleAddSlot"
+            :disabled="(addMode === 'existing' && !selectedSessionId) || (addMode === 'new' && !newSessionTitle.trim()) || addingSlot"
+          >
+            <span v-if="addingSlot" class="flex items-center gap-2">
+              <div class="animate-spin rounded-full h-3 w-3 border-t-2 border-white"></div>
+              Ajout…
+            </span>
+            <span v-else>{{ addMode === 'new' ? 'Créer et ajouter' : 'Ajouter au cycle' }}</span>
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <!-- ── Dialog : Clôturer ───────────────────────────────────────────── -->
     <Dialog :open="showEndDialog" @update:open="showEndDialog = $event">
       <DialogContent class="max-w-md">
         <DialogHeader>
           <DialogTitle>Clôturer le cycle</DialogTitle>
-          <DialogDescription>Définissez la date de fin. Vous pourrez ajouter des mensurations finales.</DialogDescription>
+          <DialogDescription>Définissez la date de fin et ajoutez vos mensurations finales si souhaité.</DialogDescription>
         </DialogHeader>
         <div class="space-y-4 py-2">
           <div class="space-y-1.5">
             <label class="text-sm font-medium">Date de fin</label>
             <Input v-model="endForm.ended_at" type="date" />
           </div>
-          <!-- Mensurations de fin -->
           <div class="border rounded-xl overflow-hidden">
             <button
               type="button"
@@ -233,32 +315,13 @@
       </DialogContent>
     </Dialog>
 
-    <!-- Dialog ajouter créneau -->
-    <Dialog :open="showAddSlot" @update:open="showAddSlot = $event">
-      <DialogContent class="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Ajouter un créneau</DialogTitle>
-        </DialogHeader>
-        <div class="space-y-3 py-2">
-          <div class="space-y-1.5">
-            <label class="text-sm font-medium">Nom du créneau</label>
-            <Input v-model="newSlotName" placeholder="ex: Push A, Jambes…" @keydown.enter="handleAddSlot" />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" @click="showAddSlot = false">Annuler</Button>
-          <Button @click="handleAddSlot" :disabled="!newSlotName.trim()">Ajouter</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
-    <!-- Dialog supprimer -->
+    <!-- ── Dialog : Supprimer cycle ───────────────────────────────────── -->
     <AlertDialog :open="showDeleteDialog" @update:open="showDeleteDialog = $event">
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Supprimer le cycle</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action est irréversible. Le cycle et ses créneaux seront supprimés, mais les séances réalisées seront conservées.
+            Cette action est irréversible. Le cycle et ses séances seront supprimés du cycle, mais les séances restent dans votre bibliothèque.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -269,15 +332,33 @@
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    <!-- ── Dialog : Supprimer créneau ─────────────────────────────────── -->
+    <AlertDialog :open="!!slotToDelete" @update:open="val => { if (!val) slotToDelete = null }">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Retirer cette séance du cycle ?</AlertDialogTitle>
+          <AlertDialogDescription>
+            La séance reste dans votre bibliothèque. Seul son rattachement à ce cycle est supprimé.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="slotToDelete = null">Annuler</AlertDialogCancel>
+          <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="handleDeleteSlot">
+            Retirer
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import {
   AlertTriangle, ChevronLeft, ChevronRight, ChevronDown, Plus, Play,
-  Trash2, CheckCircle2, Ruler, LayoutGrid
+  Trash2, CheckCircle2, Ruler, LayoutGrid, Search, Dumbbell, Check, X
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -292,20 +373,30 @@ import { useCycle } from '~/composables/useCycle'
 import { useCycleStats } from '~/composables/useCycleStats'
 
 const route = useRoute()
-const router = useRouter()
 const cycleId = route.params.id
 
-const { loading, error, fetchCycle, updateCycle, deleteCycle, createSlot, saveMeasurement } = useCycle()
+const { loading, error, fetchCycle, updateCycle, deleteCycle, createSlot, deleteSlot, saveMeasurement } = useCycle()
 const { computeMeasurementDiff } = useCycleStats()
 
 const cycle = ref(null)
+
+// Dialog states
 const showDeleteDialog = ref(false)
 const showEndDialog = ref(false)
-const showAddSlot = ref(false)
-const showStartMeasurements = ref(false)
+const showStartMeasurementsDialog = ref(false)
 const showEndMeasurements = ref(false)
 const ending = ref(false)
-const newSlotName = ref('')
+const slotToDelete = ref(null)
+
+// Add slot dialog
+const showAddSlot = ref(false)
+const addMode = ref('existing') // 'existing' | 'new'
+const addingSlot = ref(false)
+const sessionSearch = ref('')
+const selectedSessionId = ref(null)
+const newSessionTitle = ref('')
+const allSessions = ref([])
+const loadingSessions = ref(false)
 
 const endForm = reactive({ ended_at: new Date().toISOString().split('T')[0], measurements: {} })
 
@@ -322,43 +413,123 @@ const measurementDiff = computed(() =>
   computeMeasurementDiff(cycle.value?.measurement_start, cycle.value?.measurement_end)
 )
 
+const filteredSessions = computed(() => {
+  const q = sessionSearch.value.toLowerCase().trim()
+  return allSessions.value.filter(s =>
+    !q || s.title?.toLowerCase().includes(q)
+  )
+})
+
+// ── Chargement ──────────────────────────────────────────────────────────────
+
 const load = async () => {
-  const { data, error: err } = await fetchCycle(cycleId)
+  const { data } = await fetchCycle(cycleId)
   if (data) cycle.value = data
 }
+
+const loadSessions = async () => {
+  loadingSessions.value = true
+  const supabase = useSupabaseClient()
+  const { data } = await supabase
+    .from('workoutsession')
+    .select('id, title, exercises:workoutexercise(id)')
+    .order('date', { ascending: false })
+  allSessions.value = data || []
+  loadingSessions.value = false
+}
+
+// ── Dialog ajouter créneau ──────────────────────────────────────────────────
+
+const openAddSlot = () => {
+  addMode.value = 'existing'
+  selectedSessionId.value = null
+  newSessionTitle.value = ''
+  sessionSearch.value = ''
+  showAddSlot.value = true
+  loadSessions()
+}
+
+const closeAddSlot = () => {
+  showAddSlot.value = false
+}
+
+const handleAddSlot = async () => {
+  addingSlot.value = true
+  const slotOrder = cycle.value?.slots?.length || 0
+  const supabase = useSupabaseClient()
+
+  if (addMode.value === 'existing' && selectedSessionId.value) {
+    const session = allSessions.value.find(s => s.id === selectedSessionId.value)
+    await createSlot(cycleId, {
+      name: session?.title || 'Séance',
+      slot_order: slotOrder,
+      workout_session_id: selectedSessionId.value
+    })
+    closeAddSlot()
+    await load()
+
+  } else if (addMode.value === 'new' && newSessionTitle.value.trim()) {
+    const user = (await supabase.auth.getUser()).data.user
+    // Créer la séance
+    const { data: newSession, error: sessionErr } = await supabase
+      .from('workoutsession')
+      .insert({ title: newSessionTitle.value.trim(), user_id: user.id, date: new Date().toISOString() })
+      .select()
+      .single()
+
+    if (!sessionErr && newSession) {
+      await createSlot(cycleId, {
+        name: newSession.title,
+        slot_order: slotOrder,
+        workout_session_id: newSession.id
+      })
+      closeAddSlot()
+      await load()
+      // Naviguer vers l'édition pour ajouter des exercices
+      navigateTo(`/seances/${newSession.id}/edit?cycle=${cycleId}`)
+    }
+  }
+
+  addingSlot.value = false
+}
+
+// ── Supprimer créneau ───────────────────────────────────────────────────────
+
+const confirmDeleteSlot = (slot) => { slotToDelete.value = slot }
+
+const handleDeleteSlot = async () => {
+  if (!slotToDelete.value) return
+  await deleteSlot(slotToDelete.value.id)
+  slotToDelete.value = null
+  await load()
+}
+
+// ── Clôturer ────────────────────────────────────────────────────────────────
 
 const handleEndCycle = async () => {
   ending.value = true
   await updateCycle(cycleId, { ended_at: endForm.ended_at })
   const hasData = Object.values(endForm.measurements).some(v => v != null && v !== '')
-  if (hasData) {
-    await saveMeasurement(cycleId, 'end', endForm.measurements, endForm.ended_at)
-  }
+  if (hasData) await saveMeasurement(cycleId, 'end', endForm.measurements, endForm.ended_at)
   await load()
   showEndDialog.value = false
   ending.value = false
 }
 
-const handleAddSlot = async () => {
-  if (!newSlotName.value.trim()) return
-  await createSlot(cycleId, { name: newSlotName.value.trim(), slot_order: cycle.value?.slots?.length || 0 })
-  newSlotName.value = ''
-  showAddSlot.value = false
-  await load()
-}
+// ── Supprimer cycle ─────────────────────────────────────────────────────────
 
 const handleDelete = async () => {
   await deleteCycle(cycleId)
   navigateTo('/cycles')
 }
 
+// ── Démarrer une séance depuis le cycle ─────────────────────────────────────
+
 const startSlot = (slot) => {
-  navigateTo(`/seances/${slot.workout_session_id}/start?slot=${slot.id}&cycle=${cycleId}`)
+  navigateTo(`/seances/${slot.workout_session_id}/train?slot=${slot.id}&cycle=${cycleId}`)
 }
 
-const linkSession = (slot) => {
-  navigateTo(`/seances?linkSlot=${slot.id}&cycle=${cycleId}`)
-}
+// ── Utilitaires ─────────────────────────────────────────────────────────────
 
 const formatDate = (d) => {
   if (!d) return ''
