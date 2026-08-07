@@ -117,37 +117,9 @@
             </div>
           </div>
 
-          <!-- Créneaux -->
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <label class="text-sm font-medium">Créneaux</label>
-              <Button type="button" variant="ghost" size="sm" @click="addSlot" class="h-7 text-xs gap-1">
-                <Plus class="h-3 w-3" /> Ajouter
-              </Button>
-            </div>
-            <div class="space-y-2">
-              <div
-                v-for="(slot, i) in form.slots"
-                :key="i"
-                class="flex items-center gap-2"
-              >
-                <div class="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground flex-shrink-0">
-                  {{ i + 1 }}
-                </div>
-                <Input v-model="slot.name" :placeholder="`ex: Push A, Jambes, Full Body ${i + 1}…`" class="flex-1" />
-                <button
-                  type="button"
-                  @click="removeSlot(i)"
-                  class="text-muted-foreground hover:text-destructive transition-colors p-1"
-                >
-                  <X class="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            <p v-if="form.slots.length === 0" class="text-xs text-muted-foreground">
-              Vous pourrez ajouter des créneaux après la création du cycle.
-            </p>
-          </div>
+          <p class="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+            Vous pourrez ajouter vos séances directement depuis la page du cycle après création.
+          </p>
 
           <!-- Mensurations de début (collapsible) -->
           <div class="border rounded-xl overflow-hidden">
@@ -211,7 +183,7 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { Plus, RotateCcw, AlertTriangle, X, ChevronDown, Ruler } from 'lucide-vue-next'
+import { Plus, RotateCcw, AlertTriangle, ChevronDown, Ruler } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -231,23 +203,19 @@ const defaultForm = () => ({
   name: '',
   started_at: today,
   ended_at: '',
-  slots: [],
   measurements: {}
 })
 
 const form = reactive(defaultForm())
 
-const addSlot = () => form.slots.push({ name: '' })
-const removeSlot = (i) => form.slots.splice(i, 1)
-
 const handleCreate = async () => {
   if (!form.name || !form.started_at) return
   creating.value = true
-  const { success, error: err } = await createCycle({
+  const { success, data } = await createCycle({
     name: form.name,
     started_at: form.started_at,
     ended_at: form.ended_at || null,
-    slots: form.slots.filter(s => s.name.trim()),
+    slots: [],
     measurements: { start: form.measurements }
   })
   creating.value = false
@@ -255,6 +223,8 @@ const handleCreate = async () => {
     showCreateDialog.value = false
     Object.assign(form, defaultForm())
     showMeasurements.value = false
+    // Naviguer vers le cycle créé pour ajouter les séances
+    navigateTo(`/cycles/${data.id}`)
   }
 }
 
