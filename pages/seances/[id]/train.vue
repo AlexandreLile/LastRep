@@ -219,22 +219,21 @@ const editSession = () => {
 
 const startSession = async () => {
   try {
-    // Utiliser getOfflineUser qui gère les erreurs réseau
     const user = await getOfflineUser(supabase)
-    
+    const slotId = route.query.slot || null
+
     if (!user) {
-      // Essayer le cache comme fallback
       const cachedUser = getCachedUser()
       if (cachedUser) {
-        prepareSession(route.params.id, cachedUser.id)
-        router.push(`/seances/${route.params.id}/start`)
+        prepareSession(route.params.id, cachedUser.id, slotId)
+        router.push(`/seances/${route.params.id}/start${slotId ? `?slot=${slotId}&cycle=${route.query.cycle || ''}` : ''}`)
         return
       }
       throw new Error('Impossible de démarrer la séance sans connexion utilisateur')
     }
-    
-    prepareSession(route.params.id, user.id)
-    router.push(`/seances/${route.params.id}/start`)
+
+    prepareSession(route.params.id, user.id, slotId)
+    router.push(`/seances/${route.params.id}/start${slotId ? `?slot=${slotId}&cycle=${route.query.cycle || ''}` : ''}`)
   } catch (e) {
     error.value = e.message || performedSessionError.value
   }
