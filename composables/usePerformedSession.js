@@ -38,12 +38,13 @@ export const usePerformedSession = (supabase) => {
   // ============================================
   // PRÉPARER UNE NOUVELLE SESSION
   // ============================================
-  const prepareSession = (workoutSessionId, userId) => {
+  const prepareSession = (workoutSessionId, userId, cycleSlotId = null) => {
     localSession.value = {
       workout_session_id: workoutSessionId,
       user_id: userId,
       started_at: new Date().toISOString(),
-      ended_at: null
+      ended_at: null,
+      cycle_slot_id: cycleSlotId || null
     }
     if (process.client) {
       localStorage.setItem('currentSession', JSON.stringify(localSession.value))
@@ -194,7 +195,8 @@ export const usePerformedSession = (supabase) => {
         workout_session_id: localSession.value.workout_session_id,
         user_id: userId,
         started_at: localSession.value.started_at,
-        ended_at: new Date().toISOString()
+        ended_at: new Date().toISOString(),
+        ...(localSession.value.cycle_slot_id ? { cycle_slot_id: localSession.value.cycle_slot_id } : {})
       }
 
       // Récupérer les sets locaux (filtrer les marquages manuels)
