@@ -25,23 +25,23 @@
             >
               <ChevronLeft class="h-4 w-4" /> Cycles
             </button>
-            <h2 class="text-2xl font-bold">{{ cycle.name }}</h2>
+            <div class="flex items-center gap-2">
+              <h2 class="text-2xl font-bold">{{ cycle.name }}</h2>
+              <button @click="openEditDialog" class="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
+                <Pencil class="h-4 w-4" />
+              </button>
+            </div>
             <p class="text-sm text-muted-foreground mt-1">
               {{ formatDate(cycle.started_at) }}
               <span v-if="cycle.ended_at"> → {{ formatDate(cycle.ended_at) }}</span>
             </p>
           </div>
-          <div class="flex items-center gap-2">
-            <span
-              class="text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0"
-              :class="cycle.ended_at ? 'bg-muted text-muted-foreground' : 'bg-primary/15 text-primary'"
-            >
-              {{ cycle.ended_at ? 'Terminé' : 'En cours' }}
-            </span>
-            <Button variant="ghost" size="icon" @click="showDeleteDialog = true">
-              <Trash2 class="h-4 w-4 text-muted-foreground" />
-            </Button>
-          </div>
+          <span
+            class="text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0"
+            :class="cycle.ended_at ? 'bg-muted text-muted-foreground' : 'bg-primary/15 text-primary'"
+          >
+            {{ cycle.ended_at ? 'Terminé' : 'En cours' }}
+          </span>
         </div>
 
         <div v-if="!cycle.ended_at">
@@ -110,51 +110,59 @@
       </div>
 
       <!-- Mensurations -->
-      <div v-if="cycle.measurement_start || cycle.measurement_end" class="bg-card rounded-xl p-6">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-            <Ruler class="w-5 h-5 text-primary" />
+      <div v-if="cycle.measurement_start || cycle.measurement_end" class="bg-card rounded-xl overflow-hidden">
+        <button
+          class="w-full flex items-center justify-between gap-3 p-6 hover:bg-muted/30 transition-colors"
+          @click="showMeasurements = !showMeasurements"
+        >
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <Ruler class="w-5 h-5 text-primary" />
+            </div>
+            <h3 class="text-lg font-semibold">Mensurations</h3>
           </div>
-          <h3 class="text-lg font-semibold">Mensurations</h3>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="text-left text-muted-foreground border-b">
-                <th class="pb-2 font-medium">Mesure</th>
-                <th class="pb-2 font-medium text-right" v-if="cycle.measurement_start">Début</th>
-                <th class="pb-2 font-medium text-right" v-if="cycle.measurement_end">Fin</th>
-                <th class="pb-2 font-medium text-right" v-if="measurementDiff">Évolution</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y">
-              <tr v-for="row in measurementRows" :key="row.key" class="py-2">
-                <td class="py-2 text-muted-foreground">{{ row.label }}</td>
-                <td class="py-2 text-right" v-if="cycle.measurement_start">
-                  {{ formatMeasure(cycle.measurement_start[row.key], row.unit) }}
-                </td>
-                <td class="py-2 text-right" v-if="cycle.measurement_end">
-                  {{ formatMeasure(cycle.measurement_end[row.key], row.unit) }}
-                </td>
-                <td class="py-2 text-right" v-if="measurementDiff">
-                  <span
-                    v-if="measurementDiff[row.key]"
-                    :class="diffClass(measurementDiff[row.key].diff, row.key)"
-                    class="font-medium"
-                  >
-                    {{ measurementDiff[row.key].diff > 0 ? '+' : '' }}{{ measurementDiff[row.key].diff.toFixed(1) }} {{ row.unit }}
-                    <span class="text-xs opacity-70">({{ measurementDiff[row.key].diff_pct?.toFixed(1) }}%)</span>
-                  </span>
-                  <span v-else class="text-muted-foreground">—</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div v-if="!cycle.measurement_end && !cycle.ended_at" class="mt-3">
-          <button class="text-sm text-primary hover:underline" @click="showEndDialog = true">
-            + Ajouter des mensurations de fin
-          </button>
+          <ChevronDown class="h-4 w-4 text-muted-foreground transition-transform flex-shrink-0" :class="{ 'rotate-180': showMeasurements }" />
+        </button>
+        <div v-if="showMeasurements" class="px-6 pb-6 border-t border-border/50">
+          <div class="overflow-x-auto pt-4">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-muted-foreground border-b">
+                  <th class="pb-2 font-medium">Mesure</th>
+                  <th class="pb-2 font-medium text-right" v-if="cycle.measurement_start">Début</th>
+                  <th class="pb-2 font-medium text-right" v-if="cycle.measurement_end">Fin</th>
+                  <th class="pb-2 font-medium text-right" v-if="measurementDiff">Évolution</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                <tr v-for="row in measurementRows" :key="row.key" class="py-2">
+                  <td class="py-2 text-muted-foreground">{{ row.label }}</td>
+                  <td class="py-2 text-right" v-if="cycle.measurement_start">
+                    {{ formatMeasure(cycle.measurement_start[row.key], row.unit) }}
+                  </td>
+                  <td class="py-2 text-right" v-if="cycle.measurement_end">
+                    {{ formatMeasure(cycle.measurement_end[row.key], row.unit) }}
+                  </td>
+                  <td class="py-2 text-right" v-if="measurementDiff">
+                    <span
+                      v-if="measurementDiff[row.key]"
+                      :class="diffClass(measurementDiff[row.key].diff, row.key)"
+                      class="font-medium"
+                    >
+                      {{ measurementDiff[row.key].diff > 0 ? '+' : '' }}{{ measurementDiff[row.key].diff.toFixed(1) }} {{ row.unit }}
+                      <span class="text-xs opacity-70">({{ measurementDiff[row.key].diff_pct?.toFixed(1) }}%)</span>
+                    </span>
+                    <span v-else class="text-muted-foreground">—</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-if="!cycle.measurement_end && !cycle.ended_at" class="mt-3">
+            <button class="text-sm text-primary hover:underline" @click="showEndDialog = true">
+              + Ajouter des mensurations de fin
+            </button>
+          </div>
         </div>
       </div>
 
@@ -184,59 +192,80 @@
         </div>
 
         <div v-for="slot in cycle.slots" :key="slot.id" class="bg-card rounded-xl p-5">
-          <div class="flex items-start justify-between gap-2 mb-3">
-            <div>
-              <h4 class="font-semibold">{{ slot.workout_session?.title || slot.name }}</h4>
-              <p v-if="slot.name !== slot.workout_session?.title && slot.workout_session" class="text-xs text-muted-foreground mt-0.5">
-                {{ slot.name }}
-              </p>
-            </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
-              <span class="text-xs text-muted-foreground">
-                {{ slot.performed_sessions?.length || 0 }} passage{{ slot.performed_sessions?.length !== 1 ? 's' : '' }}
-              </span>
-              <Button
-                v-if="slot.performed_sessions?.length"
-                size="sm"
-                variant="outline"
-                @click="navigateTo(`/cycles/${cycleId}/slots/${slot.id}`)"
-                class="flex items-center gap-1.5"
-              >
-                <BarChart2 class="h-3.5 w-3.5" />
-                Progression
-              </Button>
-              <Button size="sm" @click="startSlot(slot)" class="flex items-center gap-1.5">
-                <Play class="h-3.5 w-3.5" />
-                Démarrer
-              </Button>
-              <Button size="icon" variant="ghost" class="h-8 w-8" @click="confirmDeleteSlot(slot)">
-                <X class="h-4 w-4 text-muted-foreground" />
-              </Button>
-            </div>
+          <!-- Titre -->
+          <div class="min-w-0 mb-3">
+            <h4 class="font-semibold truncate">{{ slot.workout_session?.title || slot.name }}</h4>
+            <p v-if="slot.name !== slot.workout_session?.title && slot.workout_session" class="text-xs text-muted-foreground mt-0.5 truncate">
+              {{ slot.name }}
+            </p>
+          </div>
+
+          <!-- Actions : progression + démarrer -->
+          <div class="flex items-center gap-2 flex-wrap mb-3">
+            <span class="text-xs text-muted-foreground mr-auto">
+              {{ slot.performed_sessions?.length || 0 }} passage{{ slot.performed_sessions?.length !== 1 ? 's' : '' }}
+            </span>
+            <Button
+              v-if="slot.performed_sessions?.length"
+              size="sm"
+              variant="outline"
+              @click="navigateTo(`/cycles/${cycleId}/slots/${slot.id}`)"
+              class="flex items-center gap-1.5"
+            >
+              <BarChart2 class="h-3.5 w-3.5" />
+              Progression
+            </Button>
+            <Button size="sm" @click="startSlot(slot)" class="flex items-center gap-1.5">
+              <Play class="h-3.5 w-3.5" />
+              Démarrer
+            </Button>
           </div>
 
           <!-- Sessions réalisées dans ce cycle pour ce créneau -->
           <div v-if="slot.performed_sessions?.length" class="space-y-1.5">
-            <div
-              v-for="(session, idx) in [...(slot.performed_sessions)].sort((a, b) => new Date(b.started_at) - new Date(a.started_at))"
-              :key="session.id"
-              class="flex items-center justify-between py-2 px-3 bg-muted/40 rounded-lg cursor-pointer hover:bg-muted/70 transition-colors"
-              @click="navigateTo(`/cycles/${cycle.id}/seances/${session.id}`)"
+            <template v-for="(session, idx) in [...(slot.performed_sessions)].sort((a, b) => new Date(b.started_at) - new Date(a.started_at))" :key="session.id">
+              <div
+                v-if="idx < 4 || expandedSlots.has(slot.id)"
+                class="flex items-center justify-between py-2 px-3 bg-muted/40 rounded-lg cursor-pointer hover:bg-muted/70 transition-colors"
+                @click="navigateTo(`/cycles/${cycle.id}/seances/${session.id}`)"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium text-muted-foreground w-5 text-center">#{{ slot.performed_sessions.length - idx }}</span>
+                  <span class="text-sm">{{ formatDate(session.started_at) }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span v-if="session.ended_at" class="text-xs text-muted-foreground">
+                    {{ duration(session.started_at, session.ended_at) }}
+                  </span>
+                  <ChevronRight class="h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+            </template>
+            <button
+              v-if="slot.performed_sessions.length > 4"
+              class="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground py-1.5 transition-colors"
+              @click="toggleSlotExpand(slot.id)"
             >
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-medium text-muted-foreground w-5 text-center">#{{ slot.performed_sessions.length - idx }}</span>
-                <span class="text-sm">{{ formatDate(session.started_at) }}</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span v-if="session.ended_at" class="text-xs text-muted-foreground">
-                  {{ duration(session.started_at, session.ended_at) }}
-                </span>
-                <ChevronRight class="h-4 w-4 text-muted-foreground" />
-              </div>
-            </div>
+              <ChevronDown
+                class="h-3.5 w-3.5 transition-transform"
+                :class="{ 'rotate-180': expandedSlots.has(slot.id) }"
+              />
+              {{ expandedSlots.has(slot.id) ? 'Réduire' : `Voir ${slot.performed_sessions.length - 4} de plus` }}
+            </button>
           </div>
           <div v-else class="text-xs text-muted-foreground py-1">
             Pas encore réalisée dans ce cycle
+          </div>
+
+          <!-- Retirer du cycle -->
+          <div class="mt-4 pt-3 border-t border-border/50 flex justify-end">
+            <button
+              class="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
+              @click="confirmDeleteSlot(slot)"
+            >
+              <X class="h-3.5 w-3.5" />
+              Retirer du cycle
+            </button>
           </div>
         </div>
       </div>
@@ -409,6 +438,34 @@
       </DialogContent>
     </Dialog>
 
+    <!-- ── Dialog : Modifier cycle ─────────────────────────────────────── -->
+    <Dialog :open="showEditDialog" @update:open="showEditDialog = $event">
+      <DialogContent class="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Modifier le cycle</DialogTitle>
+        </DialogHeader>
+        <div class="py-2">
+          <Input v-model="editForm.name" placeholder="Nom du cycle" @keyup.enter="handleEditCycle" />
+        </div>
+        <DialogFooter class="flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
+          <Button
+            variant="ghost"
+            class="text-destructive hover:text-destructive hover:bg-destructive/10 justify-start"
+            @click="showEditDialog = false; showDeleteDialog = true"
+          >
+            <Trash2 class="h-4 w-4 mr-1.5" />
+            Supprimer le cycle
+          </Button>
+          <div class="flex gap-2 justify-end">
+            <Button variant="outline" @click="showEditDialog = false">Annuler</Button>
+            <Button @click="handleEditCycle" :disabled="!editForm.name.trim() || saving">
+              {{ saving ? 'Enregistrement…' : 'Enregistrer' }}
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <!-- ── Dialog : Supprimer cycle ───────────────────────────────────── -->
     <AlertDialog :open="showDeleteDialog" @update:open="showDeleteDialog = $event">
       <AlertDialogContent>
@@ -453,8 +510,8 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   AlertTriangle, ChevronLeft, ChevronRight, ChevronDown, Plus, Play,
-  Trash2, CheckCircle2, Ruler, LayoutGrid, Search, Dumbbell, Check, X,
-  Weight, Clock, BarChart2
+  Pencil, CheckCircle2, Ruler, LayoutGrid, Search, Dumbbell, Check, X,
+  Weight, Clock, BarChart2, Trash2
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -499,6 +556,7 @@ const cycleTotalMinutes = computed(() =>
 const showDeleteDialog = ref(false)
 const showEndDialog = ref(false)
 const showStartMeasurementsDialog = ref(false)
+const showMeasurements = ref(false)
 const showEndMeasurements = ref(false)
 const ending = ref(false)
 const slotToDelete = ref(null)
@@ -516,6 +574,31 @@ const loadingSessions = ref(false)
 const endForm = reactive({ ended_at: new Date().toISOString().split('T')[0], measurements: {} })
 const startForm = reactive({ measurements: {} })
 const savingStart = ref(false)
+const expandedSlots = ref(new Set())
+const toggleSlotExpand = (slotId) => {
+  const next = new Set(expandedSlots.value)
+  next.has(slotId) ? next.delete(slotId) : next.add(slotId)
+  expandedSlots.value = next
+}
+
+// Edit dialog
+const showEditDialog = ref(false)
+const editForm = reactive({ name: '' })
+const saving = ref(false)
+
+const openEditDialog = () => {
+  editForm.name = cycle.value?.name || ''
+  showEditDialog.value = true
+}
+
+const handleEditCycle = async () => {
+  if (!editForm.name.trim()) return
+  saving.value = true
+  await updateCycle(cycleId, { name: editForm.name.trim() })
+  if (cycle.value) cycle.value.name = editForm.name.trim()
+  saving.value = false
+  showEditDialog.value = false
+}
 
 const measurementRows = [
   { key: 'weight_kg', label: 'Poids', unit: 'kg', placeholder: '75' },
