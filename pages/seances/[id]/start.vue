@@ -14,7 +14,7 @@
     </div>
 
     <!-- Padding supplémentaire pour le contenu sous le badge MODE ENTRAINEMENT -->
-    <div class="pt-16 sm:pt-0"></div>
+    <div class="pt-16 sm:pt-10"></div>
 
     <div v-if="loading" class="flex justify-center items-center h-64">
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -29,12 +29,6 @@
       <div v-if="cycleId" class="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 text-sm">
         <RotateCcw class="h-4 w-4 text-primary flex-shrink-0" />
         <span class="text-primary font-medium">Séance de cycle</span>
-        <button
-          class="ml-auto text-xs text-primary/70 hover:text-primary underline-offset-2 hover:underline"
-          @click="navigateTo(`/cycles/${cycleId}`)"
-        >
-          Retour au cycle
-        </button>
       </div>
 
       <!-- En-tête amélioré -->
