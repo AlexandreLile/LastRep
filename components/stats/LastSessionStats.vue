@@ -78,12 +78,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { Timer, Dumbbell, ArrowUp, ArrowDown, Calendar, Clock, Trophy } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import SessionRecap from '~/components/stats/SessionRecap.vue'
+
+const props = defineProps({
+  userId: {
+    type: String,
+    default: null
+  }
+})
 
 const supabase = useSupabaseClient()
 const loading = ref(true)
@@ -92,10 +99,11 @@ const totalWeight = ref(0)
 const volumeDifference = ref(null)
 const showRecap = ref(false)
 
-const fetchLastSession = async () => {
+const fetchLastSession = async (userId) => {
+  if (!userId) return
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    loading.value = true
+    const user = { id: userId }
 
     // Récupérer la dernière séance effectuée
     const { data: session, error: sessionError } = await supabase
@@ -224,7 +232,7 @@ const formatDuration = (start, end) => {
   return `${minutes}min`
 }
 
-onMounted(() => {
-  fetchLastSession()
-})
+watch(() => props.userId, (userId) => {
+  if (userId) fetchLastSession(userId)
+}, { immediate: true })
 </script> 

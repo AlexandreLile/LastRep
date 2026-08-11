@@ -12,8 +12,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useSupabaseClient } from '#imports'
+import { ref, watch } from 'vue'
 import { Bar } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
 import ChartPeriodFilter from './ChartPeriodFilter.vue'
@@ -21,9 +20,9 @@ import ChartPeriodFilter from './ChartPeriodFilter.vue'
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const props = defineProps({
-  exerciseId: {
-    type: String,
-    required: true
+  sets: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -34,30 +33,6 @@ const chartOptions = ref(null)
 const allData = ref([])
 const MAX_DISPLAY_POINTS = 30 // Nombre maximum de points à afficher sans regroupement
 const MAX_DISPLAY_WITH_GROUPING = 50 // Maximum avec regroupement par session
-
-const loadData = async () => {
-  try {
-    const supabase = useSupabaseClient()
-    const user = (await supabase.auth.getUser()).data.user
-    
-    if (!user) return
-
-    const { data, error } = await supabase
-      .from('exerciseset')
-      .select('reps, created_at')
-      .eq('exercise_id', props.exerciseId)
-      .eq('user_id', user.id)
-      .not('reps', 'is', null)
-      .order('created_at', { ascending: true })
-
-    if (error) throw error
-    
-    allData.value = data
-    updateChart()
-  } catch (e) {
-    console.error('Erreur lors du chargement des données:', e)
-  }
-}
 
 // Fonction pour regrouper les données par session (jour)
 const groupBySession = (data) => {
@@ -289,8 +264,10 @@ const updateChart = () => {
   updateChartWithData(labels, reps, sessionDetails, showGroupedInfo, periodGroups.length)
 }
 
-onMounted(loadData)
-watch(() => props.exerciseId, loadData)
+watch(() => props.sets, (newSets) => {
+  allData.value = (newSets || []).filter(s => s.reps != null)
+  updateChart()
+}, { immediate: true })
 watch(selectedPeriod, () => {
   if (allData.value.length) {
     updateChart()

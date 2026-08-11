@@ -111,6 +111,13 @@
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-vue-next'
 import { logger } from '~/utils/logger'
 
+const props = defineProps({
+  userId: {
+    type: String,
+    default: null
+  }
+})
+
 const supabase = useSupabaseClient()
 const currentDate = ref(new Date())
 const selectedDay = ref(null)
@@ -179,13 +186,10 @@ const formatMonthYear = computed(() => {
   })
 })
 
-const loadTrainingSessions = async () => {
+const loadTrainingSessions = async (userId) => {
+  if (!userId) return
   try {
-    const user = (await supabase.auth.getUser()).data.user
-    if (!user) {
-      logger.log('Calendrier: Aucun utilisateur connecté')
-      return
-    }
+    const user = { id: userId }
 
     logger.log('Calendrier: Chargement des séances pour l\'utilisateur:', user.id)
 
@@ -351,7 +355,9 @@ const formatShortDuration = (minutes) => {
   return remainingMinutes > 0 ? `${hours}h${remainingMinutes}` : `${hours}h`
 }
 
-onMounted(loadTrainingSessions)
+watch(() => props.userId, (userId) => {
+  if (userId) loadTrainingSessions(userId)
+}, { immediate: true })
 </script>
 
 <style scoped>

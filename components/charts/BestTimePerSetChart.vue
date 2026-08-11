@@ -12,8 +12,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useSupabaseClient } from '#imports'
+import { ref, watch } from 'vue'
 import { Bar } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
 import ChartPeriodFilter from './ChartPeriodFilter.vue'
@@ -21,9 +20,9 @@ import ChartPeriodFilter from './ChartPeriodFilter.vue'
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const props = defineProps({
-  exerciseId: {
-    type: String,
-    required: true
+  sets: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -42,30 +41,6 @@ const formatTime = (seconds) => {
     return `${minutes}min ${secs}s`
   }
   return `${secs}s`
-}
-
-const loadData = async () => {
-  try {
-    const supabase = useSupabaseClient()
-    const user = (await supabase.auth.getUser()).data.user
-    
-    if (!user) return
-
-    const { data, error } = await supabase
-      .from('exerciseset')
-      .select('duration_seconds, created_at')
-      .eq('exercise_id', props.exerciseId)
-      .eq('user_id', user.id)
-      .not('duration_seconds', 'is', null)
-      .order('created_at', { ascending: true })
-
-    if (error) throw error
-    
-    allData.value = data
-    updateChart()
-  } catch (e) {
-    console.error('Erreur lors du chargement des données:', e)
-  }
 }
 
 // Fonction pour regrouper les séances par période (jour, semaine ou mois)
@@ -268,8 +243,10 @@ const updateChart = () => {
   }
 }
 
-onMounted(loadData)
-watch(() => props.exerciseId, loadData)
+watch(() => props.sets, (newSets) => {
+  allData.value = (newSets || []).filter(s => s.duration_seconds != null)
+  updateChart()
+}, { immediate: true })
 watch(selectedPeriod, () => {
   if (allData.value.length) {
     updateChart()

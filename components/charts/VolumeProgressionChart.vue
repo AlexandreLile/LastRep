@@ -17,8 +17,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useSupabaseClient } from '#imports'
+import { ref, watch } from 'vue'
 import { Line } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
 import ChartPeriodFilter from './ChartPeriodFilter.vue'
@@ -26,9 +25,9 @@ import ChartPeriodFilter from './ChartPeriodFilter.vue'
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 const props = defineProps({
-  exerciseId: {
-    type: String,
-    required: true
+  sets: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -119,39 +118,6 @@ const groupDataByPeriod = (data, period = 'day') => {
     labels: sortedEntries.map(([key]) => key), 
     volumes: sortedEntries.map(([, value]) => Math.round(value.volume)),
     sets: sortedEntries.map(([, value]) => value.sets)
-  }
-}
-
-const loadData = async () => {
-  loading.value = true
-  try {
-    const supabase = useSupabaseClient()
-    const user = (await supabase.auth.getUser()).data.user
-    
-    if (!user) {
-      loading.value = false
-      return
-    }
-
-    const { data, error } = await supabase
-      .from('exerciseset')
-      .select('weight_kg, reps, created_at')
-      .eq('exercise_id', props.exerciseId)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: true })
-
-    if (error) throw error
-    
-    allData.value = data || []
-    
-    // Auto-sélection de la période optimale
-    selectedPeriod.value = autoSelectPeriod(data || [])
-    
-    updateChart()
-  } catch (e) {
-    console.error('Erreur lors du chargement des données:', e)
-  } finally {
-    loading.value = false
   }
 }
 
@@ -249,8 +215,13 @@ const updateChart = () => {
   }
 }
 
-onMounted(loadData)
-watch(() => props.exerciseId, loadData)
+watch(() => props.sets, (newSets) => {
+  loading.value = true
+  allData.value = newSets || []
+  selectedPeriod.value = autoSelectPeriod(allData.value)
+  updateChart()
+  loading.value = false
+}, { immediate: true })
 watch(selectedPeriod, () => {
   if (allData.value.length) {
     updateChart()

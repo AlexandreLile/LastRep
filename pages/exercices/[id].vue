@@ -48,7 +48,11 @@
               {{ exercise?.measurement_type === 'time' ? 'Meilleur temps' : exercise?.measurement_type === 'reps' ? 'Max reps' : '1RM max' }}
             </h3>
           </div>
-          <LastSetRMStats :exercise-id="route.params.id" />
+          <LastSetRMStats
+            :measurement-type="exercise?.measurement_type"
+            :last-session-sets="lastSessionSets"
+            :prev-session-sets="prevSessionSets"
+          />
         </div>
         <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
           <div class="flex items-center gap-3 mb-3">
@@ -59,7 +63,11 @@
               {{ exercise?.measurement_type === 'time' ? 'Temps total dernière séance' : 'Dernière séance' }}
             </h3>
           </div>
-          <LastExerciseSessionStats :exercise-id="route.params.id" />
+          <LastExerciseSessionStats
+            :measurement-type="exercise?.measurement_type"
+            :last-session-sets="lastSessionSets"
+            :prev-session-sets="prevSessionSets"
+          />
         </div>
         <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
           <div class="flex items-center gap-3 mb-3">
@@ -70,7 +78,12 @@
               {{ exercise?.measurement_type === 'time' ? 'Temps total effectué' : exercise?.measurement_type === 'reps' ? 'Total répétitions' : 'Volume total' }}
             </h3>
           </div>
-          <TotalVolumeStats :exercise-id="route.params.id" />
+          <TotalVolumeStats
+            :measurement-type="exercise?.measurement_type"
+            :last-session-sets="lastSessionSets"
+            :prev-session-sets="prevSessionSets"
+            :all-sets="sets"
+          />
         </div>
       </div>
 
@@ -89,7 +102,7 @@
               </div>
             </div>
             <div class="flex-1">
-              <WeightRepsChart :exercise-id="route.params.id" />
+              <WeightRepsChart :sets="sets" />
             </div>
           </div>
           <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
@@ -103,7 +116,7 @@
               </div>
             </div>
             <div class="flex-1">
-              <WeightProgressionChart :exercise-id="route.params.id" />
+              <WeightProgressionChart :sets="sets" />
             </div>
           </div>
           <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
@@ -117,7 +130,7 @@
               </div>
             </div>
             <div class="flex-1">
-              <VolumeProgressionChart :exercise-id="route.params.id" />
+              <VolumeProgressionChart :sets="sets" />
             </div>
           </div>
         </template>
@@ -135,7 +148,7 @@
               </div>
             </div>
             <div class="flex-1">
-              <RepsProgressionChart :exercise-id="route.params.id" />
+              <RepsProgressionChart :sets="sets" />
             </div>
           </div>
           <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
@@ -149,7 +162,7 @@
               </div>
             </div>
             <div class="flex-1">
-              <RepsPerSetChart :exercise-id="route.params.id" />
+              <RepsPerSetChart :sets="sets" />
             </div>
           </div>
         </template>
@@ -167,7 +180,7 @@
               </div>
             </div>
             <div class="flex-1">
-              <TimeProgressionChart :exercise-id="route.params.id" />
+              <TimeProgressionChart :sets="sets" />
             </div>
           </div>
           <!-- Graphique meilleur temps par série pour time (isométrie) -->
@@ -182,7 +195,7 @@
               </div>
             </div>
             <div class="flex-1">
-              <BestTimePerSetChart :exercise-id="route.params.id" />
+              <BestTimePerSetChart :sets="sets" />
             </div>
           </div>
           <!-- Graphique répétitions par série pour time_reps -->
@@ -197,7 +210,7 @@
               </div>
             </div>
             <div class="flex-1">
-              <RepsPerSetChart :exercise-id="route.params.id" />
+              <RepsPerSetChart :sets="sets" />
             </div>
           </div>
         </template>
@@ -215,7 +228,7 @@
               </div>
             </div>
             <div class="flex-1">
-              <WeightRepsChart :exercise-id="route.params.id" />
+              <WeightRepsChart :sets="sets" />
             </div>
           </div>
           <div class="bg-card rounded-xl p-6 flex flex-col h-full hover:shadow-md transition-all duration-300">
@@ -229,7 +242,7 @@
               </div>
             </div>
             <div class="flex-1">
-              <WeightProgressionChart :exercise-id="route.params.id" />
+              <WeightProgressionChart :sets="sets" />
             </div>
           </div>
         </template>
@@ -247,7 +260,7 @@
           </div>
         </div>
         <div class="text-2xl font-semibold text-primary pl-2">
-          <RMCalculator :exercise-id="route.params.id" />
+          <RMCalculator :sets="sets" />
         </div>
       </div>
 
@@ -512,7 +525,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useSupabaseClient } from '#imports'
 import WeightRepsChart from '~/components/charts/WeightRepsChart.vue'
 import WeightProgressionChart from '~/components/charts/WeightProgressionChart.vue'
@@ -585,7 +598,7 @@ const loadExerciseData = async () => {
     if (exerciseError) throw exerciseError
     exercise.value = exerciseData
 
-    // Récupérer les séries
+    // Récupérer les séries (une seule requête : toutes les stats/graphiques en dérivent côté client)
     const { data: setsData, error: setsError } = await supabase
       .from('exerciseset')
       .select(`
@@ -596,7 +609,8 @@ const loadExerciseData = async () => {
         rest_seconds,
         rpe,
         note,
-        created_at
+        created_at,
+        performed_session_id
       `)
       .eq('exercise_id', route.params.id)
       .eq('user_id', user.id)
@@ -604,14 +618,32 @@ const loadExerciseData = async () => {
 
     if (setsError) throw setsError
     sets.value = setsData
-
-    // Les statistiques sont maintenant gérées par les composants dédiés
   } catch (e) {
     error.value = getUserFriendlyError(e.message)
   } finally {
     loading.value = false
   }
 }
+
+// Regrouper les séries par séance réalisée (performed_session_id) pour dériver
+// "dernière séance" / "séance précédente" sans requête supplémentaire par composant
+const sessionGroups = computed(() => {
+  const groups = new Map()
+  for (const s of sets.value) {
+    if (!s.performed_session_id) continue
+    if (!groups.has(s.performed_session_id)) groups.set(s.performed_session_id, [])
+    groups.get(s.performed_session_id).push(s)
+  }
+  return [...groups.values()]
+    .map(groupSets => ({
+      sets: groupSets,
+      lastCreatedAt: Math.max(...groupSets.map(s => new Date(s.created_at).getTime()))
+    }))
+    .sort((a, b) => b.lastCreatedAt - a.lastCreatedAt)
+})
+
+const lastSessionSets = computed(() => sessionGroups.value[0]?.sets || [])
+const prevSessionSets = computed(() => sessionGroups.value[1]?.sets || [])
 
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('fr-FR', {
