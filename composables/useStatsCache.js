@@ -7,6 +7,11 @@ import { ref } from 'vue'
 const cache = ref(new Map())
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes en millisecondes
 
+// Requêtes en cours par clé, pour éviter que plusieurs composants montés en
+// concurrence (ex: dashboard) ne déclenchent chacun leur propre requête
+// avant que la première n'ait eu le temps de poser le cache.
+const inFlight = new Map()
+
 export const useStatsCache = () => {
   /**
    * Génère une clé de cache basée sur le type et l'utilisateur
@@ -68,13 +73,24 @@ export const useStatsCache = () => {
       return cached
     }
 
-    // Récupérer les données
-    const data = await fetchFn()
-    
-    // Mettre en cache
-    setCached(type, userId, data)
-    
-    return data
+    // Réutiliser la requête déjà en cours pour cette clé, s'il y en a une
+    const key = getCacheKey(type, userId)
+    if (inFlight.has(key)) {
+      return inFlight.get(key)
+    }
+
+    const promise = (async () => {
+      try {
+        const data = await fetchFn()
+        setCached(type, userId, data)
+        return data
+      } finally {
+        inFlight.delete(key)
+      }
+    })()
+
+    inFlight.set(key, promise)
+    return promise
   }
 
   return {

@@ -14,26 +14,11 @@ Suite du bilan perf du mode entraînement / stats. Déjà corrigé : fan-out N+1
 (`pages/exercices/[id].vue` + composants enfants), boucle N+1 de `SessionWeightChart.vue`, bug
 `dates`/`weights` non définis dans `WeightProgressionChart.vue`, composants stats legacy morts
 supprimés (`SessionCount.vue`, `TotalWeightLifted.vue`, `TotalTrainingTime.vue`,
-`LastSessionMaxWeightStats.vue`), et les 6× `auth.getUser()` redondants du dashboard.
+`LastSessionMaxWeightStats.vue`), les 6× `auth.getUser()` redondants du dashboard, l'agrégation
+SQL de `useExerciseStats.js` (RPC `get_exercise_stats`), le bornage de `SessionRecap.vue` aux 50
+séances précédentes déjà chargées, la parallélisation des requêtes indépendantes dans
+`LastSessionStats.vue`/`SessionRecap.vue`, la déduplication de `checkConnectivity` (uniquement
+`utils/offlineTraining.js` désormais), et la déduplication des promesses en vol dans
+`useStatsCache.js`.
 
-- [ ] **`useExerciseStats.js`** — récupère toutes les lignes `exerciseset` de l'utilisateur sans
-      limite puis regroupe côté client en O(n²) (`.reduce` + `.find`). À migrer vers une RPC
-      `GROUP BY` côté SQL, sur le même modèle que `get_session_exercise_counts` (migration
-      `20260113150000_add_get_session_exercise_counts_function.sql`).
-- [ ] **`SessionRecap.vue`** — charge `allPreviousSets`, tout l'historique de séries pour les
-      exercices de la dernière séance, sans borne temporelle ni pagination (pour calculer les PR).
-      Grossit indéfiniment avec l'ancienneté du compte. À borner (ex : 90 derniers jours ou N
-      dernières séances, comme le `.limit(50)` déjà utilisé plus bas dans le même fichier).
-- [ ] **Requêtes séquentielles non parallélisées** — `LastSessionStats.vue` et `SessionRecap.vue`
-      enchaînent 3-4 requêtes Supabase strictement l'une après l'autre alors que certaines
-      pourraient partir en `Promise.all` (ex : chercher la séance précédente peut démarrer dès
-      qu'on a `workout_session_id`, en parallèle du calcul du volume courant).
-- [ ] **Duplication de `checkConnectivity`** — logique de vérification de connectivité réelle
-      copiée à l'identique entre `composables/usePerformedSession.js` (`checkConnectivity`) et
-      `utils/offlineTraining.js` (`checkRealConnectivity`). Pas un souci perf direct mais source de
-      divergence de comportement offline si l'une évolue sans l'autre. À factoriser en un seul
-      utilitaire partagé.
-- [ ] **`useStatsCache.js` sans déduplication de promesses en vol** — au premier chargement à
-      froid, si plusieurs composants montent en concurrence (ex : dashboard), chaque `withCache`
-      peut lancer sa propre requête avant que la première ne pose le cache → doublons ponctuels.
-      À corriger en mémorisant la promesse en cours par clé, pas seulement le résultat résolu.
+Rien de restant identifié pour l'instant sur ce périmètre.
