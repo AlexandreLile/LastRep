@@ -200,7 +200,7 @@
                 <Button
                   type="button"
                   variant="outline"
-                  @click="router.push('/seances')"
+                  @click="router.push(cycleId ? `/cycles/${cycleId}` : '/seances')"
                   class="w-full sm:w-auto group"
                 >
                   <ArrowLeft class="h-4 w-4 mr-2 transition-transform duration-300 group-hover:-translate-x-1" />
@@ -321,6 +321,7 @@ import {
 const route = useRoute();
 const router = useRouter();
 const supabase = useSupabaseClient();
+const cycleId = route.query.cycle || null;
 const { getWorkoutSession, editWorkoutSession, deleteWorkoutSession } = useWorkoutSessions(useSupabaseUser());
 const { 
   workoutExercises: currentExercises,
@@ -386,6 +387,10 @@ const loadSession = async () => {
     };
     // Charger les exercices de la séance
     await getWorkoutExercises(route.params.id);
+    // Séance fraîchement créée depuis un cycle : ouvrir directement l'ajout d'exercices
+    if (cycleId && currentExercises.value.length === 0) {
+      openAddExerciseModal();
+    }
   } catch (e) {
     error.value = e.message;
   } finally {
@@ -409,8 +414,8 @@ const handleSubmit = async () => {
     if (isMobile.value && window.navigator && window.navigator.vibrate) {
       window.navigator.vibrate([50, 30, 50]);
     }
-    // Rediriger vers la page d'entraînement après l'enregistrement
-    router.push(`/seances/${route.params.id}/train`);
+    // Rediriger vers le cycle si la séance en provient, sinon vers la page d'entraînement
+    router.push(cycleId ? `/cycles/${cycleId}` : `/seances/${route.params.id}/train`);
   } catch (e) {
     console.error('Erreur lors de l\'édition:', e);
     error.value = e.message;
@@ -492,6 +497,14 @@ const deleteSession = async () => {
 
     if (updateError) throw updateError
 
+    // Retirer la séance des créneaux de cycle qui l'utilisent comme modèle
+    const { error: slotError } = await supabase
+      .from('cycle_slot')
+      .delete()
+      .eq('workout_session_id', route.params.id)
+
+    if (slotError) throw slotError
+
     // Ensuite, supprimer la workout session
     const { error: deleteError } = await deleteWorkoutSession(route.params.id)
     if (deleteError) throw deleteError
@@ -501,7 +514,7 @@ const deleteSession = async () => {
       window.navigator.vibrate([100, 50, 100]);
     }
 
-    router.push('/seances')
+    router.push(cycleId ? `/cycles/${cycleId}` : '/seances')
   } catch (e) {
     console.error('Erreur lors de la suppression de la séance:', e);
     error.value = e.message;
