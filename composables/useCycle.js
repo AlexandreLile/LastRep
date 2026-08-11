@@ -198,8 +198,10 @@ export const useCycle = () => {
   const deleteSlot = async (slotId) => {
     try {
       const supabase = useSupabaseClient()
-      const { error: err } = await supabase.from('cycle_slot').delete().eq('id', slotId)
+      const { data, error: err } = await supabase.from('cycle_slot').delete().eq('id', slotId).select()
       if (err) throw err
+      // Une RLS qui ne matche aucune ligne ne renvoie pas d'erreur : on vérifie donc explicitement
+      if (!data || data.length === 0) throw new Error('Ce créneau n\'a pas pu être supprimé (introuvable ou accès refusé)')
       return { success: true }
     } catch (e) {
       return { success: false, error: e.message }

@@ -13,45 +13,76 @@
       </div>
     </div>
 
-    <div class="bg-card rounded-xl p-6 max-w-lg hover:shadow-md transition-all duration-300">
-      <div class="flex items-center gap-3 mb-6">
-        <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-          <UserCog class="w-5 h-5 text-primary" />
+    <div class="mb-6 grid grid-cols-1 md:grid-cols-[1fr_16rem] gap-6 items-start max-w-3xl">
+      <div class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+            <UserCog class="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold">Informations personnelles</h3>
+            <p class="text-sm text-muted-foreground">Modifiez vos informations de base</p>
+          </div>
         </div>
-        <div>
-          <h3 class="text-lg font-semibold">Informations personnelles</h3>
-          <p class="text-sm text-muted-foreground">Modifiez vos informations de base</p>
-        </div>
+        <form @submit.prevent="updateProfile" class="space-y-4">
+          <div>
+            <Label class="block mb-1 font-medium">Prénom</Label>
+            <Input v-model="profile.first_name" type="text" class="w-full" />
+          </div>
+          <div>
+            <Label class="block mb-1 font-medium">Nom</Label>
+            <Input v-model="profile.last_name" type="text" class="w-full" />
+          </div>
+          <div>
+            <Label class="block mb-1 font-medium">Email</Label>
+            <Input v-model="profile.email" type="email" disabled class="w-full bg-muted" />
+          </div>
+          <div class="pt-2">
+            <Button type="submit" :disabled="loading" class="flex items-center gap-2">
+              <Save v-if="!loading" class="h-4 w-4" />
+              <Loader2 v-else class="h-4 w-4 animate-spin" />
+              {{ loading ? 'Enregistrement...' : 'Enregistrer' }}
+            </Button>
+            <div v-if="success" class="flex items-center gap-2 text-green-600 mt-3">
+              <CheckCircle class="h-4 w-4" />
+              <span>Profil mis à jour avec succès !</span>
+            </div>
+            <div v-if="error" class="flex items-center gap-2 text-red-600 mt-3">
+              <AlertTriangle class="h-4 w-4" />
+              <span>{{ error }}</span>
+            </div>
+          </div>
+        </form>
       </div>
-      <form @submit.prevent="updateProfile" class="space-y-4">
-        <div>
-          <Label class="block mb-1 font-medium">Prénom</Label>
-          <Input v-model="profile.first_name" type="text" class="w-full" />
-        </div>
-        <div>
-          <Label class="block mb-1 font-medium">Nom</Label>
-          <Input v-model="profile.last_name" type="text" class="w-full" />
-        </div>
-        <div>
-          <Label class="block mb-1 font-medium">Email</Label>
-          <Input v-model="profile.email" type="email" disabled class="w-full bg-muted" />
-        </div>
-        <div class="pt-2">
-          <Button type="submit" :disabled="loading" class="flex items-center gap-2">
-            <Save v-if="!loading" class="h-4 w-4" />
-            <Loader2 v-else class="h-4 w-4 animate-spin" />
-            {{ loading ? 'Enregistrement...' : 'Enregistrer' }}
-          </Button>
-          <div v-if="success" class="flex items-center gap-2 text-green-600 mt-3">
-            <CheckCircle class="h-4 w-4" />
-            <span>Profil mis à jour avec succès !</span>
+
+      <!-- Raccourcis -->
+      <div class="grid grid-cols-2 md:grid-cols-1 gap-4">
+        <NuxtLink
+          to="/historique"
+          class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300 flex items-center gap-3"
+        >
+          <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+            <History class="w-5 h-5 text-primary" />
           </div>
-          <div v-if="error" class="flex items-center gap-2 text-red-600 mt-3">
-            <AlertTriangle class="h-4 w-4" />
-            <span>{{ error }}</span>
+          <div>
+            <h3 class="text-base font-semibold">Historique</h3>
+            <p class="text-sm text-muted-foreground">Vos séances passées</p>
           </div>
-        </div>
-      </form>
+        </NuxtLink>
+
+        <button
+          @click="showWelcomeModal = true"
+          class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300 flex items-center gap-3 text-left"
+        >
+          <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+            <HelpCircle class="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h3 class="text-base font-semibold">Guide de démarrage</h3>
+            <p class="text-sm text-muted-foreground">Revoir le guide d'introduction</p>
+          </div>
+        </button>
+      </div>
     </div>
 
     <!-- Zone de danger - Suppression de compte -->
@@ -123,6 +154,9 @@
         </AlertDialog>
       </div>
     </div>
+
+    <!-- Modal de bienvenue -->
+    <WelcomeModal v-model:open="showWelcomeModal" />
   </div>
 </template>
 
@@ -133,14 +167,17 @@ import { useRouter } from 'vue-router'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { 
-  User, 
-  UserCog, 
-  Save, 
-  Loader2, 
-  CheckCircle, 
+import WelcomeModal from '@/components/onboarding/WelcomeModal.vue'
+import {
+  User,
+  UserCog,
+  Save,
+  Loader2,
+  CheckCircle,
   AlertTriangle,
-  Trash2
+  Trash2,
+  History,
+  HelpCircle
 } from 'lucide-vue-next'
 import {
   AlertDialog,
@@ -155,6 +192,7 @@ import {
 } from '@/components/ui/alert-dialog'
 
 const supabase = useSupabaseClient()
+const showWelcomeModal = ref(false)
 const profile = ref({
   first_name: '',
   last_name: '',
