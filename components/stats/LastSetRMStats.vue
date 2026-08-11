@@ -72,30 +72,28 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useSupabaseClient } from '#imports'
+import { computed } from 'vue'
 
 const props = defineProps({
-  exerciseId: {
+  measurementType: {
     type: String,
-    required: true
+    default: 'weight_reps'
+  },
+  lastSessionSets: {
+    type: Array,
+    default: () => []
+  },
+  prevSessionSets: {
+    type: Array,
+    default: () => []
   }
 })
 
-const supabase = useSupabaseClient()
-const lastSessionSets = ref([])
-const prevSessionSets = ref([])
-const loading = ref(true)
-const exercise = ref(null)
+const lastSessionSets = computed(() => props.lastSessionSets)
+const prevSessionSets = computed(() => props.prevSessionSets)
 
-// Récupérer le measurement_type de l'exercice
-const isRepsOnly = computed(() => {
-  return exercise.value?.measurement_type === 'reps'
-})
-
-const isTimeExercise = computed(() => {
-  return exercise.value?.measurement_type === 'time'
-})
+const isRepsOnly = computed(() => props.measurementType === 'reps')
+const isTimeExercise = computed(() => props.measurementType === 'time')
 
 function calculateRM(weight, reps) {
   return weight * (1 + 0.0333 * reps)
@@ -175,64 +173,4 @@ const formatDuration = (seconds) => {
   return `${secs}s`
 }
 
-const loadSets = async () => {
-  loading.value = true
-  try {
-    const user = (await supabase.auth.getUser()).data.user
-    if (!user) throw new Error('Utilisateur non authentifié')
-    
-    // Récupérer l'exercice pour connaître son measurement_type
-    const { data: exerciseData, error: exerciseError } = await supabase
-      .from('exercise')
-      .select('measurement_type')
-      .eq('id', props.exerciseId)
-      .single()
-    
-    if (exerciseError) throw exerciseError
-    exercise.value = exerciseData
-    
-    // 1. Récupérer toutes les performed sessions où cet exercice figure, avec leurs sets
-    const { data: sessionsData, error } = await supabase
-      .from('performedsession')
-      .select(`
-        id,
-        ended_at,
-        exerciseset:exerciseset!inner(
-          id,
-          exercise_id,
-          weight_kg,
-          reps,
-          duration_seconds,
-          created_at
-        )
-      `)
-      .eq('user_id', user.id)
-      .not('ended_at', 'is', null)
-      .order('ended_at', { ascending: false })
-      .limit(10)
-    
-    if (error) throw error
-    
-    // 2. Filtrer les sessions qui contiennent au moins un set de cet exercice
-    const filteredSessions = sessionsData
-      .map(session => ({
-        ...session,
-        sets: session.exerciseset.filter(set => set.exercise_id === props.exerciseId)
-      }))
-      .filter(session => session.sets.length > 0)
-    
-    // 3. Prendre la plus récente et la précédente
-    lastSessionSets.value = filteredSessions[0]?.sets || []
-    prevSessionSets.value = filteredSessions[1]?.sets || []
-  } catch (e) {
-    lastSessionSets.value = []
-    prevSessionSets.value = []
-    console.error('Erreur chargement sets pour RM:', e)
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(loadSets)
-watch(() => props.exerciseId, loadSets)
 </script> 

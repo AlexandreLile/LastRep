@@ -11,17 +11,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useSupabaseClient } from '#imports'
+import { ref, watch } from 'vue'
 import { Bar } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend)
 
 const props = defineProps({
-  exerciseId: {
-    type: String,
-    required: true
+  sets: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -30,31 +29,6 @@ const chartOptions = ref(null)
 const MAX_DATA_POINTS = 25 // Limite max de barres avant regroupement
 const MAX_DISPLAY_POINTS = 40 // Maximum avec regroupement
 const allData = ref([])
-
-const loadData = async () => {
-  try {
-    const supabase = useSupabaseClient()
-    const user = (await supabase.auth.getUser()).data.user
-    
-    if (!user) return
-
-    const { data, error } = await supabase
-      .from('exerciseset')
-      .select('weight_kg, reps, created_at')
-      .eq('exercise_id', props.exerciseId)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: true })
-
-    if (error) throw error
-    
-    // Stocker toutes les données
-    allData.value = data
-    
-    updateChart()
-  } catch (e) {
-    console.error('Erreur lors du chargement des données:', e)
-  }
-}
 
 // Limiter aux 12 dernières séances (jours distincts)
 const limitToLast12Days = data => {
@@ -239,9 +213,10 @@ const updateChart = () => {
   }
 }
 
-// Mettre à jour le graphique quand la période change
-onMounted(loadData)
-watch(() => props.exerciseId, loadData)
+watch(() => props.sets, (newSets) => {
+  allData.value = newSets || []
+  updateChart()
+}, { immediate: true })
 </script>
 
 <style scoped>

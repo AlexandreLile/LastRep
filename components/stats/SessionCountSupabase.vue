@@ -17,12 +17,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useSupabaseClient } from '#imports'
+import { ref, watch, computed } from 'vue'
 import { Dumbbell } from 'lucide-vue-next'
 import { useUserStats } from '~/composables/useUserStats'
 
-const supabase = useSupabaseClient()
+const props = defineProps({
+  userId: {
+    type: String,
+    default: null
+  }
+})
+
 const { getSessionStats } = useUserStats()
 const sessionCount = ref(0)
 const weeklyAverage = ref(0)
@@ -35,20 +40,15 @@ const formatWeeklyAverage = computed(() => {
     : Math.round(weeklyAverage.value).toString()
 })
 
-const loadSessionStats = async () => {
+const loadSessionStats = async (userId) => {
+  if (!userId) return
   try {
-    const user = (await supabase.auth.getUser()).data.user
-    
-    if (!user) {
-      throw new Error('Utilisateur non authentifié')
-    }
-
+    loading.value = true
     // Utiliser le cache pour améliorer les performances
-    const stats = await getSessionStats(user.id)
+    const stats = await getSessionStats(userId)
 
     sessionCount.value = stats.totalSessions || 0
     weeklyAverage.value = stats.weeklyAverage || 0
-    
   } catch (e) {
     // Erreur silencieuse pour ne pas perturber l'UX
   } finally {
@@ -56,5 +56,7 @@ const loadSessionStats = async () => {
   }
 }
 
-onMounted(loadSessionStats)
+watch(() => props.userId, (userId) => {
+  if (userId) loadSessionStats(userId)
+}, { immediate: true })
 </script> 

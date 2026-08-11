@@ -19,9 +19,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { useUserStats } from '~/composables/useUserStats'
+
+const props = defineProps({
+  userId: {
+    type: String,
+    default: null
+  }
+})
 
 const supabase = useSupabaseClient()
 const { getTotalTrainingTime, getSessionCount } = useUserStats()
@@ -47,21 +54,16 @@ const formatDuration = (minutes) => {
   return `${minutes}min`
 }
 
-const loadTotalDuration = async () => {
+const loadTotalDuration = async (userId) => {
+  if (!userId) return
   try {
     loading.value = true
     error.value = null
-    
-    const user = (await supabase.auth.getUser()).data.user
-    
-    if (!user) {
-      throw new Error('Utilisateur non authentifié')
-    }
 
     // Utiliser le cache pour améliorer les performances
     const [trainingTime, sessionCountData] = await Promise.all([
-      getTotalTrainingTime(user.id),
-      getSessionCount(user.id)
+      getTotalTrainingTime(userId),
+      getSessionCount(userId)
     ])
 
     totalDuration.value = trainingTime.totalMinutes || 0
@@ -72,7 +74,7 @@ const loadTotalDuration = async () => {
       const { count } = await supabase
         .from('performedsession')
         .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
       sessionsCount.value = count || 0
     }
 
@@ -83,5 +85,7 @@ const loadTotalDuration = async () => {
   }
 }
 
-onMounted(loadTotalDuration)
+watch(() => props.userId, (userId) => {
+  if (userId) loadTotalDuration(userId)
+}, { immediate: true })
 </script> 
