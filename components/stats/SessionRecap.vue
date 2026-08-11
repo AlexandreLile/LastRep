@@ -490,23 +490,43 @@ const loadSessionRecap = async () => {
       exerciseTypeMap[ex.exercise_id] = ex.exercise?.measurement_type || 'weight_reps'
     })
 
-    // 2. Récupérer toutes les séries de cette séance avec toutes les colonnes nécessaires
-    const { data: currentSets, error: setsError } = await supabase
-      .from('exerciseset')
-      .select(`
-        id,
-        exercise_id,
-        weight_kg,
-        reps,
-        duration_seconds,
-        distance_meters,
-        created_at
-      `)
-      .eq('performed_session_id', lastSession.id)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+    // 2 et 3. Séries de la séance courante + séances précédentes : ni l'une ni
+    // l'autre ne dépend du résultat de l'autre, on les lance en parallèle.
+    const [
+      { data: currentSets, error: setsError },
+      { data: previousSessions, error: prevSessionsError }
+    ] = await Promise.all([
+      supabase
+        .from('exerciseset')
+        .select(`
+          id,
+          exercise_id,
+          weight_kg,
+          reps,
+          duration_seconds,
+          distance_meters,
+          created_at
+        `)
+        .eq('performed_session_id', lastSession.id)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('performedsession')
+        .select(`
+          id,
+          started_at,
+          ended_at,
+          workout_session_id
+        `)
+        .eq('user_id', user.id)
+        .lt('ended_at', lastSession.ended_at)
+        .not('ended_at', 'is', null)
+        .order('ended_at', { ascending: false })
+        .limit(50) // Limiter pour les performances
+    ])
 
     if (setsError) throw setsError
+    if (prevSessionsError) throw prevSessionsError
 
     if (!currentSets || currentSets.length === 0) {
       return
@@ -540,44 +560,32 @@ const loadSessionRecap = async () => {
     
     hasRepsOnlyExercises.value = repsOnlySets.length > 0
 
-    // 3. Récupérer toutes les séances précédentes pour comparer
-    const { data: previousSessions, error: prevSessionsError } = await supabase
-      .from('performedsession')
-      .select(`
-        id,
-        started_at,
-        ended_at,
-        workout_session_id
-      `)
-      .eq('user_id', user.id)
-      .lt('ended_at', lastSession.ended_at)
-      .not('ended_at', 'is', null)
-      .order('ended_at', { ascending: false })
-      .limit(50) // Limiter pour les performances
+    // 4. Récupérer les séries des séances précédentes (bornées aux 50 séances
+    // ci-dessus, pour éviter de rapatrier tout l'historique du compte)
+    const previousSessionIds = (previousSessions || []).map(s => s.id)
 
-    if (prevSessionsError) throw prevSessionsError
+    let allPreviousSets = []
+    if (previousSessionIds.length > 0) {
+      const { data: prevSets, error: allPrevSetsError } = await supabase
+        .from('exerciseset')
+        .select(`
+          id,
+          exercise_id,
+          weight_kg,
+          reps,
+          duration_seconds,
+          distance_meters,
+          created_at,
+          performed_session_id
+        `)
+        .in('exercise_id', exerciseIds)
+        .eq('user_id', user.id)
+        .in('performed_session_id', previousSessionIds)
+        .order('created_at', { ascending: false })
 
-    // 4. Récupérer toutes les séries précédentes de l'utilisateur pour chaque exercice
-    // Uniquement les séries qui appartiennent à des séances terminées
-    const { data: allPreviousSets, error: allPrevSetsError } = await supabase
-      .from('exerciseset')
-      .select(`
-        id,
-        exercise_id,
-        weight_kg,
-        reps,
-        duration_seconds,
-        distance_meters,
-        created_at,
-        performed_session_id
-      `)
-      .in('exercise_id', exerciseIds)
-      .eq('user_id', user.id)
-      .not('performed_session_id', 'is', null)
-      .neq('performed_session_id', lastSession.id)
-      .order('created_at', { ascending: false })
-
-    if (allPrevSetsError) throw allPrevSetsError
+      if (allPrevSetsError) throw allPrevSetsError
+      allPreviousSets = prevSets || []
+    }
 
     // 5. Trouver la dernière séance du même type (même workout_session_id)
     const lastSameSession = previousSessions?.find(s => s.workout_session_id === lastSession.workout_session_id)
