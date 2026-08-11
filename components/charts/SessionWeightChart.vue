@@ -88,12 +88,15 @@ const chartOptions = computed(() => {
 
 const loadSessionWeightData = async () => {
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
     // 1. Récupérer toutes les séances effectuées pour ce workout_session_id
     const { data: sessions, error: sessionsError } = await supabase
       .from('performedsession')
       .select('id, started_at')
       .eq('workout_session_id', props.workoutSessionId)
-      .eq('user_id', (await supabase.auth.getUser()).data.user.id)
+      .eq('user_id', user.id)
       .order('started_at', { ascending: true })
 
     if (sessionsError) throw sessionsError
@@ -101,28 +104,29 @@ const loadSessionWeightData = async () => {
 
     // 2. Limiter aux 12 dernières séances
     const last12Sessions = sessions.slice(-12)
+    const sessionIds = last12Sessions.map(s => s.id)
 
-    // 3. Pour chaque séance, récupérer tous les sets associés et calculer le volume
-    const tempVolumes = []
-    const tempLabels = []
+    // 3. Récupérer tous les sets des séances sélectionnées en une seule requête
+    const { data: sets, error: setsError } = await supabase
+      .from('exerciseset')
+      .select('performed_session_id, weight_kg, reps')
+      .in('performed_session_id', sessionIds)
+      .eq('user_id', user.id)
 
-    for (const session of last12Sessions) {
-      const { data: sets, error: setsError } = await supabase
-        .from('exerciseset')
-        .select('weight_kg, reps')
-        .eq('performed_session_id', session.id)
-        .eq('user_id', (await supabase.auth.getUser()).data.user.id)
+    if (setsError) throw setsError
 
-      if (setsError) throw setsError
-
-      const volume = sets.reduce((sum, set) => sum + set.weight_kg * set.reps, 0)
-      tempVolumes.push(volume)
-      tempLabels.push(new Date(session.started_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }))
+    // 4. Regrouper les volumes par séance
+    const volumeBySession = new Map()
+    for (const set of sets || []) {
+      const volume = (set.weight_kg || 0) * (set.reps || 0)
+      volumeBySession.set(set.performed_session_id, (volumeBySession.get(set.performed_session_id) || 0) + volume)
     }
 
-    // 4. Mettre à jour les données du graphique
-    volumes.value = tempVolumes
-    labels.value = tempLabels
+    // 5. Mettre à jour les données du graphique
+    volumes.value = last12Sessions.map(session => volumeBySession.get(session.id) || 0)
+    labels.value = last12Sessions.map(session =>
+      new Date(session.started_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+    )
   } catch (error) {
     console.error('Erreur lors du chargement des données:', error)
   }

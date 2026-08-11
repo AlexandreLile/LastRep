@@ -154,9 +154,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { Target, Trophy, Award, Medal } from 'lucide-vue-next'
 import { logger } from '~/utils/logger'
+
+const props = defineProps({
+  userId: {
+    type: String,
+    default: null
+  }
+})
 
 const supabase = useSupabaseClient()
 
@@ -176,17 +183,11 @@ const nextMilestone = computed(() => {
   return 12
 })
 
-const loadMonthlyStats = async () => {
+const loadMonthlyStats = async (userId) => {
+  if (!userId) return
   try {
-    // Récupérer l'utilisateur connecté
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      logger.log('Aucun utilisateur connecté')
-      return
-    }
+    const user = { id: userId }
     logger.log('MonthlyGoals: Utilisateur connecté:', user.id)
-    logger.log('MonthlyGoals: ID attendu pour les données de seed:', '9af8cb22-9196-4616-bea9-5fafc0b48af7')
-    logger.log('MonthlyGoals: IDs correspondent?', user.id === '9af8cb22-9196-4616-bea9-5fafc0b48af7')
 
     // Définir le mois en cours
     const now = new Date()
@@ -280,9 +281,9 @@ const loadMonthlyStats = async () => {
   }
 }
 
-onMounted(() => {
-  loadMonthlyStats()
-})
+watch(() => props.userId, (userId) => {
+  if (userId) loadMonthlyStats(userId)
+}, { immediate: true })
 </script>
 
 <style scoped>

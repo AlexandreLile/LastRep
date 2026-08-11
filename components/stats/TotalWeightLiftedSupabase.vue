@@ -16,9 +16,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { useUserStats } from '~/composables/useUserStats'
+
+const props = defineProps({
+  userId: {
+    type: String,
+    default: null
+  }
+})
 
 const supabase = useSupabaseClient()
 const { getTotalWeight, getSessionCount } = useUserStats()
@@ -40,18 +47,14 @@ const formatWeight = (weight) => {
   return `${Math.round(weight)}kg`
 }
 
-const loadData = async () => {
+const loadData = async (userId) => {
+  if (!userId) return
   try {
-    const user = (await supabase.auth.getUser()).data.user
-    
-    if (!user) {
-      throw new Error('Utilisateur non authentifié')
-    }
-
+    loading.value = true
     // Utiliser le cache pour améliorer les performances
     const [weightData, sessionCountData] = await Promise.all([
-      getTotalWeight(user.id),
-      getSessionCount(user.id)
+      getTotalWeight(userId),
+      getSessionCount(userId)
     ])
 
     totalWeight.value = weightData.totalWeight || 0
@@ -62,7 +65,7 @@ const loadData = async () => {
       const { count } = await supabase
         .from('performedsession')
         .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
       sessionCount.value = count || 0
     }
   } catch (e) {
@@ -72,5 +75,7 @@ const loadData = async () => {
   }
 }
 
-onMounted(loadData)
+watch(() => props.userId, (userId) => {
+  if (userId) loadData(userId)
+}, { immediate: true })
 </script> 

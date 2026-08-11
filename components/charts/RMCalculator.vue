@@ -6,17 +6,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useSupabaseClient } from '#imports'
+import { ref, watch } from 'vue'
 
 const props = defineProps({
-  exerciseId: {
-    type: String,
-    required: true
+  sets: {
+    type: Array,
+    default: () => []
   }
 })
 
-const supabase = useSupabaseClient()
 const loading = ref(true)
 const error = ref(null)
 const bestSet = ref(null)
@@ -27,38 +25,25 @@ const calculateRM = (weight, reps) => {
   return weight * (1 + 0.0333 * reps)
 }
 
-const loadBestSet = async () => {
+const computeBestSet = (sets) => {
+  loading.value = true
   try {
-    loading.value = true
-    const user = (await supabase.auth.getUser()).data.user
-    
-    if (!user) {
-      throw new Error('Utilisateur non authentifié')
-    }
+    bestSet.value = null
+    estimatedRM.value = 0
 
-    // Récupérer toutes les séries de cet exercice, quelle que soit la séance
-    const { data, error: fetchError } = await supabase
-      .from('exerciseset')
-      .select('weight_kg, reps, created_at')
-      .eq('exercise_id', props.exerciseId)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      
-    if (fetchError) throw fetchError
-
-    if (data && data.length > 0) {
+    if (sets && sets.length > 0) {
       // Trouver la série avec le 1RM estimé le plus élevé
       let maxRM = 0
       let bestSetFound = null
-      
-      data.forEach(set => {
+
+      sets.forEach(set => {
         const rm = calculateRM(set.weight_kg, set.reps)
         if (rm > maxRM) {
           maxRM = rm
           bestSetFound = set
         }
       })
-      
+
       if (bestSetFound) {
         bestSet.value = bestSetFound
         estimatedRM.value = maxRM
@@ -71,6 +56,5 @@ const loadBestSet = async () => {
   }
 }
 
-onMounted(loadBestSet)
-watch(() => props.exerciseId, loadBestSet)
+watch(() => props.sets, computeBestSet, { immediate: true })
 </script> 

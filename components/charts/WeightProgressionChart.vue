@@ -12,8 +12,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useSupabaseClient } from '#imports'
+import { ref, watch } from 'vue'
 import { Line } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
 import ChartPeriodFilter from './ChartPeriodFilter.vue'
@@ -21,9 +20,9 @@ import ChartPeriodFilter from './ChartPeriodFilter.vue'
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 const props = defineProps({
-  exerciseId: {
-    type: String,
-    required: true
+  sets: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -79,86 +78,6 @@ const groupDataByPeriod = (data, period = 'day') => {
   return { 
     dates: sortedEntries.map(([key]) => key), 
     weights: sortedEntries.map(([, value]) => value.weight)
-  }
-}
-
-const loadData = async () => {
-  try {
-    const supabase = useSupabaseClient()
-    const user = (await supabase.auth.getUser()).data.user
-    
-    if (!user) return
-
-    const { data, error } = await supabase
-      .from('exerciseset')
-      .select('weight_kg, created_at')
-      .eq('exercise_id', props.exerciseId)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: true })
-
-    if (error) throw error
-    
-    // Stocker toutes les données
-    allData.value = data
-    
-    updateChart()
-    
-    // Trouver le poids minimum et maximum
-    const minWeight = Math.min(...weights)
-    const maxWeight = Math.max(...weights)
-    
-    chartData.value = {
-      labels: dates,
-      datasets: [{
-        label: 'Poids max',
-        data: weights,
-        borderColor: '#FE751C',
-        backgroundColor: '#FE751C',
-        tension: 0.4,
-        pointRadius: 5,
-        pointHoverRadius: 7
-      }]
-    }
-
-    // Mettre à jour les options du graphique
-    chartOptions.value = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              return `Poids max: ${context.parsed.y} kg`;
-            }
-          }
-        },
-        legend: {
-          display: false
-        }
-      },
-      scales: {
-        y: {
-          min: Math.max(0, minWeight - 5),
-          max: maxWeight + 5,
-          title: {
-            display: true,
-            text: 'Poids (kg)'
-          }
-        },
-        x: {
-          title: {
-            display: true,
-            text: 'Date'
-          },
-          ticks: {
-            maxRotation: 45,
-            minRotation: 45
-          }
-        }
-      }
-    }
-  } catch (e) {
-    console.error('Erreur lors du chargement des données:', e)
   }
 }
 
@@ -261,8 +180,10 @@ const updateChart = () => {
   }
 }
 
-onMounted(loadData)
-watch(() => props.exerciseId, loadData)
+watch(() => props.sets, (newSets) => {
+  allData.value = newSets || []
+  updateChart()
+}, { immediate: true })
 watch(selectedPeriod, () => {
   if (allData.value.length) {
     updateChart()

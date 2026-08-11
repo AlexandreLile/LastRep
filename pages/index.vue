@@ -41,7 +41,7 @@
             </div>
             <h3 class="text-sm font-medium text-muted-foreground">Séances complétées</h3>
           </div>
-          <SessionCountSupabase class="mt-auto" />
+          <SessionCountSupabase class="mt-auto" :user-id="user?.id" />
         </div>
       </div>
       <div class="bg-card rounded-xl p-6 border border-border">
@@ -52,7 +52,7 @@
             </div>
             <h3 class="text-sm font-medium text-muted-foreground">Poids total soulevé</h3>
           </div>
-          <TotalWeightLiftedSupabase class="mt-auto" />
+          <TotalWeightLiftedSupabase class="mt-auto" :user-id="user?.id" />
         </div>
       </div>
       <div class="bg-card rounded-xl p-6 border border-border">
@@ -63,7 +63,7 @@
             </div>
             <h3 class="text-sm font-medium text-foreground">Temps d'entraînement</h3>
           </div>
-          <TotalTrainingTimeSupabase class="mt-auto" />
+          <TotalTrainingTimeSupabase class="mt-auto" :user-id="user?.id" />
         </div>
       </div>
     </div>
@@ -83,7 +83,7 @@
             </div>
             <h3 class="text-lg font-semibold">Dernière séance</h3>
           </div>
-          <LastSessionStats />
+          <LastSessionStats :user-id="user?.id" />
         </div>
         
         <!-- Monthly Goals -->
@@ -94,7 +94,7 @@
             </div>
             <h3 class="text-lg font-semibold">Objectifs mensuels</h3>
           </div>
-          <MonthlyGoals />
+          <MonthlyGoals :user-id="user?.id" />
         </div>
       </div>
 
@@ -106,7 +106,7 @@
           </div>
           <h3 class="text-lg font-semibold">Calendrier d'entraînement</h3>
         </div>
-        <TrainingCalendar />
+        <TrainingCalendar :user-id="user?.id" />
       </div>
     </div>
 
