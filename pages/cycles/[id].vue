@@ -186,6 +186,11 @@
           </Button>
         </div>
 
+        <div v-if="slotDeleteError" class="flex items-center gap-2 text-sm text-red-500 bg-red-500/10 rounded-lg px-3 py-2">
+          <AlertTriangle class="h-4 w-4 flex-shrink-0" />
+          {{ slotDeleteError }}
+        </div>
+
         <div v-if="!cycle.slots?.length" class="flex flex-col items-center justify-center py-10 bg-card rounded-xl text-muted-foreground">
           <LayoutGrid class="w-10 h-10 mb-2 opacity-30" />
           <p class="text-sm">Aucune séance — ajoutez-en une pour commencer</p>
@@ -495,8 +500,12 @@
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel @click="slotToDelete = null">Annuler</AlertDialogCancel>
-          <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="handleDeleteSlot">
-            Retirer
+          <AlertDialogAction
+            class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            :disabled="deletingSlot"
+            @click="handleDeleteSlot"
+          >
+            {{ deletingSlot ? 'Suppression...' : 'Retirer' }}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -560,6 +569,8 @@ const showMeasurements = ref(false)
 const showEndMeasurements = ref(false)
 const ending = ref(false)
 const slotToDelete = ref(null)
+const slotDeleteError = ref('')
+const deletingSlot = ref(false)
 
 // Add slot dialog
 const showAddSlot = ref(false)
@@ -717,11 +728,35 @@ const handleAddSlot = async () => {
 
 // ── Supprimer créneau ───────────────────────────────────────────────────────
 
-const confirmDeleteSlot = (slot) => { slotToDelete.value = slot }
+// Id capturé séparément de `slotToDelete` : le bouton "Retirer" de l'AlertDialog
+// ferme la modale (et donc vide slotToDelete via @update:open) avant même que ce
+// handler ne s'exécute, donc on ne peut pas se fier à slotToDelete.value ici.
+const pendingDeleteSlotId = ref(null)
+
+const confirmDeleteSlot = (slot) => {
+  slotToDelete.value = slot
+  pendingDeleteSlotId.value = slot.id
+  slotDeleteError.value = ''
+}
 
 const handleDeleteSlot = async () => {
-  if (!slotToDelete.value) return
-  await deleteSlot(slotToDelete.value.id)
+  const slotId = pendingDeleteSlotId.value
+  if (!slotId) return
+  deletingSlot.value = true
+  slotDeleteError.value = ''
+  const result = await deleteSlot(slotId)
+  deletingSlot.value = false
+  pendingDeleteSlotId.value = null
+
+  if (!result.success) {
+    slotDeleteError.value = result.error || 'Une erreur est survenue lors de la suppression'
+    return
+  }
+
+  // Retrait immédiat de l'affichage, sans attendre le rechargement
+  if (cycle.value?.slots) {
+    cycle.value.slots = cycle.value.slots.filter(s => s.id !== slotId)
+  }
   slotToDelete.value = null
   await load()
 }
