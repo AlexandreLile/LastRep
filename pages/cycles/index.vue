@@ -46,7 +46,7 @@
         v-for="cycle in cycles"
         :key="cycle.id"
         class="bg-card rounded-xl p-5 hover:shadow-md transition-all duration-200 cursor-pointer"
-        @click="navigateTo(`/cycles/${cycle.id}`)"
+        @click="navigateTo(cycle.ended_at ? `/cycles/${cycle.id}/recap` : `/cycles/${cycle.id}`)"
       >
         <div class="flex items-start justify-between gap-3">
           <div class="flex-1 min-w-0">

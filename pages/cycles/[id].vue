@@ -1,5 +1,8 @@
 <template>
-  <div class="relative space-y-6">
+  <!-- Route enfant active (ex: /cycles/:id/seances/:sessionId) -->
+  <NuxtPage v-if="hasChildRoute" />
+
+  <div v-else class="relative space-y-6">
     <!-- Chargement -->
     <div v-if="loading" class="flex justify-center items-center h-64">
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -46,6 +49,63 @@
             <CheckCircle2 class="h-4 w-4" />
             Clôturer le cycle
           </Button>
+        </div>
+      </div>
+
+      <!-- Stats du cycle -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-card rounded-xl p-6 border border-border">
+          <div class="flex flex-col h-full">
+            <div class="mb-3 flex items-center gap-3">
+              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <Dumbbell class="w-5 h-5 text-primary" />
+              </div>
+              <h3 class="text-sm font-medium text-muted-foreground">Séances complétées</h3>
+            </div>
+            <p class="text-3xl font-bold text-foreground mt-auto">{{ cycleSessionCount }}</p>
+            <p class="text-sm text-muted-foreground mt-1">séances réalisées</p>
+          </div>
+        </div>
+
+        <div class="bg-card rounded-xl p-6 border border-border">
+          <div class="flex flex-col h-full">
+            <div class="mb-3 flex items-center gap-3">
+              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <Weight class="w-5 h-5 text-primary" />
+              </div>
+              <h3 class="text-sm font-medium text-muted-foreground">Poids total soulevé</h3>
+            </div>
+            <div v-if="loadingWeight" class="mt-auto flex items-center py-1">
+              <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
+            </div>
+            <template v-else>
+              <p class="text-3xl font-bold text-foreground mt-auto">{{ formatWeight(cycleWeight) }}</p>
+              <div class="flex flex-wrap items-center justify-between gap-2 mt-1">
+                <p class="text-sm text-muted-foreground">poids total soulevé</p>
+                <div v-if="cycleSessionCount > 0" class="bg-primary/10 text-primary text-xs font-medium px-3 py-1.5 rounded-full border border-primary/20 shadow-sm">
+                  {{ formatWeight(Math.round(cycleWeight / cycleSessionCount)) }}/séance
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <div class="bg-card rounded-xl p-6 border border-border">
+          <div class="flex flex-col h-full">
+            <div class="mb-3 flex items-center gap-3">
+              <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <Clock class="w-5 h-5 text-primary" />
+              </div>
+              <h3 class="text-sm font-medium text-muted-foreground">Temps d'entraînement</h3>
+            </div>
+            <p class="text-3xl font-bold text-foreground mt-auto">{{ formatTotalDuration(cycleTotalMinutes) }}</p>
+            <div class="flex flex-wrap items-center justify-between gap-2 mt-1">
+              <p class="text-sm text-muted-foreground">temps total</p>
+              <div v-if="cycleSessionCount > 0" class="bg-primary/10 text-primary text-xs font-medium px-3 py-1.5 rounded-full border border-primary/20 shadow-sm">
+                {{ formatTotalDuration(Math.round(cycleTotalMinutes / cycleSessionCount)) }}/séance
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -135,6 +195,16 @@
               <span class="text-xs text-muted-foreground">
                 {{ slot.performed_sessions?.length || 0 }} passage{{ slot.performed_sessions?.length !== 1 ? 's' : '' }}
               </span>
+              <Button
+                v-if="slot.performed_sessions?.length"
+                size="sm"
+                variant="outline"
+                @click="navigateTo(`/cycles/${cycleId}/slots/${slot.id}`)"
+                class="flex items-center gap-1.5"
+              >
+                <BarChart2 class="h-3.5 w-3.5" />
+                Progression
+              </Button>
               <Button size="sm" @click="startSlot(slot)" class="flex items-center gap-1.5">
                 <Play class="h-3.5 w-3.5" />
                 Démarrer
@@ -315,6 +385,30 @@
       </DialogContent>
     </Dialog>
 
+    <!-- ── Dialog : Mensurations de départ ──────────────────────────── -->
+    <Dialog :open="showStartMeasurementsDialog" @update:open="showStartMeasurementsDialog = $event">
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Mensurations de départ</DialogTitle>
+          <DialogDescription>Enregistrez vos mensurations au début de ce cycle.</DialogDescription>
+        </DialogHeader>
+        <div class="space-y-3 py-2">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1" v-for="f in measurementRows" :key="f.key">
+              <label class="text-xs text-muted-foreground">{{ f.label }} ({{ f.unit }})</label>
+              <Input v-model.number="startForm.measurements[f.key]" type="number" step="0.1" :placeholder="f.placeholder" />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" @click="showStartMeasurementsDialog = false">Annuler</Button>
+          <Button @click="handleSaveStartMeasurements" :disabled="savingStart">
+            {{ savingStart ? 'Enregistrement…' : 'Enregistrer' }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <!-- ── Dialog : Supprimer cycle ───────────────────────────────────── -->
     <AlertDialog :open="showDeleteDialog" @update:open="showDeleteDialog = $event">
       <AlertDialogContent>
@@ -353,12 +447,14 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   AlertTriangle, ChevronLeft, ChevronRight, ChevronDown, Plus, Play,
-  Trash2, CheckCircle2, Ruler, LayoutGrid, Search, Dumbbell, Check, X
+  Trash2, CheckCircle2, Ruler, LayoutGrid, Search, Dumbbell, Check, X,
+  Weight, Clock, BarChart2
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -371,14 +467,33 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useCycle } from '~/composables/useCycle'
 import { useCycleStats } from '~/composables/useCycleStats'
+import { usePerformedSession } from '~/composables/usePerformedSession'
+import { getOfflineUser } from '~/utils/offlineTraining'
 
 const route = useRoute()
 const cycleId = route.params.id
+const hasChildRoute = computed(() =>
+  !!route.params.sessionId || !!route.params.slotId || route.path.endsWith('/recap')
+)
 
 const { loading, error, fetchCycle, updateCycle, deleteCycle, createSlot, deleteSlot, saveMeasurement } = useCycle()
 const { computeMeasurementDiff } = useCycleStats()
 
 const cycle = ref(null)
+const cycleWeight = ref(0)
+const loadingWeight = ref(false)
+
+// Stats calculées depuis les données déjà chargées
+const cycleSessionCount = computed(() =>
+  (cycle.value?.slots || []).reduce((sum, s) => sum + (s.performed_sessions?.length || 0), 0)
+)
+
+const cycleTotalMinutes = computed(() =>
+  (cycle.value?.slots || []).flatMap(s => s.performed_sessions || []).reduce((sum, s) => {
+    if (!s.started_at || !s.ended_at) return sum
+    return sum + Math.round((new Date(s.ended_at) - new Date(s.started_at)) / 60000)
+  }, 0)
+)
 
 // Dialog states
 const showDeleteDialog = ref(false)
@@ -399,6 +514,8 @@ const allSessions = ref([])
 const loadingSessions = ref(false)
 
 const endForm = reactive({ ended_at: new Date().toISOString().split('T')[0], measurements: {} })
+const startForm = reactive({ measurements: {} })
+const savingStart = ref(false)
 
 const measurementRows = [
   { key: 'weight_kg', label: 'Poids', unit: 'kg', placeholder: '75' },
@@ -425,6 +542,28 @@ const filteredSessions = computed(() => {
 const load = async () => {
   const { data } = await fetchCycle(cycleId)
   if (data) cycle.value = data
+  await loadCycleWeight()
+}
+
+const loadCycleWeight = async () => {
+  const sessionIds = (cycle.value?.slots || [])
+    .flatMap(s => s.performed_sessions || [])
+    .map(s => s.id)
+
+  if (!sessionIds.length) { cycleWeight.value = 0; return }
+
+  loadingWeight.value = true
+  const supabase = useSupabaseClient()
+  const { data } = await supabase
+    .from('exerciseset')
+    .select('weight_kg, reps')
+    .in('performed_session_id', sessionIds)
+
+  cycleWeight.value = (data || []).reduce((sum, s) => {
+    if (s.weight_kg == null || !s.reps) return sum
+    return sum + s.weight_kg * s.reps
+  }, 0)
+  loadingWeight.value = false
 }
 
 const loadSessions = async () => {
@@ -504,6 +643,17 @@ const handleDeleteSlot = async () => {
   await load()
 }
 
+// ── Mensurations de départ ──────────────────────────────────────────────────
+
+const handleSaveStartMeasurements = async () => {
+  savingStart.value = true
+  await saveMeasurement(cycleId, 'start', startForm.measurements, cycle.value?.started_at)
+  await load()
+  showStartMeasurementsDialog.value = false
+  Object.keys(startForm.measurements).forEach(k => delete startForm.measurements[k])
+  savingStart.value = false
+}
+
 // ── Clôturer ────────────────────────────────────────────────────────────────
 
 const handleEndCycle = async () => {
@@ -511,9 +661,9 @@ const handleEndCycle = async () => {
   await updateCycle(cycleId, { ended_at: endForm.ended_at })
   const hasData = Object.values(endForm.measurements).some(v => v != null && v !== '')
   if (hasData) await saveMeasurement(cycleId, 'end', endForm.measurements, endForm.ended_at)
-  await load()
   showEndDialog.value = false
   ending.value = false
+  navigateTo(`/cycles/${cycleId}/recap`)
 }
 
 // ── Supprimer cycle ─────────────────────────────────────────────────────────
@@ -525,8 +675,13 @@ const handleDelete = async () => {
 
 // ── Démarrer une séance depuis le cycle ─────────────────────────────────────
 
-const startSlot = (slot) => {
-  navigateTo(`/seances/${slot.workout_session_id}/train?slot=${slot.id}&cycle=${cycleId}`)
+const startSlot = async (slot) => {
+  const supabase = useSupabaseClient()
+  const { prepareSession } = usePerformedSession(supabase)
+  const user = await getOfflineUser(supabase)
+  if (!user) return
+  prepareSession(slot.workout_session_id, user.id, slot.id)
+  navigateTo(`/seances/${slot.workout_session_id}/start?slot=${slot.id}&cycle=${cycleId}`)
 }
 
 // ── Utilitaires ─────────────────────────────────────────────────────────────
@@ -550,6 +705,21 @@ const duration = (start, end) => {
   const mins = Math.round((new Date(end) - new Date(start)) / 60000)
   if (mins < 60) return `${mins} min`
   return `${Math.floor(mins / 60)}h${mins % 60 > 0 ? String(mins % 60).padStart(2, '0') : ''}`
+}
+
+const formatTotalDuration = (minutes) => {
+  if (!minutes) return '0min'
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (h > 0) return `${h}h${m > 0 ? `${m}m` : ''}`
+  return `${minutes}min`
+}
+
+const formatWeight = (w) => {
+  if (!w) return '0kg'
+  if (w >= 1000000) return `${(w / 1000000).toFixed(1)}T`
+  if (w >= 1000) return `${(w / 1000).toFixed(1)}K`
+  return `${Math.round(w)}kg`
 }
 
 onMounted(load)

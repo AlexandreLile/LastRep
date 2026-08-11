@@ -33,7 +33,7 @@
           </div>
           <Button
             v-if="slotSessionId"
-            @click="navigateTo(`/seances/${slotSessionId}/start?slot=${slotId}&cycle=${cycleId}`)"
+            @click="refaire"
             class="flex items-center gap-1.5 flex-shrink-0"
           >
             <Play class="h-4 w-4" />
@@ -139,6 +139,8 @@ import { AlertTriangle, ChevronLeft, Dumbbell, Play, TrendingUp, TrendingDown, M
 import { Button } from '@/components/ui/button'
 import { useCycleStats } from '~/composables/useCycleStats'
 import { useCycle } from '~/composables/useCycle'
+import { usePerformedSession } from '~/composables/usePerformedSession'
+import { getOfflineUser } from '~/utils/offlineTraining'
 
 const route = useRoute()
 const cycleId = route.params.id
@@ -173,6 +175,16 @@ const DiffBadge = defineComponent({
 const getExComparison = (exerciseId, key) => {
   if (!sessionData.value?.comparison?.exercises) return null
   return sessionData.value.comparison.exercises.find(e => e.exercise_id === exerciseId)?.[key] ?? null
+}
+
+const refaire = async () => {
+  if (!slotSessionId.value || !slotId.value) return
+  const supabase = useSupabaseClient()
+  const { prepareSession } = usePerformedSession(supabase)
+  const user = await getOfflineUser(supabase)
+  if (!user) return
+  prepareSession(slotSessionId.value, user.id, slotId.value)
+  navigateTo(`/seances/${slotSessionId.value}/start?slot=${slotId.value}&cycle=${cycleId}`)
 }
 
 const load = async () => {
