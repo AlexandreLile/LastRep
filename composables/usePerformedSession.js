@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { checkRealConnectivity } from '~/utils/offlineTraining'
 
 // ============================================
 // COMPOSABLE: usePerformedSession
@@ -106,30 +107,6 @@ export const usePerformedSession = (supabase) => {
   }
 
   // ============================================
-  // VÉRIFICATION DE CONNECTIVITÉ RÉELLE
-  // ============================================
-  const checkConnectivity = async () => {
-    if (!process.client) return true
-    if (!navigator.onLine) return false
-    
-    try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 2000)
-      
-      const response = await fetch(`${window.location.origin}/favicon.png?_=${Date.now()}`, {
-        method: 'HEAD',
-        cache: 'no-store',
-        signal: controller.signal
-      })
-      
-      clearTimeout(timeoutId)
-      return response.ok
-    } catch (e) {
-      return false
-    }
-  }
-
-  // ============================================
   // RÉCUPÉRER L'UTILISATEUR (cache prioritaire)
   // ============================================
   const getUserId = async () => {
@@ -216,7 +193,7 @@ export const usePerformedSession = (supabase) => {
       const realSets = localSets.filter(set => !set.manually_marked)
 
       // Vérifier la connectivité
-      const isConnected = await checkConnectivity()
+      const isConnected = await checkRealConnectivity()
 
       if (!isConnected) {
         // MODE OFFLINE: Mettre en queue pour sync ultérieure

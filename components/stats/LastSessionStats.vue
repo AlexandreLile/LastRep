@@ -138,29 +138,24 @@ const fetchLastSession = async (userId) => {
       // Récupérer les exercices de la séance
       const exerciseIds = session.workoutsession.workoutexercise.map(ex => ex.exercise_id)
 
-      // Récupérer les sets de la dernière séance
-      const { data: currentSets, error: currentSetsError } = await supabase
-        .from('exerciseset')
-        .select(`
-          weight_kg,
-          reps,
-          created_at
-        `)
-        .in('exercise_id', exerciseIds)
-        .eq('user_id', user.id)
-        .gte('created_at', session.started_at)
-        .lte('created_at', session.ended_at)
-
-      if (currentSetsError) throw currentSetsError
-
-      // Calculer le volume total de la séance actuelle
-      if (currentSets && currentSets.length > 0) {
-        totalWeight.value = currentSets.reduce((total, set) => {
-          return total + (set.weight_kg * set.reps)
-        }, 0)
-
-        // Récupérer toutes les séances effectuées pour ce workout_session_id
-        const { data: allSessions, error: allSessionsError } = await supabase
+      // Sets de la dernière séance + historique du même workout_session_id :
+      // aucune des deux requêtes ne dépend du résultat de l'autre.
+      const [
+        { data: currentSets, error: currentSetsError },
+        { data: allSessions, error: allSessionsError }
+      ] = await Promise.all([
+        supabase
+          .from('exerciseset')
+          .select(`
+            weight_kg,
+            reps,
+            created_at
+          `)
+          .in('exercise_id', exerciseIds)
+          .eq('user_id', user.id)
+          .gte('created_at', session.started_at)
+          .lte('created_at', session.ended_at),
+        supabase
           .from('performedsession')
           .select(`
             id,
@@ -170,6 +165,15 @@ const fetchLastSession = async (userId) => {
           .eq('user_id', user.id)
           .eq('workout_session_id', session.workout_session_id)
           .order('ended_at', { ascending: false })
+      ])
+
+      if (currentSetsError) throw currentSetsError
+
+      // Calculer le volume total de la séance actuelle
+      if (currentSets && currentSets.length > 0) {
+        totalWeight.value = currentSets.reduce((total, set) => {
+          return total + (set.weight_kg * set.reps)
+        }, 0)
 
         if (!allSessionsError && allSessions && allSessions.length > 1) {
           // Trouver la séance précédente (la deuxième dans la liste puisqu'elles sont triées par date décroissante)
