@@ -61,17 +61,7 @@
       </NuxtLink>
 
       <NuxtLink
-        to="/historique"
-        class="flex items-center space-x-3 text-muted-foreground hover:text-foreground"
-        :class="{ 'text-primary font-medium': currentPath === '/historique' }"
-        @click="closeMenuOnMobile"
-      >
-        <History class="w-5 h-5" />
-        <span>Historique</span>
-      </NuxtLink>
-
-      <NuxtLink 
-        to="/profil" 
+        to="/profil"
         class="flex items-center space-x-3 text-muted-foreground hover:text-foreground"
         :class="{ 'text-primary font-medium': currentPath === '/profil' }"
         @click="closeMenuOnMobile"
@@ -79,15 +69,6 @@
         <User class="w-5 h-5" />
         <span>Profil</span>
       </NuxtLink>
-
-      <!-- Bouton pour réafficher le guide (temporaire, 1 semaine) -->
-      <button 
-        @click="handleShowWelcomeModal"
-        class="flex items-center space-x-3 text-muted-foreground hover:text-foreground w-full text-left"
-      >
-        <HelpCircle class="w-5 h-5" />
-        <span>Guide de démarrage</span>
-      </button>
     </nav>
 
     <AlertDialog>
@@ -123,18 +104,14 @@
     <slot />
   </main>
 
-  <!-- Modal de bienvenue -->
-  <WelcomeModal v-model:open="showWelcomeModal" />
-
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, Timer, Dumbbell, LogOut, Menu, X, History, User, HelpCircle, RotateCcw } from 'lucide-vue-next'
+import { LayoutDashboard, Timer, Dumbbell, LogOut, Menu, X, User, RotateCcw } from 'lucide-vue-next'
 import { useSupabaseClient } from '#imports'
 import { Button } from '@/components/ui/button'
-import WelcomeModal from '@/components/onboarding/WelcomeModal.vue'
 import { usePerformedSession } from '~/composables/usePerformedSession'
 import { clearCachedUser } from '~/utils/offlineTraining'
 import {
@@ -156,17 +133,11 @@ const { setupOfflineSync } = usePerformedSession(supabase)
 
 const currentPath = computed(() => route.path)
 const isMenuOpen = ref(false)
-const showWelcomeModal = ref(false)
 
 const closeMenuOnMobile = () => {
   if (window.innerWidth < 768) { // 768px est le breakpoint md de Tailwind
     isMenuOpen.value = false
   }
-}
-
-const handleShowWelcomeModal = () => {
-  showWelcomeModal.value = true
-  closeMenuOnMobile()
 }
 
 const logout = async () => {
