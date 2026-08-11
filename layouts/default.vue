@@ -50,8 +50,18 @@
         <span>Exercices</span>
       </NuxtLink>
 
-      <NuxtLink 
-        to="/historique" 
+      <NuxtLink
+        to="/cycles"
+        class="flex items-center space-x-3 text-muted-foreground hover:text-foreground"
+        :class="{ 'text-primary font-medium': currentPath.startsWith('/cycles') }"
+        @click="closeMenuOnMobile"
+      >
+        <RotateCcw class="w-5 h-5" />
+        <span>Cycles</span>
+      </NuxtLink>
+
+      <NuxtLink
+        to="/historique"
         class="flex items-center space-x-3 text-muted-foreground hover:text-foreground"
         :class="{ 'text-primary font-medium': currentPath === '/historique' }"
         @click="closeMenuOnMobile"
@@ -121,7 +131,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, Timer, Dumbbell, LogOut, Menu, X, History, User, HelpCircle } from 'lucide-vue-next'
+import { LayoutDashboard, Timer, Dumbbell, LogOut, Menu, X, History, User, HelpCircle, RotateCcw } from 'lucide-vue-next'
 import { useSupabaseClient } from '#imports'
 import { Button } from '@/components/ui/button'
 import WelcomeModal from '@/components/onboarding/WelcomeModal.vue'

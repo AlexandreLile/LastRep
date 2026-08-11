@@ -14,7 +14,7 @@
     </div>
 
     <!-- Padding supplémentaire pour le contenu sous le badge MODE ENTRAINEMENT -->
-    <div class="pt-16 sm:pt-0"></div>
+    <div class="pt-16 sm:pt-10"></div>
 
     <div v-if="loading" class="flex justify-center items-center h-64">
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -25,6 +25,12 @@
     </div>
 
     <div v-else-if="session" class="space-y-8">
+      <!-- Contexte cycle -->
+      <div v-if="cycleId" class="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 text-sm">
+        <RotateCcw class="h-4 w-4 text-primary flex-shrink-0" />
+        <span class="text-primary font-medium">Séance de cycle</span>
+      </div>
+
       <!-- En-tête amélioré -->
       <div class="bg-card rounded-xl p-4 sm:p-6">
         <div class="flex flex-col gap-4 sm:gap-6">
@@ -265,8 +271,8 @@ import {
   getOfflineUser 
 } from '~/utils/offlineTraining'
 import { Button } from '@/components/ui/button'
-import { 
-  Dumbbell, 
+import {
+  Dumbbell,
   Calendar,
   CheckCircle,
   X,
@@ -275,7 +281,8 @@ import {
   BarChart3,
   Timer,
   ListChecks,
-  ArrowRight
+  ArrowRight,
+  RotateCcw
 } from 'lucide-vue-next'
 import {
   AlertDialog,
@@ -296,6 +303,7 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const supabase = useSupabaseClient()
+const cycleId = computed(() => route.query.cycle || null)
 const { getWorkoutSession } = useWorkoutSessions(useSupabaseUser())
 const { workoutExercises: exercisesRaw, getWorkoutExercises } = useWorkoutExercise()
 const { performedSession, error: performedSessionError, saveSession, getCurrentSession, setupOfflineSync } = usePerformedSession(supabase)
@@ -492,15 +500,18 @@ const handleEndSession = async () => {
   try {
     if (isSavingSession.value) return
     isSavingSession.value = true
-    
+
     const result = await saveSession()
-    
+
     if (result) {
-      // Nettoyage géré par saveSession() sauf pour le mode offline
-      // où les sets doivent rester pour la sync ultérieure
       stopTimer()
       isLeavingPage.value = true
-      router.push({ path: '/', query: { celebrate: '1' } })
+      // Retourner au cycle si la séance y était rattachée
+      if (cycleId.value) {
+        router.push(`/cycles/${cycleId.value}`)
+      } else {
+        router.push({ path: '/', query: { celebrate: '1' } })
+      }
     }
   } catch (e) {
     error.value = e.message || performedSessionError.value

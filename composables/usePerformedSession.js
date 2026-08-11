@@ -38,12 +38,13 @@ export const usePerformedSession = (supabase) => {
   // ============================================
   // PRÉPARER UNE NOUVELLE SESSION
   // ============================================
-  const prepareSession = (workoutSessionId, userId) => {
+  const prepareSession = (workoutSessionId, userId, cycleSlotId = null) => {
     localSession.value = {
       workout_session_id: workoutSessionId,
       user_id: userId,
       started_at: new Date().toISOString(),
-      ended_at: null
+      ended_at: null,
+      cycle_slot_id: cycleSlotId || null
     }
     if (process.client) {
       localStorage.setItem('currentSession', JSON.stringify(localSession.value))
@@ -189,12 +190,25 @@ export const usePerformedSession = (supabase) => {
       const userId = await getUserId()
       if (!userId) throw new Error('Utilisateur non authentifié')
 
+      // Auto-rattachement au cycle actif si la séance n'a pas été démarrée depuis un cycle
+      if (!localSession.value.cycle_slot_id) {
+        try {
+          const { data: slots } = await supabase
+            .from('cycle_slot')
+            .select('id, cycle:cycle_id(ended_at)')
+            .eq('workout_session_id', localSession.value.workout_session_id)
+          const activeSlot = (slots || []).find(s => s.cycle && s.cycle.ended_at === null)
+          if (activeSlot) localSession.value.cycle_slot_id = activeSlot.id
+        } catch (_) {}
+      }
+
       // Préparer les données de session
       const sessionData = {
         workout_session_id: localSession.value.workout_session_id,
         user_id: userId,
         started_at: localSession.value.started_at,
-        ended_at: new Date().toISOString()
+        ended_at: new Date().toISOString(),
+        ...(localSession.value.cycle_slot_id ? { cycle_slot_id: localSession.value.cycle_slot_id } : {})
       }
 
       // Récupérer les sets locaux (filtrer les marquages manuels)

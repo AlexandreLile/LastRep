@@ -68,6 +68,9 @@
       </div>
     </div>
 
+    <!-- Cycle en cours -->
+    <CycleEnCours class="mb-8" />
+
     <!-- Two Columns Layout avec styles améliorés -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Left Column -->
@@ -128,6 +131,7 @@ import SessionCountSupabase from '~/components/stats/SessionCountSupabase.vue'
 import TotalWeightLiftedSupabase from '~/components/stats/TotalWeightLiftedSupabase.vue'
 import TotalTrainingTimeSupabase from '~/components/stats/TotalTrainingTimeSupabase.vue'
 import WelcomeModal from '@/components/onboarding/WelcomeModal.vue'
+import CycleEnCours from '~/components/cycles/CycleEnCours.vue'
 import { Button } from '@/components/ui/button'
 import { useAuthentication } from '~/composables/useAuthentication'
 import { clearCachedUser } from '~/utils/offlineTraining'
