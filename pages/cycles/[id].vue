@@ -19,12 +19,14 @@
       <div class="bg-card rounded-xl p-6">
         <div class="flex items-start justify-between gap-3 mb-4">
           <div>
-            <button
-              class="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-2 transition-colors"
+            <Button
+              variant="outline"
+              size="sm"
+              class="flex items-center gap-2 mb-2"
               @click="navigateTo('/cycles')"
             >
-              <ChevronLeft class="h-4 w-4" /> Cycles
-            </button>
+              <ArrowLeft class="h-4 w-4" /> Cycles
+            </Button>
             <div class="flex items-center gap-2">
               <h2 class="text-2xl font-bold">{{ cycle.name }}</h2>
               <button @click="openEditDialog" class="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
@@ -111,18 +113,29 @@
 
       <!-- Mensurations -->
       <div v-if="cycle.measurement_start || cycle.measurement_end" class="bg-card rounded-xl overflow-hidden">
-        <button
-          class="w-full flex items-center justify-between gap-3 p-6 hover:bg-muted/30 transition-colors"
-          @click="showMeasurements = !showMeasurements"
-        >
-          <div class="flex items-center gap-3">
+        <div class="w-full flex items-center justify-between gap-3 p-6 hover:bg-muted/30 transition-colors">
+          <button
+            class="flex items-center gap-3 flex-1 min-w-0 text-left"
+            @click="showMeasurements = !showMeasurements"
+          >
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
               <Ruler class="w-5 h-5 text-primary" />
             </div>
             <h3 class="text-lg font-semibold">Mensurations</h3>
+          </button>
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <button
+              class="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Modifier les mensurations"
+              @click="openEditMeasurementsDialog"
+            >
+              <Pencil class="h-4 w-4" />
+            </button>
+            <button @click="showMeasurements = !showMeasurements">
+              <ChevronDown class="h-4 w-4 text-muted-foreground transition-transform" :class="{ 'rotate-180': showMeasurements }" />
+            </button>
           </div>
-          <ChevronDown class="h-4 w-4 text-muted-foreground transition-transform flex-shrink-0" :class="{ 'rotate-180': showMeasurements }" />
-        </button>
+        </div>
         <div v-if="showMeasurements" class="px-6 pb-6 border-t border-border/50">
           <div class="overflow-x-auto pt-4">
             <table class="w-full text-sm">
@@ -443,6 +456,42 @@
       </DialogContent>
     </Dialog>
 
+    <!-- ── Dialog : Modifier les mensurations ──────────────────────────── -->
+    <Dialog :open="showEditMeasurementsDialog" @update:open="showEditMeasurementsDialog = $event">
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Modifier les mensurations</DialogTitle>
+          <DialogDescription>Corrigez vos mesures de début{{ cycle?.measurement_end ? ' et de fin' : '' }}.</DialogDescription>
+        </DialogHeader>
+        <div class="space-y-4 py-2">
+          <div v-if="cycle?.measurement_start" class="space-y-2">
+            <p class="text-xs font-medium text-muted-foreground">Début</p>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1" v-for="f in measurementRows" :key="f.key">
+                <label class="text-xs text-muted-foreground">{{ f.label }} ({{ f.unit }})</label>
+                <Input v-model.number="editMeasurementsForm.start[f.key]" type="number" step="0.1" :placeholder="f.placeholder" />
+              </div>
+            </div>
+          </div>
+          <div v-if="cycle?.measurement_end" class="space-y-2">
+            <p class="text-xs font-medium text-muted-foreground">Fin</p>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1" v-for="f in measurementRows" :key="f.key">
+                <label class="text-xs text-muted-foreground">{{ f.label }} ({{ f.unit }})</label>
+                <Input v-model.number="editMeasurementsForm.end[f.key]" type="number" step="0.1" :placeholder="f.placeholder" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" @click="showEditMeasurementsDialog = false">Annuler</Button>
+          <Button @click="handleSaveEditMeasurements" :disabled="savingMeasurements">
+            {{ savingMeasurements ? 'Enregistrement…' : 'Enregistrer' }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <!-- ── Dialog : Modifier cycle ─────────────────────────────────────── -->
     <Dialog :open="showEditDialog" @update:open="showEditDialog = $event">
       <DialogContent class="max-w-sm">
@@ -518,7 +567,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import {
-  AlertTriangle, ChevronLeft, ChevronRight, ChevronDown, Plus, Play,
+  AlertTriangle, ArrowLeft, ChevronRight, ChevronDown, Plus, Play,
   Pencil, CheckCircle2, Ruler, LayoutGrid, Search, Dumbbell, Check, X,
   Weight, Clock, BarChart2, Trash2
 } from 'lucide-vue-next'
@@ -585,6 +634,9 @@ const loadingSessions = ref(false)
 const endForm = reactive({ ended_at: new Date().toISOString().split('T')[0], measurements: {} })
 const startForm = reactive({ measurements: {} })
 const savingStart = ref(false)
+const showEditMeasurementsDialog = ref(false)
+const editMeasurementsForm = reactive({ start: {}, end: {} })
+const savingMeasurements = ref(false)
 const expandedSlots = ref(new Set())
 const toggleSlotExpand = (slotId) => {
   const next = new Set(expandedSlots.value)
@@ -770,6 +822,31 @@ const handleSaveStartMeasurements = async () => {
   showStartMeasurementsDialog.value = false
   Object.keys(startForm.measurements).forEach(k => delete startForm.measurements[k])
   savingStart.value = false
+}
+
+// ── Modifier les mensurations existantes ────────────────────────────────────
+
+const openEditMeasurementsDialog = () => {
+  Object.keys(editMeasurementsForm.start).forEach(k => delete editMeasurementsForm.start[k])
+  Object.keys(editMeasurementsForm.end).forEach(k => delete editMeasurementsForm.end[k])
+  measurementRows.forEach(({ key }) => {
+    if (cycle.value?.measurement_start?.[key] != null) editMeasurementsForm.start[key] = cycle.value.measurement_start[key]
+    if (cycle.value?.measurement_end?.[key] != null) editMeasurementsForm.end[key] = cycle.value.measurement_end[key]
+  })
+  showEditMeasurementsDialog.value = true
+}
+
+const handleSaveEditMeasurements = async () => {
+  savingMeasurements.value = true
+  if (cycle.value?.measurement_start) {
+    await saveMeasurement(cycleId, 'start', editMeasurementsForm.start, cycle.value.measurement_start.measured_at)
+  }
+  if (cycle.value?.measurement_end) {
+    await saveMeasurement(cycleId, 'end', editMeasurementsForm.end, cycle.value.measurement_end.measured_at)
+  }
+  await load()
+  savingMeasurements.value = false
+  showEditMeasurementsDialog.value = false
 }
 
 // ── Clôturer ────────────────────────────────────────────────────────────────
