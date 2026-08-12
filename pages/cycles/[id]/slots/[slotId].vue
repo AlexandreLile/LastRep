@@ -14,12 +14,14 @@
     <template v-else>
       <!-- Header -->
       <div class="bg-card rounded-xl p-6">
-        <button
-          class="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-3 transition-colors"
+        <Button
+          variant="outline"
+          size="sm"
+          class="flex items-center gap-2 mb-3"
           @click="navigateTo(`/cycles/${cycleId}`)"
         >
-          <ChevronLeft class="h-4 w-4" /> {{ cycleName || 'Cycle' }}
-        </button>
+          <ArrowLeft class="h-4 w-4" /> {{ cycleName || 'Cycle' }}
+        </Button>
         <div class="flex items-start justify-between gap-3">
           <div>
             <h2 class="text-xl font-bold">{{ slotName }}</h2>
@@ -43,12 +45,12 @@
       <template v-else>
         <!-- Résumé progression globale -->
         <div v-if="sessions.length >= 2" class="grid grid-cols-2 gap-4">
-          <div class="bg-card rounded-xl p-5 border border-border">
+          <div class="bg-card rounded-xl p-6 border border-border">
             <p class="text-xs text-muted-foreground mb-1">Volume (s1 → s{{ sessions.length }})</p>
             <p class="text-2xl font-bold text-foreground">{{ formatKg(lastSession.stats.volume) }}</p>
             <DiffBadge :pct="overallVolumePct" class="mt-1" />
           </div>
-          <div class="bg-card rounded-xl p-5 border border-border">
+          <div class="bg-card rounded-xl p-6 border border-border">
             <p class="text-xs text-muted-foreground mb-1">Kg/rep (s1 → s{{ sessions.length }})</p>
             <p class="text-2xl font-bold text-foreground">
               {{ lastSession.stats.kg_per_rep != null ? lastSession.stats.kg_per_rep.toFixed(1) : '—' }}
@@ -64,7 +66,7 @@
           <div
             v-for="session in [...sessions].reverse()"
             :key="session.performed_session_id"
-            class="bg-card rounded-xl p-5 cursor-pointer hover:shadow-md transition-all"
+            class="bg-card rounded-xl p-6 cursor-pointer hover:shadow-md transition-all duration-300"
             @click="navigateTo(`/cycles/${cycleId}/seances/${session.performed_session_id}`)"
           >
             <!-- En-tête de la séance -->
@@ -128,7 +130,7 @@
 <script setup>
 import { ref, computed, onMounted, defineComponent, h } from 'vue'
 import { useRoute } from 'vue-router'
-import { AlertTriangle, ChevronLeft, ChevronRight, Play, Dumbbell, TrendingUp, TrendingDown, Minus } from 'lucide-vue-next'
+import { AlertTriangle, ArrowLeft, ChevronRight, Play, Dumbbell, TrendingUp, TrendingDown, Minus } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useCycleStats } from '~/composables/useCycleStats'
 import { useCycle } from '~/composables/useCycle'
