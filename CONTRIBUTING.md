@@ -88,8 +88,9 @@ refactor(stats): extract chart helpers into composable
 Quand `develop` est stable et testé :
 
 1. Ouvrir une PR `develop` → `production`
-2. Valider manuellement via GitHub Environments (étape de confirmation) — c'est ce merge qui déclenche le vrai déploiement Vercel
-3. Merge (pas de squash nécessaire, `develop` est déjà composée de commits propres)
+2. Merger avec **"Create a merge commit"** — jamais squash. C'est ce merge qui déclenche le vrai déploiement Vercel.
+
+> **Important :** le squash sur ce merge spécifique casse l'ancestry entre `develop` et `production` (un vrai commit de merge à 2 parents est nécessaire), ce qui fait réapparaître indéfiniment de faux conflits sur les fichiers déjà résolus lors d'un merge précédent.
 
 ---
 
