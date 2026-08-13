@@ -7,7 +7,7 @@
           <Dumbbell class="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h2 class="text-2xl font-bold text-foreground">Séances d'entraînement</h2>
+          <h2 class="text-2xl font-bold text-foreground">Mes séances</h2>
           <p class="text-sm text-muted-foreground">Créez et gérez vos programmes d'entraînement</p>
         </div>
       </div>
@@ -107,11 +107,11 @@
 <script setup>
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { 
-  Dumbbell, 
-  Plus, 
-  PlusCircle, 
-  ListOrdered, 
+import {
+  Dumbbell,
+  Plus,
+  PlusCircle,
+  ListOrdered,
   PieChart,
   Lightbulb,
   CheckCircle2
