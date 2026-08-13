@@ -3,19 +3,23 @@
 ## Workflow de branches
 
 ```
-main (production)
- └── develop (staging / intégration)
-      ├── feature/xxx
-      ├── fix/xxx
-      ├── chore/xxx
-      └── hotfix/xxx  ← part de main directement, merge dans main ET develop
+production (déploiement Vercel réel — voir note ci-dessous)
+ └── main (release-ready, pas encore déployé)
+      └── develop (staging / intégration)
+           ├── feature/xxx
+           ├── fix/xxx
+           ├── chore/xxx
+           └── hotfix/xxx  ← part de main directement, merge dans main ET develop
 ```
 
 **Règles :**
-- `main` = état exact de la production. Jamais touché directement.
+- `production` = branche surveillée par Vercel pour le déploiement en prod (voir note ci-dessous). Jamais touchée directement.
+- `main` = release-ready, prête à être promue en prod, mais **pas encore déployée tant qu'elle n'est pas mergée dans `production`**. Jamais touché directement.
 - `develop` = branche d'intégration. Toute nouvelle branche part d'ici.
-- `hotfix/*` = seul cas où on part de `main` (bug critique en prod). Merger dans `main` ET `develop` après.
+- `hotfix/*` = seul cas où on part de `main` (bug critique en prod). Merger dans `main` ET `develop` après, puis suivre la mise en prod normale (`main` → `production`).
 - Chaque branche de travail est supprimée après merge.
+
+> **Note — pourquoi `production` existe :** le déploiement Vercel réel (environnement "Production" côté Vercel) est configuré pour suivre la branche `production`, pas `main`. Un push/merge sur `main` seul ne déclenche qu'un déploiement **Preview** sur Vercel, pas une mise en prod. Ce point n'est pas configuré dans les workflows GitHub Actions (`deploy-prod.yml`/`deploy-dev.yml`), qui échouent systématiquement depuis leur création (secret `VERCEL_TOKEN` manquant) et n'ont donc aucun effet — c'est l'intégration native GitHub de Vercel qui fait le vrai déploiement. Tant que ces workflows ne sont pas corrigés (ou supprimés), ignorer leur statut d'échec dans les checks de PR.
 
 ### Créer une branche de travail
 
@@ -81,18 +85,23 @@ refactor(stats): extract chart helpers into composable
 5. **Squash & Merge** uniquement — 1 commit propre par feature
 6. La branche source est supprimée automatiquement après le merge
 
-### Merge vers main (mise en prod)
+### Merge vers main puis production (mise en prod)
 
-Quand `develop` est stable et testé :
+Quand `develop` est stable et testé, la mise en prod se fait en **deux étapes** :
+
 1. Ouvrir une PR `develop` → `main`
 2. Valider manuellement via GitHub Environments (étape de confirmation)
 3. Squash & Merge
+4. Ouvrir une PR `main` → `production` (c'est ce merge qui déclenche le vrai déploiement Vercel)
+5. Merge (pas de squash nécessaire ici, `main` est déjà propre)
+
+**Étape 4 obligatoire** : sans elle, le code reste release-ready sur `main` mais n'est jamais réellement déployé en production.
 
 ---
 
 ## Règles absolues
 
-- Aucun `git push` direct sur `main` ou `develop`
-- Aucun `--force` sur ces deux branches
+- Aucun `git push` direct sur `main`, `develop` ou `production`
+- Aucun `--force` sur ces branches
 - Aucun commit sans message conforme à Conventional Commits
 - Les fichiers `.env*` ne sont jamais commités (vérifier `.gitignore`)

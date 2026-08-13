@@ -14,12 +14,14 @@
     <template v-else-if="sessionData">
       <!-- Header -->
       <div class="bg-card rounded-xl p-6">
-        <button
-          class="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-3 transition-colors"
+        <Button
+          variant="outline"
+          size="sm"
+          class="flex items-center gap-2 mb-3"
           @click="navigateTo(`/cycles/${cycleId}`)"
         >
-          <ChevronLeft class="h-4 w-4" /> {{ slotName || 'Cycle' }}
-        </button>
+          <ArrowLeft class="h-4 w-4" /> {{ slotName || 'Cycle' }}
+        </Button>
         <div class="flex items-start justify-between gap-3">
           <div>
             <p class="text-xs text-muted-foreground mb-1">
@@ -44,13 +46,13 @@
 
       <!-- Récap global -->
       <div class="grid grid-cols-2 gap-4">
-        <div class="bg-card rounded-xl p-5 text-center">
+        <div class="bg-card rounded-xl p-6 border border-border text-center">
           <p class="text-xs text-muted-foreground mb-1">Volume total</p>
           <p class="text-2xl font-bold text-primary">{{ formatKg(sessionData.stats.volume) }}</p>
           <p class="text-xs text-muted-foreground">kg·reps</p>
           <DiffBadge v-if="sessionData.comparison" :pct="sessionData.comparison.volume_diff_pct" class="mt-1 justify-center" />
         </div>
-        <div class="bg-card rounded-xl p-5 text-center">
+        <div class="bg-card rounded-xl p-6 border border-border text-center">
           <p class="text-xs text-muted-foreground mb-1">Kg/rep moyen</p>
           <p class="text-2xl font-bold text-primary">
             {{ sessionData.stats.kg_per_rep != null ? sessionData.stats.kg_per_rep.toFixed(1) : '—' }}
@@ -135,7 +137,7 @@
 <script setup>
 import { ref, onMounted, defineComponent, h } from 'vue'
 import { useRoute } from 'vue-router'
-import { AlertTriangle, ChevronLeft, Dumbbell, Play, TrendingUp, TrendingDown, Minus } from 'lucide-vue-next'
+import { AlertTriangle, ArrowLeft, Dumbbell, Play, TrendingUp, TrendingDown, Minus } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useCycleStats } from '~/composables/useCycleStats'
 import { useCycle } from '~/composables/useCycle'
