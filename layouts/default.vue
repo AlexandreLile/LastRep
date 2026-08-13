@@ -30,18 +30,28 @@
         <span>Vue d'ensemble</span>
       </NuxtLink>
 
-      <NuxtLink 
-        to="/seances" 
+      <NuxtLink
+        to="/seances"
         class="flex items-center space-x-3 text-muted-foreground hover:text-foreground"
         :class="{ 'text-primary font-medium': currentPath === '/seances' }"
         @click="closeMenuOnMobile"
       >
         <Timer class="w-5 h-5" />
-        <span>Séances</span>
+        <span>Mes séances</span>
       </NuxtLink>
 
-      <NuxtLink 
-        to="/exercices" 
+      <NuxtLink
+        to="/catalogue"
+        class="flex items-center space-x-3 text-muted-foreground hover:text-foreground"
+        :class="{ 'text-primary font-medium': currentPath === '/catalogue' }"
+        @click="closeMenuOnMobile"
+      >
+        <Library class="w-5 h-5" />
+        <span>Catalogue de séances</span>
+      </NuxtLink>
+
+      <NuxtLink
+        to="/exercices"
         class="flex items-center space-x-3 text-muted-foreground hover:text-foreground"
         :class="{ 'text-primary font-medium': currentPath === '/exercices' }"
         @click="closeMenuOnMobile"
@@ -109,7 +119,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, Timer, Dumbbell, LogOut, Menu, X, User, RotateCcw } from 'lucide-vue-next'
+import { LayoutDashboard, Timer, Dumbbell, LogOut, Menu, X, User, RotateCcw, Library } from 'lucide-vue-next'
 import { useSupabaseClient } from '#imports'
 import { Button } from '@/components/ui/button'
 import { usePerformedSession } from '~/composables/usePerformedSession'
