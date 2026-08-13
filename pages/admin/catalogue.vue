@@ -59,25 +59,30 @@
           </div>
         </div>
 
-        <Button
-          variant="outline"
-          class="w-full sm:w-auto self-end text-destructive border-destructive/30 hover:bg-destructive/10"
-          @click="confirmDelete(template)"
-        >
-          <Trash2 class="mr-2 h-4 w-4" /> Supprimer
-        </Button>
+        <div class="flex items-center justify-end gap-2">
+          <Button variant="outline" class="w-full sm:w-auto" @click="openEditDialog(template)">
+            <Pencil class="mr-2 h-4 w-4" /> Modifier
+          </Button>
+          <Button
+            variant="outline"
+            class="w-full sm:w-auto text-destructive border-destructive/30 hover:bg-destructive/10"
+            @click="confirmDelete(template)"
+          >
+            <Trash2 class="mr-2 h-4 w-4" /> Supprimer
+          </Button>
+        </div>
       </div>
     </div>
 
-    <!-- Dialog de création -->
+    <!-- Dialog de création / modification -->
     <Dialog :open="showCreateDialog" @update:open="handleCreateDialogClose">
       <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Créer une séance modèle</DialogTitle>
+          <DialogTitle>{{ editingTemplate ? 'Modifier la séance modèle' : 'Créer une séance modèle' }}</DialogTitle>
           <DialogDescription>Cette séance sera visible par tous les utilisateurs dans le catalogue.</DialogDescription>
         </DialogHeader>
 
-        <form class="space-y-4" @submit.prevent="handleCreate">
+        <form class="space-y-4" @submit.prevent="handleSubmit">
           <div class="space-y-2">
             <Label for="template-title">Titre</Label>
             <Input id="template-title" v-model="form.title" placeholder="Ex: Full Body Débutant" required />
@@ -152,9 +157,9 @@
 
           <DialogFooter>
             <Button type="button" variant="outline" @click="showCreateDialog = false">Annuler</Button>
-            <Button type="submit" :disabled="creating">
-              <span v-if="creating" class="animate-spin mr-2">⌛</span>
-              Créer la séance
+            <Button type="submit" :disabled="saving">
+              <span v-if="saving" class="animate-spin mr-2">⌛</span>
+              {{ editingTemplate ? 'Enregistrer' : 'Créer la séance' }}
             </Button>
           </DialogFooter>
         </form>
@@ -211,7 +216,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
-import { ShieldCheck, Dumbbell, Plus, Trash2, ChevronUp, ChevronDown } from 'lucide-vue-next';
+import { ShieldCheck, Dumbbell, Plus, Trash2, Pencil, ChevronUp, ChevronDown } from 'lucide-vue-next';
 import ExerciseSearch from '@/components/exercises/ExerciseSearch.vue';
 import { useSessionTemplates } from '~/composables/useSessionTemplates';
 
@@ -222,6 +227,7 @@ const {
   loading,
   getSessionTemplates,
   createSessionTemplate,
+  updateSessionTemplate,
   deleteSessionTemplate
 } = useSessionTemplates();
 
@@ -229,21 +235,41 @@ const existingCategories = computed(() => [...new Set(templates.value.map(t => t
 
 const showCreateDialog = ref(false);
 const showExercisePicker = ref(false);
-const creating = ref(false);
+const saving = ref(false);
 const formError = ref('');
 const templateToDelete = ref(null);
+const editingTemplate = ref(null);
 
 const emptyForm = () => ({ title: '', category: '', description: '', exercises: [] });
 const form = ref(emptyForm());
 
 const openCreateDialog = () => {
+  editingTemplate.value = null;
   form.value = emptyForm();
+  formError.value = '';
+  showCreateDialog.value = true;
+};
+
+const openEditDialog = (template) => {
+  editingTemplate.value = template;
+  form.value = {
+    title: template.title,
+    category: template.category,
+    description: template.description || '',
+    exercises: template.exercises.map(templateExercise => ({
+      exercise_id: templateExercise.exercise.id,
+      name: templateExercise.exercise.name,
+      target_sets: templateExercise.target_sets ?? '',
+      target_reps: templateExercise.target_reps ?? ''
+    }))
+  };
   formError.value = '';
   showCreateDialog.value = true;
 };
 
 const handleCreateDialogClose = (open) => {
   showCreateDialog.value = open;
+  if (!open) editingTemplate.value = null;
 };
 
 const handleAddExercise = (exercise) => {
@@ -266,7 +292,7 @@ const moveExercise = (index, direction) => {
   [exercises[index], exercises[newIndex]] = [exercises[newIndex], exercises[index]];
 };
 
-const handleCreate = async () => {
+const handleSubmit = async () => {
   formError.value = '';
 
   if (!form.value.title.trim() || !form.value.category.trim()) {
@@ -278,28 +304,33 @@ const handleCreate = async () => {
     return;
   }
 
-  creating.value = true;
+  const payload = {
+    title: form.value.title.trim(),
+    category: form.value.category.trim(),
+    description: form.value.description.trim(),
+    exercises: form.value.exercises.map(exercise => ({
+      exercise_id: exercise.exercise_id,
+      target_sets: exercise.target_sets ? Number(exercise.target_sets) : null,
+      target_reps: exercise.target_reps || null
+    }))
+  };
+
+  saving.value = true;
   try {
-    const result = await createSessionTemplate({
-      title: form.value.title.trim(),
-      category: form.value.category.trim(),
-      description: form.value.description.trim(),
-      exercises: form.value.exercises.map(exercise => ({
-        exercise_id: exercise.exercise_id,
-        target_sets: exercise.target_sets ? Number(exercise.target_sets) : null,
-        target_reps: exercise.target_reps || null
-      }))
-    });
+    const result = editingTemplate.value
+      ? await updateSessionTemplate(editingTemplate.value.id, payload)
+      : await createSessionTemplate(payload);
 
     if (result.success) {
-      toast.success(`« ${form.value.title} » a été ajoutée au catalogue`);
+      toast.success(editingTemplate.value ? `« ${form.value.title} » a été mise à jour` : `« ${form.value.title} » a été ajoutée au catalogue`);
       showCreateDialog.value = false;
+      editingTemplate.value = null;
       await getSessionTemplates();
     } else {
-      formError.value = result.error || "Erreur lors de la création de la séance";
+      formError.value = result.error || "Erreur lors de l'enregistrement de la séance";
     }
   } finally {
-    creating.value = false;
+    saving.value = false;
   }
 };
 

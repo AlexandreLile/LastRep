@@ -119,6 +119,26 @@ export function useSessionTemplates() {
     }
   };
 
+  // Admin : modifie une séance modèle existante du catalogue (nécessite les droits admin)
+  const updateSessionTemplate = async (templateId, payload) => {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await adminFetch(`/api/admin/session-templates/${templateId}`, {
+        method: 'PATCH',
+        body: payload
+      });
+      return { success: true, data: response.data };
+    } catch (err) {
+      const message = err?.data?.statusMessage || err.message;
+      error.value = message;
+      return { success: false, error: message };
+    } finally {
+      loading.value = false;
+    }
+  };
+
   // Admin : supprime une séance modèle du catalogue (nécessite les droits admin)
   const deleteSessionTemplate = async (templateId) => {
     loading.value = true;
@@ -144,6 +164,7 @@ export function useSessionTemplates() {
     getSessionTemplates,
     addTemplateToMySessions,
     createSessionTemplate,
+    updateSessionTemplate,
     deleteSessionTemplate
   };
 }
