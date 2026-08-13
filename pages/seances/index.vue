@@ -28,20 +28,27 @@
                 <h3 class="text-lg font-semibold">Créer votre séance</h3>
                 <p class="text-sm text-muted-foreground">Établissez un programme et suivez vos progrès.</p>
               </div>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button class="w-full sm:w-auto bg-primary hover:bg-primary/90">
-                    <PlusCircle class="mr-2 h-4 w-4" /> Ajouter une séance
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogDescription>
-                      <SessionsAddWorkoutSession></SessionsAddWorkoutSession>
-                    </DialogDescription>
-                  </DialogHeader>
-                </DialogContent>
-              </Dialog>
+              <div class="flex flex-wrap gap-3">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button class="w-full sm:w-auto bg-primary hover:bg-primary/90">
+                      <PlusCircle class="mr-2 h-4 w-4" /> Ajouter une séance
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogDescription>
+                        <SessionsAddWorkoutSession></SessionsAddWorkoutSession>
+                      </DialogDescription>
+                    </DialogHeader>
+                  </DialogContent>
+                </Dialog>
+                <Button variant="outline" class="w-full sm:w-auto" as-child>
+                  <NuxtLink to="/seances/modeles">
+                    <Library class="mr-2 h-4 w-4" /> Découvrir des séances toutes prêtes
+                  </NuxtLink>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -107,14 +114,15 @@
 <script setup>
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { 
-  Dumbbell, 
-  Plus, 
-  PlusCircle, 
-  ListOrdered, 
+import {
+  Dumbbell,
+  Plus,
+  PlusCircle,
+  ListOrdered,
   PieChart,
   Lightbulb,
-  CheckCircle2
+  CheckCircle2,
+  Library
 } from 'lucide-vue-next'
 </script>
 
