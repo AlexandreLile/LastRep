@@ -12,12 +12,14 @@
     <template v-else-if="cycle">
       <!-- Header -->
       <div class="bg-card rounded-xl p-6">
-        <button
-          class="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
+        <Button
+          variant="outline"
+          size="sm"
+          class="flex items-center gap-2 mb-4"
           @click="navigateTo('/cycles')"
         >
-          <ChevronLeft class="h-4 w-4" /> Cycles
-        </button>
+          <ArrowLeft class="h-4 w-4" /> Cycles
+        </Button>
         <div class="flex items-center gap-4">
           <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
             <Trophy class="w-7 h-7 text-primary" />
@@ -35,11 +37,11 @@
 
       <!-- Stats globaux -->
       <div class="grid grid-cols-3 gap-4">
-        <div class="bg-card rounded-xl p-5 border border-border text-center">
+        <div class="bg-card rounded-xl p-6 border border-border text-center">
           <p class="text-2xl font-bold text-foreground">{{ totalSessions }}</p>
           <p class="text-xs text-muted-foreground mt-1">séances</p>
         </div>
-        <div class="bg-card rounded-xl p-5 border border-border text-center">
+        <div class="bg-card rounded-xl p-6 border border-border text-center">
           <div v-if="loadingWeight" class="flex justify-center py-1">
             <div class="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary"></div>
           </div>
@@ -48,14 +50,14 @@
             <p class="text-xs text-muted-foreground mt-1">soulevé</p>
           </template>
         </div>
-        <div class="bg-card rounded-xl p-5 border border-border text-center">
+        <div class="bg-card rounded-xl p-6 border border-border text-center">
           <p class="text-2xl font-bold text-foreground">{{ formatDuration(totalMinutes) }}</p>
           <p class="text-xs text-muted-foreground mt-1">d'entraînement</p>
         </div>
       </div>
 
       <!-- Mensurations -->
-      <div v-if="cycle.measurement_start || cycle.measurement_end" class="bg-card rounded-xl p-6">
+      <div v-if="cycle.measurement_start || cycle.measurement_end" class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <Ruler class="w-5 h-5 text-primary" />
@@ -99,7 +101,7 @@
           <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
         </div>
 
-        <div v-else v-for="slot in slotsProgression" :key="slot.id" class="bg-card rounded-xl p-5">
+        <div v-else v-for="slot in slotsProgression" :key="slot.id" class="bg-card rounded-xl p-6 hover:shadow-md transition-all duration-300">
           <div class="flex items-center justify-between mb-4">
             <div>
               <h4 class="font-semibold">{{ slot.name }}</h4>
@@ -173,7 +175,8 @@
 <script setup>
 import { ref, computed, onMounted, defineComponent, h } from 'vue'
 import { useRoute } from 'vue-router'
-import { AlertTriangle, ChevronLeft, Trophy, Ruler, TrendingUp, TrendingDown, Minus } from 'lucide-vue-next'
+import { AlertTriangle, ArrowLeft, Trophy, Ruler, TrendingUp, TrendingDown, Minus } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 import { useCycle } from '~/composables/useCycle'
 import { useCycleStats } from '~/composables/useCycleStats'
 
