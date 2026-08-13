@@ -3,14 +3,11 @@
     <!-- Header -->
     <div class="mb-8 bg-card rounded-xl p-6">
       <div class="flex items-center gap-4">
-        <NuxtLink
-          to="/seances"
-          class="w-10 h-10 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center hover:bg-primary/20 transition-colors"
-        >
-          <ArrowLeft class="h-5 w-5 text-primary" />
-        </NuxtLink>
+        <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
+          <Library class="h-6 w-6 text-primary" />
+        </div>
         <div>
-          <h2 class="text-2xl font-bold text-foreground">Bibliothèque de séances</h2>
+          <h2 class="text-2xl font-bold text-foreground">Catalogue de séances</h2>
           <p class="text-sm text-muted-foreground">Des séances prêtes à l'emploi à ajouter directement à vos séances</p>
         </div>
       </div>
@@ -96,7 +93,7 @@ import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dumbbell, PlusCircle, ArrowLeft } from 'lucide-vue-next';
+import { Dumbbell, PlusCircle, Library } from 'lucide-vue-next';
 import { useSessionTemplates } from '~/composables/useSessionTemplates';
 
 const router = useRouter();

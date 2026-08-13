@@ -7,7 +7,7 @@
           <Dumbbell class="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h2 class="text-2xl font-bold text-foreground">Séances d'entraînement</h2>
+          <h2 class="text-2xl font-bold text-foreground">Mes séances</h2>
           <p class="text-sm text-muted-foreground">Créez et gérez vos programmes d'entraînement</p>
         </div>
       </div>
@@ -28,27 +28,20 @@
                 <h3 class="text-lg font-semibold">Créer votre séance</h3>
                 <p class="text-sm text-muted-foreground">Établissez un programme et suivez vos progrès.</p>
               </div>
-              <div class="flex flex-wrap gap-3">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button class="w-full sm:w-auto bg-primary hover:bg-primary/90">
-                      <PlusCircle class="mr-2 h-4 w-4" /> Ajouter une séance
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogDescription>
-                        <SessionsAddWorkoutSession></SessionsAddWorkoutSession>
-                      </DialogDescription>
-                    </DialogHeader>
-                  </DialogContent>
-                </Dialog>
-                <Button variant="outline" class="w-full sm:w-auto" as-child>
-                  <NuxtLink to="/seances/modeles">
-                    <Library class="mr-2 h-4 w-4" /> Découvrir des séances toutes prêtes
-                  </NuxtLink>
-                </Button>
-              </div>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button class="w-full sm:w-auto bg-primary hover:bg-primary/90">
+                    <PlusCircle class="mr-2 h-4 w-4" /> Ajouter une séance
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogDescription>
+                      <SessionsAddWorkoutSession></SessionsAddWorkoutSession>
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>
@@ -121,8 +114,7 @@ import {
   ListOrdered,
   PieChart,
   Lightbulb,
-  CheckCircle2,
-  Library
+  CheckCircle2
 } from 'lucide-vue-next'
 </script>
 
