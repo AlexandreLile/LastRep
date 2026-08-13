@@ -179,7 +179,7 @@
     </Dialog>
 
     <!-- Confirmation de suppression -->
-    <AlertDialog :open="!!templateToDelete" @update:open="templateToDelete = $event ? templateToDelete : null">
+    <AlertDialog :open="showDeleteDialog" @update:open="showDeleteDialog = $event">
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Supprimer cette séance du catalogue ?</AlertDialogTitle>
@@ -238,6 +238,7 @@ const showExercisePicker = ref(false);
 const saving = ref(false);
 const formError = ref('');
 const templateToDelete = ref(null);
+const showDeleteDialog = ref(false);
 const editingTemplate = ref(null);
 
 const emptyForm = () => ({ title: '', category: '', description: '', exercises: [] });
@@ -336,6 +337,7 @@ const handleSubmit = async () => {
 
 const confirmDelete = (template) => {
   templateToDelete.value = template;
+  showDeleteDialog.value = true;
 };
 
 const handleDelete = async () => {
@@ -346,6 +348,7 @@ const handleDelete = async () => {
   } else {
     toast.error(result.error || 'Erreur lors de la suppression');
   }
+  showDeleteDialog.value = false;
   templateToDelete.value = null;
 };
 
