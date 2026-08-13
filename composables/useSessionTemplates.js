@@ -1,4 +1,5 @@
 import { ref } from 'vue';
+import { adminFetch } from '~/composables/useAdminFetch';
 
 export function useSessionTemplates() {
   const templates = ref([]);
@@ -98,11 +99,51 @@ export function useSessionTemplates() {
     }
   };
 
+  // Admin : crée une nouvelle séance modèle dans le catalogue (nécessite les droits admin)
+  const createSessionTemplate = async (payload) => {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await adminFetch('/api/admin/session-templates', {
+        method: 'POST',
+        body: payload
+      });
+      return { success: true, data: response.data };
+    } catch (err) {
+      const message = err?.data?.statusMessage || err.message;
+      error.value = message;
+      return { success: false, error: message };
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // Admin : supprime une séance modèle du catalogue (nécessite les droits admin)
+  const deleteSessionTemplate = async (templateId) => {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      await adminFetch(`/api/admin/session-templates/${templateId}`, { method: 'DELETE' });
+      templates.value = templates.value.filter(template => template.id !== templateId);
+      return { success: true };
+    } catch (err) {
+      const message = err?.data?.statusMessage || err.message;
+      error.value = message;
+      return { success: false, error: message };
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     templates,
     loading,
     error,
     getSessionTemplates,
-    addTemplateToMySessions
+    addTemplateToMySessions,
+    createSessionTemplate,
+    deleteSessionTemplate
   };
 }

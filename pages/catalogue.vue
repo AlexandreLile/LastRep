@@ -6,10 +6,15 @@
         <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
           <Library class="h-6 w-6 text-primary" />
         </div>
-        <div>
+        <div class="flex-1">
           <h2 class="text-2xl font-bold text-foreground">Catalogue de séances</h2>
           <p class="text-sm text-muted-foreground">Des séances prêtes à l'emploi à ajouter directement à vos séances</p>
         </div>
+        <Button v-if="isAdmin" variant="outline" size="sm" as-child>
+          <NuxtLink to="/admin/catalogue">
+            <ShieldCheck class="mr-2 h-4 w-4" /> Gérer le catalogue
+          </NuxtLink>
+        </Button>
       </div>
     </div>
 
@@ -93,11 +98,13 @@ import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dumbbell, PlusCircle, Library } from 'lucide-vue-next';
+import { Dumbbell, PlusCircle, Library, ShieldCheck } from 'lucide-vue-next';
 import { useSessionTemplates } from '~/composables/useSessionTemplates';
+import { useAdmin } from '~/composables/useAdmin';
 
 const router = useRouter();
 const { templates, loading, error, getSessionTemplates, addTemplateToMySessions } = useSessionTemplates();
+const { isAdmin, checkAdmin } = useAdmin();
 
 const currentCategory = ref('Toutes');
 const addingTemplateId = ref(null);
@@ -128,5 +135,6 @@ const handleAddTemplate = async (template) => {
 
 onMounted(() => {
   getSessionTemplates();
+  checkAdmin();
 });
 </script>
