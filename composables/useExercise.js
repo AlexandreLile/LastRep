@@ -14,32 +14,48 @@ export function useExercise() {
       // get_visible_exercises() retourne : les exercices persos de l'utilisateur,
       // les nouveaux exercices globaux, et les anciens exercices globaux (legacy)
       // uniquement si l'utilisateur les a déjà utilisés (séances/séries passées).
-      let query = supabase
-        .rpc('get_visible_exercises')
-        .select(`
-          *,
-          exercise_muscles:exercise_muscle (
-            is_primary,
-            muscle:muscle_id (
-              id,
-              name
-            )
-          )
-        `)
-        .order('is_custom', { ascending: true }) // Exercices globaux en premier
-        .order('name', { ascending: true });
+      // Le catalogue dépasse la limite par défaut de 1000 lignes de PostgREST,
+      // donc on paginé avec .range() jusqu'à récupérer toutes les lignes.
+      const PAGE_SIZE = 1000;
+      const fetchPage = (from, withMuscles) => {
+        let query = supabase.rpc('get_visible_exercises');
+        query = withMuscles
+          ? query.select(`
+              *,
+              exercise_muscles:exercise_muscle (
+                is_primary,
+                muscle:muscle_id (
+                  id,
+                  name
+                )
+              )
+            `)
+          : query.select('*');
+        return query
+          .order('is_custom', { ascending: true }) // Exercices globaux en premier
+          .order('name', { ascending: true })
+          .range(from, from + PAGE_SIZE - 1);
+      };
 
-      let { data, error: supabaseError } = await query;
+      const fetchAllPages = async (withMuscles) => {
+        let all = [];
+        let from = 0;
+        while (true) {
+          const { data: page, error: pageError } = await fetchPage(from, withMuscles);
+          if (pageError) return { data: null, error: pageError };
+          all = all.concat(page || []);
+          if (!page || page.length < PAGE_SIZE) break;
+          from += PAGE_SIZE;
+        }
+        return { data: all, error: null };
+      };
+
+      let { data, error: supabaseError } = await fetchAllPages(true);
 
       // Si erreur liée à la table exercise_muscle qui n'existe pas, essayer sans
       if (supabaseError && (supabaseError.message?.includes('exercise_muscle') || supabaseError.code === '42P01')) {
         console.warn('Table exercise_muscle non trouvée, utilisation de la structure simple');
-        query = supabase
-          .rpc('get_visible_exercises')
-          .order('is_custom', { ascending: true })
-          .order('name', { ascending: true });
-
-        const result = await query;
+        const result = await fetchAllPages(false);
         data = result.data;
         supabaseError = result.error;
       }
