@@ -46,16 +46,30 @@
           </div>
         </div>
 
-        <div class="flex-1 space-y-1.5 mb-4">
+        <div class="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-4 content-start">
           <div
             v-for="templateExercise in template.exercises"
             :key="templateExercise.id"
-            class="flex items-center justify-between text-sm bg-muted/50 px-3 py-1.5 rounded-lg"
+            class="flex flex-col rounded-lg overflow-hidden border bg-background"
           >
-            <span class="text-foreground">{{ templateExercise.exercise.name }}</span>
-            <span v-if="templateExercise.target_sets || templateExercise.target_reps" class="text-xs text-muted-foreground flex-shrink-0 ml-2">
-              {{ templateExercise.target_sets ? `${templateExercise.target_sets}×` : '' }}{{ templateExercise.target_reps }}
-            </span>
+            <div class="relative aspect-square w-full bg-gradient-to-br from-primary/15 to-muted overflow-hidden">
+              <img
+                v-if="templateExercise.exercise.image_url"
+                :src="templateExercise.exercise.image_url"
+                :alt="templateExercise.exercise.name"
+                class="h-full w-full object-cover"
+                loading="lazy"
+              />
+              <div v-else class="h-full w-full flex items-center justify-center">
+                <Dumbbell class="h-5 w-5 text-primary/40" />
+              </div>
+            </div>
+            <div class="p-1.5">
+              <p class="text-[11px] font-medium text-foreground leading-snug line-clamp-2">{{ templateExercise.exercise.name }}</p>
+              <p v-if="templateExercise.target_sets || templateExercise.target_reps" class="text-[10px] text-muted-foreground mt-0.5">
+                {{ templateExercise.target_sets ? `${templateExercise.target_sets}×` : '' }}{{ templateExercise.target_reps }}
+              </p>
+            </div>
           </div>
         </div>
 

@@ -82,43 +82,39 @@
             </Button>
           </div>
 
-          <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div 
-              v-for="exercise in exercises" 
+          <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <button
+              v-for="exercise in exercises"
               :key="exercise.id"
-              class="bg-card rounded-xl p-6 cursor-pointer relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group"
+              type="button"
+              class="group relative flex flex-col text-left rounded-xl overflow-hidden border bg-background transition-all duration-150 hover:border-primary/40 active:scale-[0.98]"
               @click="router.push(`/exercices/${exercise.exercise_id}`)"
             >
-              <!-- Effet de bordure néon -->
-              <div class="absolute inset-0 rounded-xl bg-primary/20 blur-md transition-all duration-300 group-hover:bg-primary/30 group-hover:blur-lg"></div>
-              <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/50 via-primary/30 to-primary/50 animate-[pulse_2s_ease-in-out_infinite] group-hover:from-primary/60 group-hover:via-primary/40 group-hover:to-primary/60"></div>
-              <div class="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/40 to-transparent animate-[glow_3s_ease-in-out_infinite] group-hover:from-primary/50 group-hover:to-transparent"></div>
-              <div class="absolute inset-[1px] rounded-xl bg-card"></div>
-
-              <!-- Contenu -->
-              <div class="relative flex flex-col h-full">
-                <div class="flex flex-wrap gap-4 items-start mb-4">
-                  <div class="flex items-center space-x-3 flex-1">
-                    <div class="h-12 w-12 flex-shrink-0 rounded-full overflow-hidden bg-primary/20 transition-all duration-300 group-hover:bg-primary/30 group-hover:scale-110 flex items-center justify-center">
-                      <img
-                        v-if="exercise.exercise?.image_url"
-                        :src="exercise.exercise.image_url"
-                        :alt="exercise.exercise?.name"
-                        class="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                      <Dumbbell v-else class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
-                    </div>
-                    <div>
-                      <h3 class="text-lg font-medium text-foreground transition-colors duration-300 group-hover:text-primary">{{ exercise.exercise?.name }}</h3>
-                      <span class="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-primary/10 group-hover:text-primary">
-                        {{ exercise.exercise?.primary_muscle }}
-                      </span>
-                    </div>
-                  </div>
+              <!-- Image / fallback -->
+              <div class="relative aspect-square w-full bg-gradient-to-br from-primary/15 to-muted overflow-hidden">
+                <img
+                  v-if="exercise.exercise?.image_url"
+                  :src="exercise.exercise.image_url"
+                  :alt="exercise.exercise?.name"
+                  class="h-full w-full object-cover"
+                  loading="lazy"
+                />
+                <div v-else class="h-full w-full flex items-center justify-center">
+                  <Dumbbell class="h-8 w-8 text-primary/40" />
                 </div>
               </div>
-            </div>
+
+              <!-- Nom + muscle principal -->
+              <div class="p-2.5 flex-1 flex flex-col gap-1">
+                <p class="font-medium text-sm text-foreground leading-snug line-clamp-2 transition-colors duration-300 group-hover:text-primary">{{ exercise.exercise?.name }}</p>
+                <span
+                  v-if="exercise.exercise?.primary_muscle"
+                  class="text-[11px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary self-start"
+                >
+                  {{ exercise.exercise?.primary_muscle }}
+                </span>
+              </div>
+            </button>
           </div>
         </div>
 
