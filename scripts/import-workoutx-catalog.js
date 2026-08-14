@@ -148,6 +148,25 @@ const CATEGORY_TO_MEASUREMENT = {
   force: 'weight_reps',
 }
 
+// WorkoutX classe en "cardio" des mouvements réalisés avec du lest (traîneau,
+// poulie, machine à levier...) pour leur intensité cardiovasculaire, alors
+// qu'ils doivent être suivis en poids/reps comme n'importe quel exercice de
+// force (ex: "Hack squat sur traîneau"). On corrige ce cas via l'équipement,
+// sauf pour les vraies machines cardio (vélo, tapis, elliptique...).
+const CARDIO_LOAD_EQUIPMENT = new Set([
+  'Traîneau', 'Câble', 'Machine à levier', 'Machine Smith',
+  'Avec poids additionnel', 'Haltère', 'Médecine-ball', 'Machine Hammer',
+])
+const CARDIO_MACHINE_NAME_PATTERN = /vélo|tapis|elliptique|stepmill|skierg/i
+
+function resolveMeasurementType(category, equipment, name) {
+  const base = CATEGORY_TO_MEASUREMENT[category] || 'weight_reps'
+  if (base === 'time' && CARDIO_LOAD_EQUIPMENT.has(equipment) && !CARDIO_MACHINE_NAME_PATTERN.test(name)) {
+    return 'weight_reps'
+  }
+  return base
+}
+
 async function fetchAllWorkoutxExercises() {
   const res = await fetch(`${WORKOUTX_BASE}/exercises?limit=2000&offset=0`, {
     headers: { 'X-WorkoutX-Key': WORKOUTX_API_KEY },
@@ -257,7 +276,7 @@ async function main() {
       name: ex.name,
       primary_muscle: primaryMuscleFr,
       body_part: ex.bodyPart || null,
-      measurement_type: CATEGORY_TO_MEASUREMENT[ex.category] || 'weight_reps',
+      measurement_type: resolveMeasurementType(ex.category, ex.equipment, ex.name),
       is_custom: false,
       is_legacy: false,
       category_id: categoryIdByName.get(categoryName) || null,
