@@ -76,9 +76,16 @@
         :key="exercise.id"
         class="flex items-center gap-3 px-3 py-3 border-b last:border-b-0 active:bg-muted/60 transition-colors"
       >
-        <!-- Icône muscle -->
-        <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-          <Dumbbell class="h-4 w-4 text-primary" />
+        <!-- Icône muscle / image -->
+        <div class="w-9 h-9 rounded-full bg-primary/10 overflow-hidden flex items-center justify-center flex-shrink-0">
+          <img
+            v-if="exercise.image_url"
+            :src="exercise.image_url"
+            :alt="exercise.name"
+            class="h-full w-full object-cover"
+            loading="lazy"
+          />
+          <Dumbbell v-else class="h-4 w-4 text-primary" />
         </div>
 
         <!-- Nom + muscles -->

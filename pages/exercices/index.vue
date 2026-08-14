@@ -96,8 +96,15 @@
                 <div class="absolute inset-[1px] rounded-xl bg-card"></div>
                 <div class="relative flex items-center justify-between">
                   <div class="flex items-center gap-3">
-                    <div class="p-2 rounded-full bg-primary/20 transition-all duration-300 group-hover:bg-primary/30 group-hover:scale-110">
-                      <Dumbbell class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
+                    <div class="h-10 w-10 shrink-0 rounded-full overflow-hidden bg-primary/20 transition-all duration-300 group-hover:bg-primary/30 group-hover:scale-110 flex items-center justify-center">
+                      <img
+                        v-if="stat.exercise.image_url"
+                        :src="stat.exercise.image_url"
+                        :alt="stat.exercise.name"
+                        class="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                      <Dumbbell v-else class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
                     </div>
                     <div>
                       <h4 class="text-base font-medium text-foreground transition-colors duration-300 group-hover:text-primary">{{ stat.exercise.name }}</h4>
