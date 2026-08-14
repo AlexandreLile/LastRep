@@ -170,7 +170,8 @@ export const useWorkoutExercise = () => {
             name,
             primary_muscle,
             measurement_type,
-            is_custom
+            is_custom,
+            image_url
           )
         `)
         .eq('id', exerciseId)

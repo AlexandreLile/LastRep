@@ -1,15 +1,14 @@
 <template>
   <Dialog :open="isOpen" @update:open="$emit('update:open', $event)">
-    <DialogContent class="sm:max-w-md max-h-[90vh] !flex !flex-col">
-      <DialogHeader class="flex-shrink-0">
+    <DialogScrollContent class="sm:max-w-md">
+      <DialogHeader>
         <DialogTitle>Créer un exercice personnalisé</DialogTitle>
         <DialogDescription>
           Créez votre propre exercice avec le type de mesure qui vous convient
         </DialogDescription>
       </DialogHeader>
 
-      <form @submit.prevent="handleSubmit" class="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <div class="flex-1 overflow-y-auto space-y-4 pr-2 -mr-2">
+      <form @submit.prevent="handleSubmit" class="space-y-4">
         <!-- Nom de l'exercice -->
         <div class="space-y-2">
           <Label for="name">Nom de l'exercice *</Label>
@@ -99,13 +98,12 @@
           </div>
         </div>
 
-          <!-- Message d'erreur -->
-          <div v-if="error" class="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
-            {{ error }}
-          </div>
+        <!-- Message d'erreur -->
+        <div v-if="error" class="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+          {{ error }}
         </div>
 
-        <DialogFooter class="flex-shrink-0 pt-4 border-t mt-4">
+        <DialogFooter class="pt-4 border-t">
           <Button
             type="button"
             variant="outline"
@@ -120,15 +118,14 @@
           </Button>
         </DialogFooter>
       </form>
-    </DialogContent>
+    </DialogScrollContent>
   </Dialog>
-
 </template>
 
 <script setup>
 import { ref, watch, computed, nextTick } from 'vue'
 import { useSupabaseClient } from '#imports'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogScrollContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
