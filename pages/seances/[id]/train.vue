@@ -99,8 +99,15 @@
               <div class="relative flex flex-col h-full">
                 <div class="flex flex-wrap gap-4 items-start mb-4">
                   <div class="flex items-center space-x-3 flex-1">
-                    <div class="p-2 rounded-full bg-primary/20 transition-all duration-300 group-hover:bg-primary/30 group-hover:scale-110">
-                      <Dumbbell class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
+                    <div class="h-12 w-12 flex-shrink-0 rounded-full overflow-hidden bg-primary/20 transition-all duration-300 group-hover:bg-primary/30 group-hover:scale-110 flex items-center justify-center">
+                      <img
+                        v-if="exercise.exercise?.image_url"
+                        :src="exercise.exercise.image_url"
+                        :alt="exercise.exercise?.name"
+                        class="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                      <Dumbbell v-else class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
                     </div>
                     <div>
                       <h3 class="text-lg font-medium text-foreground transition-colors duration-300 group-hover:text-primary">{{ exercise.exercise?.name }}</h3>
