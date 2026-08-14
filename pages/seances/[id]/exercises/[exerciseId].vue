@@ -279,20 +279,31 @@
     </div>
     <div v-else class="space-y-6 mt-16 md:mt-0">
       <!-- En-tête de l'exercice -->
-      <div class="bg-card rounded-xl p-6">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="flex items-start gap-4">
-            <div class="p-3 rounded-full bg-primary/10 flex-shrink-0">
-              <Dumbbell class="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h2 class="text-2xl font-bold text-foreground">{{ exercise.exercise?.name }}</h2>
-              <div class="flex items-center mt-1.5">
-                <span class="text-xs font-medium bg-muted text-foreground px-2 py-1 rounded-full">{{ exercise.exercise?.primary_muscle }}</span>
-              </div>
+      <div class="bg-card rounded-xl overflow-hidden">
+        <!-- Grande image de démonstration -->
+        <div class="relative aspect-video w-full bg-gradient-to-br from-primary/15 to-muted overflow-hidden">
+          <!-- Fallback toujours présent en dessous : visible tant que l'image ne charge pas (hors-ligne compris) -->
+          <div class="absolute inset-0 flex items-center justify-center">
+            <Dumbbell class="h-12 w-12 text-primary/40" />
+          </div>
+          <img
+            v-if="exercise.exercise?.image_url"
+            :src="exercise.exercise.image_url"
+            :alt="exercise.exercise?.name"
+            class="absolute inset-0 h-full w-full object-contain"
+            loading="eager"
+            @error="$event.target.style.visibility = 'hidden'"
+          />
+        </div>
+
+        <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-bold text-foreground">{{ exercise.exercise?.name }}</h2>
+            <div class="flex items-center mt-1.5">
+              <span class="text-xs font-medium bg-muted text-foreground px-2 py-1 rounded-full">{{ exercise.exercise?.primary_muscle }}</span>
             </div>
           </div>
-          
+
           <div class="flex items-center gap-3">
             <div class="text-sm text-muted-foreground bg-muted/70 px-3 py-1.5 rounded-md">
               <span v-if="localExerciseSets.length === 0">Aucune série</span>

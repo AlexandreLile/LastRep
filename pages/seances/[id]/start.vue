@@ -122,72 +122,84 @@
         </div>
 
         <div v-if="exercises.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div 
-            v-for="(exercise, index) in exercises" 
-            :key="exercise.id" 
-            class="bg-card rounded-xl p-4 group transition-all duration-300 hover:scale-[1.02] border border-border100 hover:border-primary/20 relative"
+          <div
+            v-for="(exercise, index) in exercises"
+            :key="exercise.id"
+            class="bg-card rounded-xl overflow-hidden group transition-all duration-300 hover:scale-[1.02] border border-border100 hover:border-primary/20 relative"
             :style="{animationDelay: `${index * 0.1}s`}"
             :class="{'animate-fade-in': true}"
           >
-            <!-- Contenu principal -->
-            <div class="flex flex-col space-y-3">
-              <!-- Partie supérieure: nom et icône principale -->
-              <div class="flex items-start gap-3">
-                <div class="p-2 rounded-full bg-primary/20 transition-all duration-300 group-hover:bg-primary/30 group-hover:scale-110 relative">
-                  <Dumbbell class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
-                  <!-- Indicateur visuel de statut -->
-                  <div v-if="exercise.completionStatus" class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-                </div>
-                <div class="flex-grow">
-                  <h4 class="text-base font-medium text-foreground transition-colors duration-300 group-hover:text-primary">{{ exercise.exercise?.name }}</h4>
-                </div>
+            <!-- Image / fallback -->
+            <div class="relative aspect-square w-full bg-gradient-to-br from-primary/15 to-muted overflow-hidden">
+              <!-- Fallback toujours présent en dessous : visible tant que l'image ne charge pas (hors-ligne compris) -->
+              <div class="absolute inset-0 flex items-center justify-center">
+                <Dumbbell class="h-8 w-8 text-primary/40" />
               </div>
-              
-              <!-- Partie inférieure: Muscle, statut et actions -->
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <span class="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-primary/10 group-hover:text-primary">
+              <img
+                v-if="exercise.exercise?.image_url"
+                :src="exercise.exercise.image_url"
+                :alt="exercise.exercise?.name"
+                class="absolute inset-0 h-full w-full object-cover"
+                loading="lazy"
+                @error="$event.target.style.visibility = 'hidden'"
+              />
+              <!-- Indicateur visuel de statut -->
+              <div
+                v-if="exercise.completionStatus"
+                class="absolute top-2 right-2 h-7 w-7 rounded-full bg-green-500 flex items-center justify-center shadow-sm"
+              >
+                <Check class="h-4 w-4 text-white" />
+              </div>
+            </div>
+
+            <!-- Contenu -->
+            <div class="p-4 flex flex-col space-y-3">
+              <div>
+                <h4 class="text-base font-medium text-foreground transition-colors duration-300 group-hover:text-primary">{{ exercise.exercise?.name }}</h4>
+                <span class="inline-block mt-1.5 text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-primary/10 group-hover:text-primary">
                   {{ exercise.exercise?.primary_muscle }}
                 </span>
-                
-                <div class="flex items-center gap-2 justify-between sm:justify-end">
-                  <span 
-                    class="text-xs px-2 py-0.5 rounded-full"
+              </div>
+
+              <!-- Statut et actions -->
+              <div class="flex items-center justify-between gap-2">
+                <span
+                  class="text-xs px-2 py-0.5 rounded-full"
+                  :class="{
+                    'bg-green-50 text-green-600': exercise.completionStatus,
+                    'bg-muted text-muted-foreground': !exercise.completionStatus
+                  }"
+                >
+                  {{ exercise.completionStatus ? 'Complété' : 'À faire' }}
+                </span>
+
+                <!-- Actions de contrôle pour l'exercice -->
+                <div class="flex items-center space-x-2">
+                  <button
+                    @click.stop="toggleExerciseStatus(exercise.exercise_id)"
+                    class="w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200"
                     :class="{
-                      'bg-green-50 text-green-600': exercise.completionStatus,
-                      'bg-muted text-muted-foreground': !exercise.completionStatus
+                      'bg-green-100 hover:bg-green-200': exercise.completionStatus,
+                      'bg-muted hover:bg-muted/80': !exercise.completionStatus
                     }"
                   >
-                    {{ exercise.completionStatus ? 'Complété' : 'À faire' }}
-                  </span>
-                  
-                  <!-- Actions de contrôle pour l'exercice -->
-                  <div class="flex items-center space-x-2">
-                    <button 
-                      @click.stop="toggleExerciseStatus(exercise.exercise_id)"
-                      class="w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200"
-                      :class="{
-                        'bg-green-100 hover:bg-green-200': exercise.completionStatus,
-                        'bg-muted hover:bg-muted/80': !exercise.completionStatus
-                      }"
-                    >
-                      <Check v-if="exercise.completionStatus" class="w-4 h-4 text-green-600" />
-                      <CircleSlash v-else class="w-4 h-4 text-muted-foreground" />
-                    </button>
-                    
-                    <button 
-                      @click.stop="goToExercise(exercise.id)"
-                      class="w-8 h-8 bg-primary/10 hover:bg-primary/20 rounded-full flex items-center justify-center transition-colors duration-200"
-                    >
-                      <ArrowRight class="w-4 h-4 text-primary" />
-                    </button>
-                  </div>
+                    <Check v-if="exercise.completionStatus" class="w-4 h-4 text-green-600" />
+                    <CircleSlash v-else class="w-4 h-4 text-muted-foreground" />
+                  </button>
+
+                  <button
+                    @click.stop="goToExercise(exercise.id)"
+                    class="w-8 h-8 bg-primary/10 hover:bg-primary/20 rounded-full flex items-center justify-center transition-colors duration-200"
+                  >
+                    <ArrowRight class="w-4 h-4 text-primary" />
+                  </button>
                 </div>
               </div>
             </div>
-            
+
             <!-- Surface cliquable pour toute la carte -->
-            <div 
-              class="absolute inset-0 cursor-pointer" 
+            <div
+              class="absolute inset-0 cursor-pointer"
               @click="goToExercise(exercise.id)"
             ></div>
           </div>
