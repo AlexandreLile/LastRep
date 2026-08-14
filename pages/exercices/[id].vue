@@ -14,8 +14,14 @@
       <div class="mb-8 bg-card rounded-xl p-6">
         <div class="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
           <div class="flex items-start gap-4">
-            <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
-              <Dumbbell class="h-6 w-6 text-primary" />
+            <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full overflow-hidden flex items-center justify-center">
+              <img
+                v-if="exercise.image_url"
+                :src="exercise.image_url"
+                :alt="exercise.name"
+                class="h-full w-full object-cover"
+              />
+              <Dumbbell v-else class="h-6 w-6 text-primary" />
             </div>
             <div>
               <h2 class="text-2xl font-bold text-foreground">{{ exercise.name }}</h2>
