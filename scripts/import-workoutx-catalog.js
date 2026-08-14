@@ -23,7 +23,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const WORKOUTX_BASE = 'https://api.workoutxapp.com/v1'
 const CACHE_PATH = path.join(__dirname, 'data', 'workoutx-catalog-cache.json')
-const TRANSLATIONS_PATH = path.join(__dirname, 'data', 'workoutx-translations-fr.json')
 const BUCKET = 'exercise-images'
 // Plan Pro : 300 req/min. Avec CONCURRENCY workers, chacun espacé de
 // PACE_MS, le débit total reste sous la limite (300 req/min ≈ 1 req/200ms).
@@ -149,6 +148,25 @@ const CATEGORY_TO_MEASUREMENT = {
   force: 'weight_reps',
 }
 
+// WorkoutX classe en "cardio" des mouvements réalisés avec du lest (traîneau,
+// poulie, machine à levier...) pour leur intensité cardiovasculaire, alors
+// qu'ils doivent être suivis en poids/reps comme n'importe quel exercice de
+// force (ex: "Hack squat sur traîneau"). On corrige ce cas via l'équipement,
+// sauf pour les vraies machines cardio (vélo, tapis, elliptique...).
+const CARDIO_LOAD_EQUIPMENT = new Set([
+  'Traîneau', 'Câble', 'Machine à levier', 'Machine Smith',
+  'Avec poids additionnel', 'Haltère', 'Médecine-ball', 'Machine Hammer',
+])
+const CARDIO_MACHINE_NAME_PATTERN = /vélo|tapis|elliptique|stepmill|skierg/i
+
+function resolveMeasurementType(category, equipment, name) {
+  const base = CATEGORY_TO_MEASUREMENT[category] || 'weight_reps'
+  if (base === 'time' && CARDIO_LOAD_EQUIPMENT.has(equipment) && !CARDIO_MACHINE_NAME_PATTERN.test(name)) {
+    return 'weight_reps'
+  }
+  return base
+}
+
 async function fetchAllWorkoutxExercises() {
   const res = await fetch(`${WORKOUTX_BASE}/exercises?limit=2000&offset=0`, {
     headers: { 'X-WorkoutX-Key': WORKOUTX_API_KEY },
@@ -171,19 +189,6 @@ async function loadWorkoutxExercises() {
     await writeFile(CACHE_PATH, JSON.stringify(list))
     console.log(`  ${list.length} exercices récupérés et mis en cache`)
     return list
-  }
-}
-
-async function loadTranslations() {
-  try {
-    const raw = await readFile(TRANSLATIONS_PATH, 'utf-8')
-    const list = JSON.parse(raw)
-    const map = new Map(list.map((t) => [t.id, t.fr]))
-    console.log(`Traductions chargées : ${map.size} entrées`)
-    return map
-  } catch {
-    console.warn(`Pas de fichier de traductions trouvé (${TRANSLATIONS_PATH}), noms anglais utilisés tels quels.`)
-    return new Map()
   }
 }
 
@@ -239,8 +244,6 @@ async function main() {
   const wxExercises = await loadWorkoutxExercises()
   console.log(`  ${wxExercises.length} exercices`)
 
-  const translations = await loadTranslations()
-
   console.log('Récupération des tables muscle / exercise_category locales...')
   const [{ data: muscles }, { data: categories }] = await Promise.all([
     supabase.from('muscle').select('id, name'),
@@ -270,9 +273,10 @@ async function main() {
     return {
       id,
       wxId: ex.id,
-      name: translations.get(ex.id) || ex.name,
+      name: ex.name,
       primary_muscle: primaryMuscleFr,
-      measurement_type: CATEGORY_TO_MEASUREMENT[ex.category] || 'weight_reps',
+      body_part: ex.bodyPart || null,
+      measurement_type: resolveMeasurementType(ex.category, ex.equipment, ex.name),
       is_custom: false,
       is_legacy: false,
       category_id: categoryIdByName.get(categoryName) || null,
@@ -314,6 +318,7 @@ async function main() {
     id: r.id,
     name: r.name,
     primary_muscle: r.primary_muscle,
+    body_part: r.body_part,
     measurement_type: r.measurement_type,
     is_custom: r.is_custom,
     is_legacy: r.is_legacy,
