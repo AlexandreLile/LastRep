@@ -10,12 +10,12 @@ export function useExercise() {
     try {
       loading.value = true;
       const supabase = useSupabaseClient();
-      const user = (await supabase.auth.getUser()).data.user;
 
-      // Essayer d'abord avec la nouvelle structure (muscles multiples)
-      // Si ça échoue, fallback sur l'ancienne structure
+      // get_visible_exercises() retourne : les exercices persos de l'utilisateur,
+      // les nouveaux exercices globaux, et les anciens exercices globaux (legacy)
+      // uniquement si l'utilisateur les a déjà utilisés (séances/séries passées).
       let query = supabase
-        .from('exercise')
+        .rpc('get_visible_exercises')
         .select(`
           *,
           exercise_muscles:exercise_muscle (
@@ -26,7 +26,6 @@ export function useExercise() {
             )
           )
         `)
-        .or(`is_custom.eq.false${user ? ',and(is_custom.eq.true,user_id.eq.' + user.id + ')' : ''}`)
         .order('is_custom', { ascending: true }) // Exercices globaux en premier
         .order('name', { ascending: true });
 
@@ -36,12 +35,10 @@ export function useExercise() {
       if (supabaseError && (supabaseError.message?.includes('exercise_muscle') || supabaseError.code === '42P01')) {
         console.warn('Table exercise_muscle non trouvée, utilisation de la structure simple');
         query = supabase
-          .from('exercise')
-          .select('*')
-          .or(`is_custom.eq.false${user ? ',and(is_custom.eq.true,user_id.eq.' + user.id + ')' : ''}`)
+          .rpc('get_visible_exercises')
           .order('is_custom', { ascending: true })
           .order('name', { ascending: true });
-        
+
         const result = await query;
         data = result.data;
         supabaseError = result.error;
