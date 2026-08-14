@@ -23,7 +23,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const WORKOUTX_BASE = 'https://api.workoutxapp.com/v1'
 const CACHE_PATH = path.join(__dirname, 'data', 'workoutx-catalog-cache.json')
-const TRANSLATIONS_PATH = path.join(__dirname, 'data', 'workoutx-translations-fr.json')
 const BUCKET = 'exercise-images'
 // Plan Pro : 300 req/min. Avec CONCURRENCY workers, chacun espacé de
 // PACE_MS, le débit total reste sous la limite (300 req/min ≈ 1 req/200ms).
@@ -193,19 +192,6 @@ async function loadWorkoutxExercises() {
   }
 }
 
-async function loadTranslations() {
-  try {
-    const raw = await readFile(TRANSLATIONS_PATH, 'utf-8')
-    const list = JSON.parse(raw)
-    const map = new Map(list.map((t) => [t.id, t.fr]))
-    console.log(`Traductions chargées : ${map.size} entrées`)
-    return map
-  } catch {
-    console.warn(`Pas de fichier de traductions trouvé (${TRANSLATIONS_PATH}), noms anglais utilisés tels quels.`)
-    return new Map()
-  }
-}
-
 async function mapConcurrent(items, limitConcurrency, fn) {
   const results = new Array(items.length)
   let index = 0
@@ -258,8 +244,6 @@ async function main() {
   const wxExercises = await loadWorkoutxExercises()
   console.log(`  ${wxExercises.length} exercices`)
 
-  const translations = await loadTranslations()
-
   console.log('Récupération des tables muscle / exercise_category locales...')
   const [{ data: muscles }, { data: categories }] = await Promise.all([
     supabase.from('muscle').select('id, name'),
@@ -289,8 +273,9 @@ async function main() {
     return {
       id,
       wxId: ex.id,
-      name: translations.get(ex.id) || ex.name,
+      name: ex.name,
       primary_muscle: primaryMuscleFr,
+      body_part: ex.bodyPart || null,
       measurement_type: resolveMeasurementType(ex.category, ex.equipment, ex.name),
       is_custom: false,
       is_legacy: false,
@@ -333,6 +318,7 @@ async function main() {
     id: r.id,
     name: r.name,
     primary_muscle: r.primary_muscle,
+    body_part: r.body_part,
     measurement_type: r.measurement_type,
     is_custom: r.is_custom,
     is_legacy: r.is_legacy,

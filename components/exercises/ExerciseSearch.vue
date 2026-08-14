@@ -150,14 +150,27 @@ const { exercises: localExercises, getAllExercises } = useExercise()
 
 const exercises = computed(() => props.exercises ?? localExercises.value ?? [])
 
-// Chips : "Tout" + muscles uniques extraits des exercices
+// Ordre d'affichage des catégories corporelles (plus lisible que l'alphabétique)
+const BODY_PART_ORDER = [
+  'Poitrine', 'Dos', 'Épaules', 'Bras (haut)', 'Avant-bras',
+  'Jambes (haut)', 'Jambes (bas)', 'Taille', 'Cardio', 'Cou',
+]
+
+// Chips : "Tout" + catégories corporelles présentes parmi les exercices
 const muscleChips = computed(() => {
-  const muscles = new Set()
+  const parts = new Set()
   exercises.value.forEach(ex => {
-    const list = ex.muscles_names?.length ? ex.muscles_names : [ex.primary_muscle]
-    list.filter(Boolean).forEach(m => muscles.add(m))
+    if (ex.body_part) parts.add(ex.body_part)
   })
-  return ['Tout', ...Array.from(muscles).sort()]
+  const sorted = Array.from(parts).sort((a, b) => {
+    const ia = BODY_PART_ORDER.indexOf(a)
+    const ib = BODY_PART_ORDER.indexOf(b)
+    if (ia === -1 && ib === -1) return a.localeCompare(b)
+    if (ia === -1) return 1
+    if (ib === -1) return -1
+    return ia - ib
+  })
+  return ['Tout', ...sorted]
 })
 
 const normalizeText = (t) =>
@@ -167,10 +180,7 @@ const filteredExercises = computed(() => {
   let list = exercises.value
 
   if (selectedMuscle.value !== 'Tout') {
-    list = list.filter(ex => {
-      const muscles = ex.muscles_names?.length ? ex.muscles_names : [ex.primary_muscle]
-      return muscles.some(m => m === selectedMuscle.value)
-    })
+    list = list.filter(ex => ex.body_part === selectedMuscle.value)
   }
 
   const q = normalizeText(searchQuery.value)
@@ -178,7 +188,9 @@ const filteredExercises = computed(() => {
     list = list.filter(ex => {
       const name = normalizeText(ex.name)
       const muscles = ex.muscles_names?.length ? ex.muscles_names : [ex.primary_muscle]
-      return name.includes(q) || muscles.some(m => normalizeText(m).includes(q))
+      return name.includes(q)
+        || normalizeText(ex.body_part).includes(q)
+        || muscles.some(m => normalizeText(m).includes(q))
     })
   }
 
