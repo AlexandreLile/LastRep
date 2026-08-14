@@ -71,43 +71,49 @@
         </button>
       </div>
 
-      <div
-        v-for="exercise in filteredExercises"
-        :key="exercise.id"
-        class="flex items-center gap-3 px-3 py-3 border-b last:border-b-0 active:bg-muted/60 transition-colors"
-      >
-        <!-- Icône muscle -->
-        <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-          <Dumbbell class="h-4 w-4 text-primary" />
-        </div>
-
-        <!-- Nom + muscles -->
-        <div class="flex-1 min-w-0">
-          <p class="font-medium text-sm text-foreground truncate">{{ exercise.name }}</p>
-          <div class="flex gap-1 mt-0.5 flex-wrap">
-            <span
-              v-for="(muscle, i) in (exercise.muscles_names?.length ? exercise.muscles_names : [exercise.primary_muscle]).filter(Boolean).slice(0, 2)"
-              :key="i"
-              class="text-[11px] px-1.5 py-0.5 rounded-full"
-              :class="i === 0 ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'"
-            >
-              {{ muscle }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Bouton ajouter -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3">
         <button
+          v-for="exercise in filteredExercises"
+          :key="exercise.id"
           type="button"
           :disabled="isExerciseAdded(exercise.id)"
           @click="selectExercise(exercise)"
-          class="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150"
-          :class="isExerciseAdded(exercise.id)
-            ? 'bg-muted text-muted-foreground cursor-default'
-            : 'bg-primary text-primary-foreground active:scale-95 hover:bg-primary/90'"
+          class="group relative flex flex-col text-left rounded-xl overflow-hidden border bg-background transition-all duration-150 active:scale-[0.98]"
+          :class="isExerciseAdded(exercise.id) ? 'opacity-60' : 'hover:border-primary/40'"
         >
-          <Check v-if="isExerciseAdded(exercise.id)" class="h-4 w-4" />
-          <Plus v-else class="h-4 w-4" />
+          <!-- Image / fallback -->
+          <div class="relative aspect-square w-full bg-gradient-to-br from-primary/15 to-muted overflow-hidden">
+            <img
+              v-if="exercise.image_url"
+              :src="exercise.image_url"
+              :alt="exercise.name"
+              class="h-full w-full object-cover"
+              loading="lazy"
+            />
+            <div v-else class="h-full w-full flex items-center justify-center">
+              <Dumbbell class="h-8 w-8 text-primary/40" />
+            </div>
+
+            <!-- Badge ajouté / bouton ajouter -->
+            <div
+              class="absolute top-1.5 right-1.5 h-7 w-7 rounded-full flex items-center justify-center shadow-sm"
+              :class="isExerciseAdded(exercise.id) ? 'bg-primary text-primary-foreground' : 'bg-black/50 text-white backdrop-blur-sm'"
+            >
+              <Check v-if="isExerciseAdded(exercise.id)" class="h-4 w-4" />
+              <Plus v-else class="h-4 w-4" />
+            </div>
+          </div>
+
+          <!-- Nom + muscle principal -->
+          <div class="p-2.5 flex-1 flex flex-col gap-1">
+            <p class="font-medium text-sm text-foreground leading-snug line-clamp-2">{{ exercise.name }}</p>
+            <span
+              v-if="(exercise.muscles_names?.[0] || exercise.primary_muscle)"
+              class="text-[11px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary self-start"
+            >
+              {{ exercise.muscles_names?.[0] || exercise.primary_muscle }}
+            </span>
+          </div>
         </button>
       </div>
     </div>

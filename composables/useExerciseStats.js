@@ -31,7 +31,7 @@ export const useExerciseStats = () => {
       const exerciseIds = counts.map(c => c.exercise_id)
       const { data: exercises, error: exercisesError } = await supabase
         .from('exercise')
-        .select('id, name, primary_muscle')
+        .select('id, name, primary_muscle, image_url')
         .in('id', exerciseIds)
 
       if (exercisesError) throw exercisesError

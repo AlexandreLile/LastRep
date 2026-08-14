@@ -34,3 +34,7 @@ supabase/.temp/
 
 # Vercel local config (contains org/project IDs)
 .vercel/
+
+# Cache local de données tierces (régénérable, pas de source de vérité)
+scripts/data/workoutx-exercises-cache.json
+scripts/data/workoutx-catalog-cache.json

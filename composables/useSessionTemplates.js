@@ -24,7 +24,8 @@ export function useSessionTemplates() {
             exercise:exercise_id (
               id,
               name,
-              primary_muscle
+              primary_muscle,
+              image_url
             )
           )
         `)

@@ -124,29 +124,40 @@
                       {{ index + 1 }}
                     </div>
                     
-                    <div class="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 pl-6">
-                      <!-- Informations sur l'exercice et poignée de drag -->
-                      <div class="flex items-center gap-3 w-full">
-                        <div class="p-2 rounded-full bg-primary/10 transition-all duration-300 group-hover:bg-primary/20 drag-handle cursor-grab active:cursor-grabbing shadow-sm hover:shadow focus:shadow-xl flex items-center justify-center">
-                          <GripVertical class="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
-                        </div>
-                        <div class="flex-1">
-                          <h4 class="text-base font-semibold text-foreground transition-colors duration-300 group-hover:text-primary">{{ element.exercise?.name }}</h4>
-                          <div class="flex items-center justify-between mt-2">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                              {{ element.exercise?.primary_muscle }}
-                            </span>
-                            
-                            <!-- Bouton supprimer placé à droite de la catégorie musculaire -->
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              class="h-6 w-6 flex items-center justify-center rounded-full hover:bg-red-50 hover:text-red-500 transition-all duration-300"
-                              @click.prevent.stop="openDeleteModal(element.id, element.exercise?.name)"
-                            >
-                              <Trash2 class="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
+                    <div class="relative flex items-center gap-3 pl-6">
+                      <!-- Poignée de drag -->
+                      <div class="p-2 rounded-full bg-primary/10 transition-all duration-300 group-hover:bg-primary/20 drag-handle cursor-grab active:cursor-grabbing shadow-sm hover:shadow focus:shadow-xl flex items-center justify-center flex-shrink-0">
+                        <GripVertical class="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
+                      </div>
+
+                      <!-- Image / fallback -->
+                      <div class="h-14 w-14 flex-shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-primary/15 to-muted flex items-center justify-center">
+                        <img
+                          v-if="element.exercise?.image_url"
+                          :src="element.exercise.image_url"
+                          :alt="element.exercise?.name"
+                          class="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                        <Dumbbell v-else class="h-6 w-6 text-primary/40" />
+                      </div>
+
+                      <!-- Nom, muscle, suppression -->
+                      <div class="flex-1 min-w-0">
+                        <h4 class="text-base font-semibold text-foreground truncate transition-colors duration-300 group-hover:text-primary">{{ element.exercise?.name }}</h4>
+                        <div class="flex items-center justify-between mt-1.5">
+                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                            {{ element.exercise?.primary_muscle }}
+                          </span>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            class="h-6 w-6 flex items-center justify-center rounded-full hover:bg-red-50 hover:text-red-500 transition-all duration-300"
+                            @click.prevent.stop="openDeleteModal(element.id, element.exercise?.name)"
+                          >
+                            <Trash2 class="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </div>
                     </div>
