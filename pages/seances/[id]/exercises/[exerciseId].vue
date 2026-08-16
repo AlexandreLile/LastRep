@@ -21,6 +21,14 @@
     </div>
     
     <Toaster />
+    <RecordCelebration
+      :open="showRecordCelebration"
+      @update:open="showRecordCelebration = $event"
+      :main-text="recordCelebrationMain"
+      :delta-text="recordCelebrationDelta"
+      :streak-text="recordCelebrationStreak"
+      :auto-close-ms="recordCelebrationStreak ? 2400 : 1800"
+    />
     <Dialog :open="showRestModal" @update:open="handleRestModalChange">
       <DialogContent class="sm:max-w-md" @pointer-down-outside.prevent @escape-key-down.prevent>
         <DialogHeader>
@@ -598,9 +606,13 @@ import {
   generateLocalId,
   isLocalId,
   getOfflineUser,
-  isOnline
+  isOnline,
+  logRecordEvent,
+  getStartOfWeek,
+  getRecordCountSince
 } from '~/utils/offlineTraining'
 import AdaptSetInput from '~/components/exercises/AdaptSetInput.vue'
+import RecordCelebration from '~/components/exercises/RecordCelebration.vue'
 import { toast } from 'vue-sonner'
 import { Toaster } from '@/components/ui/sonner'
 import {
@@ -645,6 +657,10 @@ const sessionId = ref(null)
 const isLeavingPage = ref(false)
 const bestSet = ref(null)
 const lastSessionVolume = ref(null)
+const showRecordCelebration = ref(false)
+const recordCelebrationMain = ref('')
+const recordCelebrationDelta = ref(null)
+const recordCelebrationStreak = ref(null)
 // Créer un ref local pour les séries
 const localExerciseSets = ref([])
 
@@ -1420,6 +1436,7 @@ const actuallyAddSet = async () => {
   localSetsCount.value = localExerciseSets.value.length
   
   // Mise à jour UI (record personnel local)
+  const previousBest = bestSet.value
   const isNewRecord = isBetterSet(localSet, bestSet.value)
   if (isNewRecord) {
     bestSet.value = localSet
@@ -1444,14 +1461,14 @@ const actuallyAddSet = async () => {
   
   pendingSetData.value = null
   
-  // Toast de succès
+  // Toast de succès (ou overlay de célébration si nouveau record)
   const description = getSetDescription(localSet, measurementType)
   if (isNewRecord) {
-    toast.success('Félicitations ! 🏆', { description: `Nouveau record ! ${description}` })
+    triggerRecordCelebration(localSet, previousBest, measurementType)
   } else {
     toast.success('Série enregistrée', { description })
   }
-  
+
   isSavingSet.value = false
 }
 
@@ -1468,6 +1485,67 @@ const getSetDescription = (set, measurementType) => {
     return `${formatDuration(set.duration_seconds || 0)} sur ${((set.distance_meters || 0) / 1000).toFixed(2)} km`
   }
   return 'Série ajoutée'
+}
+
+// Construit le texte principal + le delta affichés dans l'overlay de célébration de record
+const buildRecordCelebrationData = (newSet, previousBest, measurementType) => {
+  if (measurementType === 'time') {
+    const newTime = newSet.duration_seconds || 0
+    const prevTime = previousBest ? (previousBest.isTimeExercise ? previousBest.maxTime : (previousBest.duration_seconds || 0)) : 0
+    const delta = prevTime > 0 ? newTime - prevTime : null
+    return {
+      mainText: formatDuration(newTime),
+      deltaText: delta > 0 ? `+${formatDuration(delta)}` : null
+    }
+  }
+
+  if (measurementType === 'reps') {
+    const newReps = newSet.reps || 0
+    const prevReps = previousBest ? (previousBest.isRepsExercise ? previousBest.maxReps : (previousBest.reps || 0)) : 0
+    const delta = prevReps > 0 ? newReps - prevReps : null
+    return {
+      mainText: `${newReps} répétitions`,
+      deltaText: delta > 0 ? `+${delta} reps` : null
+    }
+  }
+
+  if (measurementType === 'distance') {
+    const newDistance = newSet.distance_meters || 0
+    return { mainText: `${(newDistance / 1000).toFixed(2)} km`, deltaText: null }
+  }
+
+  if (measurementType === 'time_reps') {
+    return {
+      mainText: `${formatDuration(newSet.duration_seconds || 0)} × ${newSet.reps || 0}`,
+      deltaText: null
+    }
+  }
+
+  if (measurementType === 'time_distance') {
+    return { mainText: getSetDescription(newSet, measurementType), deltaText: null }
+  }
+
+  // weight_reps / weight_only (par défaut)
+  const newWeight = newSet.weight_kg || 0
+  const prevWeight = previousBest?.weight_kg || 0
+  const deltaWeight = prevWeight > 0 ? +(newWeight - prevWeight).toFixed(2) : null
+  return {
+    mainText: measurementType === 'weight_only' ? `${newWeight} kg` : `${newWeight} kg × ${newSet.reps || 0}`,
+    deltaText: deltaWeight > 0 ? `+${deltaWeight} kg` : null
+  }
+}
+
+const triggerRecordCelebration = (newSet, previousBest, measurementType) => {
+  const { mainText, deltaText } = buildRecordCelebrationData(newSet, previousBest, measurementType)
+  recordCelebrationMain.value = mainText
+  recordCelebrationDelta.value = deltaText
+
+  // Streak hebdomadaire (tous exercices confondus, calculé en local uniquement)
+  logRecordEvent(exercise.value?.exercise?.id)
+  const weeklyCount = getRecordCountSince(getStartOfWeek())
+  recordCelebrationStreak.value = weeklyCount >= 2 ? `🔥 ${weeklyCount}ᵉ record cette semaine` : null
+
+  showRecordCelebration.value = true
 }
 
 const handleAddSet = async () => {
@@ -1725,12 +1803,11 @@ const handleUpdateSet = async () => {
   
   // Vérifier si c'est un nouveau record
   const updatedLocalSet = { ...previousSetData, ...updateData }
+  const previousBestForEdit = bestSet.value
   const isNewRecord = isBetterSet(updatedLocalSet, bestSet.value)
   if (isNewRecord) {
     bestSet.value = updatedLocalSet
-    toast.success('Félicitations ! 🏆', { 
-      description: `Nouveau record ! ${getSetDescription(updatedLocalSet, measurementType)}` 
-    })
+    triggerRecordCelebration(updatedLocalSet, previousBestForEdit, measurementType)
   } else {
     toast.success('Série modifiée')
   }
