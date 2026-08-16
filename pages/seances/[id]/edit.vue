@@ -244,13 +244,13 @@
           'p-0',
           isMobile
             ? 'fixed inset-0 !translate-x-0 !translate-y-0 !top-0 !left-0 w-full h-full max-w-full max-h-full rounded-none'
-            : 'sm:max-w-2xl sm:h-[85vh] sm:flex sm:flex-col sm:p-6'
+            : 'md:max-w-2xl md:h-[85vh] md:flex md:flex-col md:p-6'
         ]"
       >
         <!-- Header mobile avec bouton retour -->
-        <div class="sticky top-0 z-10 bg-card border-b border-border p-4 flex items-center gap-3 sm:hidden">
-          <Button 
-            variant="ghost" 
+        <div class="sticky top-0 z-10 bg-card border-b border-border p-4 flex items-center gap-3 md:hidden">
+          <Button
+            variant="ghost"
             size="icon"
             class="h-10 w-10 rounded-full"
             @click="handleModalClose(false)"
@@ -262,9 +262,9 @@
             <p class="text-xs text-muted-foreground">Sélectionnez des exercices</p>
           </div>
         </div>
-        
+
         <!-- Header desktop -->
-        <DialogHeader class="hidden sm:block pb-4">
+        <DialogHeader class="hidden md:block pb-4">
           <DialogTitle>Ajouter des exercices</DialogTitle>
           <DialogDescription>
             Sélectionnez des exercices à ajouter à votre séance
