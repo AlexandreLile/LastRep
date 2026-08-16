@@ -157,6 +157,39 @@ export const cachePersonalBest = (exerciseId, bestSet) => {
 export const getCachedPersonalBest = (exerciseId) => readJson(personalBestKey(exerciseId), null)
 
 // ============================================
+// JOURNAL DES RECORDS (pour le streak hebdomadaire)
+// ============================================
+// Stocké localement uniquement (device-first) : pas de sync serveur,
+// donc le compteur repart de zéro si l'utilisateur change d'appareil
+// ou vide son stockage local.
+const recordEventsKey = 'offline:recordEvents'
+const RECORD_EVENTS_MAX_AGE_DAYS = 60
+
+export const logRecordEvent = (exerciseId) => {
+  if (!exerciseId) return
+  const events = readJson(recordEventsKey, [])
+  events.push({ exercise_id: exerciseId, achieved_at: new Date().toISOString() })
+
+  const cutoff = Date.now() - RECORD_EVENTS_MAX_AGE_DAYS * 24 * 60 * 60 * 1000
+  const pruned = events.filter((e) => new Date(e.achieved_at).getTime() >= cutoff)
+  writeJson(recordEventsKey, pruned)
+}
+
+export const getStartOfWeek = (date = new Date()) => {
+  const d = new Date(date)
+  const day = d.getDay() // 0 = dimanche ... 6 = samedi
+  const diffToMonday = day === 0 ? -6 : 1 - day
+  d.setDate(d.getDate() + diffToMonday)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+export const getRecordCountSince = (sinceDate) => {
+  const events = readJson(recordEventsKey, [])
+  return events.filter((e) => new Date(e.achieved_at) >= sinceDate).length
+}
+
+// ============================================
 // CACHE WORKOUT SESSIONS & EXERCISES
 // ============================================
 const workoutSessionKey = (sessionId) => `offline:workoutSession:${sessionId}`
