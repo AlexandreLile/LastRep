@@ -24,31 +24,31 @@
               <div v-if="session.notes" class="mt-1 text-sm text-muted-foreground">
                 {{ session.notes }}
               </div>
+            </div>
+          </div>
 
-              <!-- Badges motivation -->
-              <div v-if="!motivation.loading" class="mt-4 flex flex-wrap gap-2">
-                <div
-                  v-if="motivation.lastSessionPrCount > 0"
-                  class="inline-flex items-center gap-1.5 rounded-full border border-record/30 bg-record/10 px-3 py-1.5 text-xs font-medium text-record"
-                >
-                  <Trophy class="h-3.5 w-3.5 flex-shrink-0" />
-                  🏆 {{ motivation.lastSessionPrCount }} record{{ motivation.lastSessionPrCount > 1 ? 's' : '' }} battu{{ motivation.lastSessionPrCount > 1 ? 's' : '' }}
-                </div>
-                <div
-                  v-if="motivation.recordsInPlay > 0"
-                  class="inline-flex items-center gap-1.5 rounded-full border border-record/30 bg-record/10 px-3 py-1.5 text-xs font-medium text-record"
-                >
-                  <Trophy class="h-3.5 w-3.5 flex-shrink-0" />
-                  {{ motivation.recordsInPlay }} record{{ motivation.recordsInPlay > 1 ? 's' : '' }} personnel{{ motivation.recordsInPlay > 1 ? 's' : '' }} en jeu
-                </div>
-                <div
-                  v-if="motivation.isFirstTime"
-                  class="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary"
-                >
-                  <Sparkles class="h-3.5 w-3.5 flex-shrink-0" />
-                  Première fois sur cette séance — pose ta première référence
-                </div>
-              </div>
+          <!-- Badges motivation -->
+          <div v-if="!motivation.loading" class="mt-4 flex flex-wrap gap-2">
+            <div
+              v-if="motivation.lastSessionPrCount > 0"
+              class="inline-flex items-center gap-1.5 rounded-full border border-record/30 bg-record/10 px-3 py-1.5 text-xs font-medium text-record"
+            >
+              <Trophy class="h-3.5 w-3.5 flex-shrink-0" />
+              🏆 {{ motivation.lastSessionPrCount }} record{{ motivation.lastSessionPrCount > 1 ? 's' : '' }} battu{{ motivation.lastSessionPrCount > 1 ? 's' : '' }}
+            </div>
+            <div
+              v-if="motivation.recordsInPlay > 0"
+              class="inline-flex items-center gap-1.5 rounded-full border border-record/30 bg-record/10 px-3 py-1.5 text-xs font-medium text-record"
+            >
+              <Trophy class="h-3.5 w-3.5 flex-shrink-0" />
+              {{ motivation.recordsInPlay }} record{{ motivation.recordsInPlay > 1 ? 's' : '' }} personnel{{ motivation.recordsInPlay > 1 ? 's' : '' }} en jeu
+            </div>
+            <div
+              v-if="motivation.isFirstTime"
+              class="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary"
+            >
+              <Sparkles class="h-3.5 w-3.5 flex-shrink-0" />
+              Première fois sur cette séance — pose ta première référence
             </div>
           </div>
 
