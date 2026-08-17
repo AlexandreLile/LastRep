@@ -164,6 +164,11 @@ function resolveMeasurementType(category, equipment, name) {
   if (base === 'time' && CARDIO_LOAD_EQUIPMENT.has(equipment) && !CARDIO_MACHINE_NAME_PATTERN.test(name)) {
     return 'weight_reps'
   }
+  // Poids du corps : reps obligatoire, poids optionnel (pour le lestage,
+  // ex. tractions/pompes lestées), comme les anciens exercices bodyweight.
+  if (base === 'weight_reps' && equipment === 'Poids du corps') {
+    return 'reps'
+  }
   return base
 }
 
@@ -280,6 +285,7 @@ async function main() {
       is_custom: false,
       is_legacy: false,
       category_id: categoryIdByName.get(categoryName) || null,
+      equipment: ex.equipment || null,
       hasGif: Boolean(ex.gifUrl),
       target: ex.target,
       secondaryMuscles: ex.secondaryMuscles || [],
@@ -323,6 +329,7 @@ async function main() {
     is_custom: r.is_custom,
     is_legacy: r.is_legacy,
     category_id: r.category_id,
+    equipment: r.equipment,
     image_url: r.image_url || null,
   }))
 
