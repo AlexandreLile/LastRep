@@ -10,40 +10,71 @@
     </div>
 
     <div v-else-if="session">
-      <!-- Header amélioré -->
-      <div class="mb-8 bg-card rounded-xl p-6">
-        <div class="flex flex-col sm:flex-row gap-6">
+      <!-- Hero -->
+      <div class="mb-8 relative overflow-hidden rounded-2xl border border-primary/15 bg-card">
+        <div class="hero-glow absolute inset-0" aria-hidden="true"></div>
+
+        <div class="relative z-10 p-6 sm:p-8">
           <div class="flex items-start gap-4">
-            <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
-              <Dumbbell class="h-6 w-6 text-primary" />
+            <div class="w-14 h-14 flex-shrink-0 bg-primary/15 rounded-full flex items-center justify-center ring-1 ring-primary/30">
+              <Dumbbell class="h-7 w-7 text-primary" />
             </div>
-            <div>
-              <h2 class="text-2xl font-bold text-foreground">{{ session.title }}</h2>
-              <div v-if="session.notes" class="mt-2 text-sm text-muted-foreground">
+            <div class="min-w-0">
+              <h2 class="text-2xl sm:text-3xl font-bold text-foreground">{{ session.title }}</h2>
+              <div v-if="session.notes" class="mt-1 text-sm text-muted-foreground">
                 {{ session.notes }}
               </div>
             </div>
           </div>
-          <div class="flex flex-wrap gap-4 sm:ml-auto self-end">
-            <Button 
-              @click="startSession" 
-              :disabled="exercises.length === 0"
-              class="relative overflow-hidden group"
-              :class="[
-                exercises.length === 0 
-                  ? 'bg-muted cursor-not-allowed' 
-                  : 'bg-primary hover:bg-primary/90',
-                'text-white px-6 py-3 rounded-lg transition-all duration-300'
-              ]"
+
+          <!-- Badges motivation -->
+          <div v-if="!motivation.loading" class="mt-4 flex flex-wrap gap-2">
+            <div
+              v-if="motivation.lastSessionPrCount > 0"
+              class="inline-flex items-center gap-1.5 rounded-full border border-record/30 bg-record/10 px-3 py-1.5 text-xs font-medium text-record"
             >
-              <span class="relative z-10 flex items-center">
-                <Play class="mr-2 h-4 w-4" />
-                {{ exercises.length === 0 ? 'Ajoutez des exercices pour démarrer' : 'Démarrer la séance' }}
-              </span>
-              <div class="absolute inset-0 bg-gradient-to-r from-primary-light to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </Button>
-            <Button 
-              @click="editSession" 
+              <Trophy class="h-3.5 w-3.5 flex-shrink-0" />
+              🏆 {{ motivation.lastSessionPrCount }} record{{ motivation.lastSessionPrCount > 1 ? 's' : '' }} battu{{ motivation.lastSessionPrCount > 1 ? 's' : '' }}
+            </div>
+            <div
+              v-if="motivation.recordsInPlay > 0"
+              class="inline-flex items-center gap-1.5 rounded-full border border-record/30 bg-record/10 px-3 py-1.5 text-xs font-medium text-record"
+            >
+              <Trophy class="h-3.5 w-3.5 flex-shrink-0" />
+              {{ motivation.recordsInPlay }} record{{ motivation.recordsInPlay > 1 ? 's' : '' }} personnel{{ motivation.recordsInPlay > 1 ? 's' : '' }} en jeu
+            </div>
+            <div
+              v-if="motivation.isFirstTime"
+              class="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary"
+            >
+              <Sparkles class="h-3.5 w-3.5 flex-shrink-0" />
+              Première fois sur cette séance — pose ta première référence
+            </div>
+          </div>
+
+          <div class="mt-6 flex flex-wrap gap-3">
+            <div class="relative inline-block">
+              <div v-if="exercises.length > 0" class="cta-glow absolute -inset-2 rounded-xl bg-primary" aria-hidden="true"></div>
+              <Button
+                @click="startSession"
+                :disabled="exercises.length === 0"
+                class="relative overflow-hidden group"
+                :class="[
+                  exercises.length === 0
+                    ? 'bg-muted cursor-not-allowed'
+                    : 'bg-primary hover:bg-primary/90',
+                  'text-white px-6 py-3 rounded-lg transition-all duration-300'
+                ]"
+              >
+                <span class="relative z-10 flex items-center">
+                  <Play class="mr-2 h-4 w-4" />
+                  {{ exercises.length === 0 ? 'Ajoutez des exercices pour démarrer' : 'Démarrer la séance' }}
+                </span>
+                <div class="absolute inset-0 bg-gradient-to-r from-primary-light to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </Button>
+            </div>
+            <Button
+              @click="editSession"
               variant="outline"
               class="px-6 py-3 text-foreground hover:text-primary hover:bg-primary/10 border-border transition-colors duration-300 flex items-center font-medium"
             >
@@ -73,8 +104,8 @@
             <p class="text-base text-muted-foreground text-center">
               Aucun exercice pour cette séance
             </p>
-            <Button 
-              @click="editSession" 
+            <Button
+              @click="editSession"
               variant="outline"
               class="mt-2"
             >
@@ -84,10 +115,11 @@
 
           <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             <button
-              v-for="exercise in exercises"
+              v-for="(exercise, index) in exercises"
               :key="exercise.id"
               type="button"
-              class="group relative flex flex-col text-left rounded-xl overflow-hidden border bg-background transition-all duration-150 hover:border-primary/40 active:scale-[0.98]"
+              :style="{ animationDelay: `${index * 40}ms` }"
+              class="exercise-card group relative flex flex-col text-left rounded-xl overflow-hidden border bg-background transition-all duration-150 hover:border-primary/40 active:scale-[0.98]"
               @click="router.push(`/exercices/${exercise.exercise_id}`)"
             >
               <!-- Image / fallback -->
@@ -139,23 +171,6 @@
           </div>
           <MuscleDistributionChart :workout-session-id="route.params.id" />
         </div>
-        
-        <!-- Section de motivation -->
-        <div v-if="exercises.length > 0" class="bg-primary rounded-xl p-6 text-white hover:shadow-lg transition-all duration-300">
-          <div class="flex flex-col items-center text-center py-4">
-            <h3 class="text-xl md:text-2xl font-bold mb-2">Prêt à vous dépasser ?</h3>
-            <p class="text-white/90 max-w-2xl mx-auto mb-4">Commencez votre séance maintenant et suivez vos performances en temps réel.</p>
-            <div class="text-4xl mb-4">💪</div>
-            <Button 
-              @click="startSession" 
-              variant="outline"
-              class="bg-card text-primary hover:bg-card/90 border-white"
-            >
-              <Play class="mr-2 h-4 w-4" />
-              Démarrer la séance
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -167,9 +182,10 @@ import { useWorkoutSessions } from '~/composables/useWorkoutSession'
 import { useWorkoutExercise } from '~/composables/useWorkoutExercise'
 import { usePerformedSession } from '~/composables/usePerformedSession'
 import { getOfflineUser, getCachedUser } from '~/utils/offlineTraining'
+import { loadSessionMotivation } from '~/composables/useSessionMotivation'
 import SessionWeightChart from '@/components/charts/SessionWeightChart.vue'
 import MuscleDistributionChart from '@/components/charts/MuscleDistributionChart.vue'
-import { 
+import {
   Dumbbell,
   Play,
   Pencil,
@@ -177,7 +193,9 @@ import {
   BarChart,
   PieChart,
   FolderPlus,
-  AlertTriangle
+  AlertTriangle,
+  Trophy,
+  Sparkles
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -191,6 +209,13 @@ const session = ref(null)
 const loading = ref(true)
 const error = ref(null)
 
+const motivation = ref({
+  loading: true,
+  isFirstTime: false,
+  lastSessionPrCount: 0,
+  recordsInPlay: 0
+})
+
 const formatDate = (date) => {
   return new Date(date).toLocaleDateString('fr-FR', {
     year: 'numeric',
@@ -199,6 +224,20 @@ const formatDate = (date) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// Charge les données motivationnelles (dernière fois + records en jeu).
+// Best-effort : ne bloque jamais l'affichage de la séance si ça échoue.
+const loadMotivationData = async () => {
+  const normalizedExercises = exercises.value.map((ex) => ({
+    exercise_id: ex.exercise_id,
+    measurement_type: ex.exercise?.measurement_type
+  }))
+  const result = await loadSessionMotivation(supabase, {
+    sessionId: route.params.id,
+    exercises: normalizedExercises
+  })
+  motivation.value = { loading: false, ...result }
 }
 
 const loadSession = async () => {
@@ -214,6 +253,7 @@ const loadSession = async () => {
   } finally {
     loading.value = false
   }
+  loadMotivationData()
 }
 
 const editSession = () => {
@@ -249,12 +289,54 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.3;
+.hero-glow {
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hero-glow::before,
+.hero-glow::after {
+  content: '';
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+}
+
+.hero-glow::before {
+  width: 280px;
+  height: 280px;
+  top: -110px;
+  left: -60px;
+  background: var(--primary);
+  opacity: 0.25;
+}
+
+.hero-glow::after {
+  width: 240px;
+  height: 240px;
+  bottom: -100px;
+  right: -50px;
+  background: var(--record);
+  opacity: 0.18;
+}
+
+.cta-glow {
+  filter: blur(16px);
+  animation: glow 2.4s ease-in-out infinite;
+}
+
+.exercise-card {
+  animation: fadeInUp 0.4s ease both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
-  50% {
-    opacity: 0.7;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -264,8 +346,15 @@ onMounted(() => {
     transform: scale(1);
   }
   50% {
-    opacity: 0.4;
-    transform: scale(1.02);
+    opacity: 0.45;
+    transform: scale(1.05);
   }
 }
-</style> 
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-glow,
+  .exercise-card {
+    animation: none;
+  }
+}
+</style>
