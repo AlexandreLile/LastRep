@@ -164,6 +164,11 @@ function resolveMeasurementType(category, equipment, name) {
   if (base === 'time' && CARDIO_LOAD_EQUIPMENT.has(equipment) && !CARDIO_MACHINE_NAME_PATTERN.test(name)) {
     return 'weight_reps'
   }
+  // Poids du corps : reps obligatoire, poids optionnel (pour le lestage,
+  // ex. tractions/pompes lestées), comme les anciens exercices bodyweight.
+  if (base === 'weight_reps' && equipment === 'Poids du corps') {
+    return 'reps'
+  }
   return base
 }
 
