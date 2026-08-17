@@ -94,7 +94,8 @@ export function useWorkoutSessions(user) {
                         exercise:exercise_id (
                             id,
                             name,
-                            primary_muscle
+                            primary_muscle,
+                            measurement_type
                         )
                     )
                 `)
