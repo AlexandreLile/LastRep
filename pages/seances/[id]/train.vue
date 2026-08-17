@@ -28,22 +28,18 @@
               <!-- Badges motivation -->
               <div v-if="!motivation.loading" class="mt-4 flex flex-wrap gap-2">
                 <div
-                  v-if="motivation.lastSession"
+                  v-if="motivation.lastSessionPrCount > 0"
                   class="inline-flex items-center gap-1.5 rounded-full border border-record/30 bg-record/10 px-3 py-1.5 text-xs font-medium text-record"
                 >
-                  <Clock class="h-3.5 w-3.5 flex-shrink-0" />
-                  <span>
-                    Dernière fois {{ formatRelativeDays(motivation.lastSession.endedAt) }}
-                    <span v-if="motivation.lastSession.setsCount > 0">· {{ motivation.lastSession.setsCount }} séries</span>
-                    <span v-if="motivation.lastSession.prCount > 0">· 🏆 {{ motivation.lastSession.prCount }} record{{ motivation.lastSession.prCount > 1 ? 's' : '' }} battu{{ motivation.lastSession.prCount > 1 ? 's' : '' }}</span>
-                  </span>
+                  <Trophy class="h-3.5 w-3.5 flex-shrink-0" />
+                  🏆 {{ motivation.lastSessionPrCount }} record{{ motivation.lastSessionPrCount > 1 ? 's' : '' }} battu{{ motivation.lastSessionPrCount > 1 ? 's' : '' }}
                 </div>
                 <div
                   v-if="motivation.recordsInPlay > 0"
                   class="inline-flex items-center gap-1.5 rounded-full border border-record/30 bg-record/10 px-3 py-1.5 text-xs font-medium text-record"
                 >
                   <Trophy class="h-3.5 w-3.5 flex-shrink-0" />
-                  {{ motivation.recordsInPlay }} record{{ motivation.recordsInPlay > 1 ? 's' : '' }} personnel{{ motivation.recordsInPlay > 1 ? 's' : '' }} en jeu aujourd'hui
+                  {{ motivation.recordsInPlay }} record{{ motivation.recordsInPlay > 1 ? 's' : '' }} personnel{{ motivation.recordsInPlay > 1 ? 's' : '' }} en jeu
                 </div>
                 <div
                   v-if="motivation.isFirstTime"
@@ -185,7 +181,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useWorkoutSessions } from '~/composables/useWorkoutSession'
 import { useWorkoutExercise } from '~/composables/useWorkoutExercise'
 import { usePerformedSession } from '~/composables/usePerformedSession'
-import { getOfflineUser, getCachedUser, cachePersonalBest } from '~/utils/offlineTraining'
+import { getOfflineUser, getCachedUser } from '~/utils/offlineTraining'
+import { loadSessionMotivation } from '~/composables/useSessionMotivation'
 import SessionWeightChart from '@/components/charts/SessionWeightChart.vue'
 import MuscleDistributionChart from '@/components/charts/MuscleDistributionChart.vue'
 import {
@@ -198,7 +195,6 @@ import {
   FolderPlus,
   AlertTriangle,
   Trophy,
-  Clock,
   Sparkles
 } from 'lucide-vue-next'
 
@@ -216,7 +212,7 @@ const error = ref(null)
 const motivation = ref({
   loading: true,
   isFirstTime: false,
-  lastSession: null, // { endedAt, startedAt, setsCount, prCount }
+  lastSessionPrCount: 0,
   recordsInPlay: 0
 })
 
@@ -230,113 +226,18 @@ const formatDate = (date) => {
   })
 }
 
-// "il y a X jours" plutôt qu'une date brute : plus rapide à lire, plus incitatif
-const formatRelativeDays = (dateString) => {
-  const diffMs = Date.now() - new Date(dateString).getTime()
-  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  if (days <= 0) return "aujourd'hui"
-  if (days === 1) return 'hier'
-  if (days < 7) return `il y a ${days} jours`
-  const weeks = Math.floor(days / 7)
-  if (weeks < 5) return `il y a ${weeks} semaine${weeks > 1 ? 's' : ''}`
-  const months = Math.floor(days / 30)
-  return `il y a ${months} mois`
-}
-
-// Meilleure série d'un exercice selon son measurement_type — même logique
-// que isBetterSet() dans la page de logging, pour rester cohérent avec ce
-// qui déclenche une célébration de record.
-const pickBestSet = (sets, measurementType) => {
-  if (!sets.length) return null
-  const type = measurementType || 'weight_reps'
-
-  if (type === 'time' || type === 'time_reps') {
-    return sets.reduce((best, s) => (!best || (s.duration_seconds || 0) > (best.duration_seconds || 0)) ? s : best, null)
-  }
-  if (type === 'reps') {
-    return sets.reduce((best, s) => (!best || (s.reps || 0) > (best.reps || 0)) ? s : best, null)
-  }
-  if (type === 'distance' || type === 'time_distance') {
-    return sets.reduce((best, s) => (!best || (s.distance_meters || 0) > (best.distance_meters || 0)) ? s : best, null)
-  }
-  return sets.reduce((best, s) => {
-    if (!best) return s
-    if ((s.weight_kg || 0) > (best.weight_kg || 0)) return s
-    if ((s.weight_kg || 0) === (best.weight_kg || 0) && (s.reps || 0) > (best.reps || 0)) return s
-    return best
-  }, null)
-}
-
 // Charge les données motivationnelles (dernière fois + records en jeu).
 // Best-effort : ne bloque jamais l'affichage de la séance si ça échoue.
 const loadMotivationData = async () => {
-  try {
-    const user = await getOfflineUser(supabase)
-    const exerciseIds = exercises.value.map(e => e.exercise_id).filter(Boolean)
-    if (!user || !exerciseIds.length) {
-      motivation.value.loading = false
-      return
-    }
-
-    const { data: lastPerformed } = await supabase
-      .from('performedsession')
-      .select('id, started_at, ended_at')
-      .eq('workout_session_id', route.params.id)
-      .eq('user_id', user.id)
-      .not('ended_at', 'is', null)
-      .order('ended_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    if (!lastPerformed) {
-      motivation.value = { loading: false, isFirstTime: true, lastSession: null, recordsInPlay: 0 }
-      return
-    }
-
-    const { data: allSets } = await supabase
-      .from('exerciseset')
-      .select('exercise_id, weight_kg, reps, duration_seconds, distance_meters, created_at, performed_session_id')
-      .eq('user_id', user.id)
-      .in('exercise_id', exerciseIds)
-
-    const setsByExercise = new Map()
-    ;(allSets || []).forEach((s) => {
-      if (!setsByExercise.has(s.exercise_id)) setsByExercise.set(s.exercise_id, [])
-      setsByExercise.get(s.exercise_id).push(s)
-    })
-
-    let recordsInPlay = 0
-    let prLastTime = 0
-    let lastSessionSetsCount = 0
-
-    exercises.value.forEach((ex) => {
-      const type = ex.exercise?.measurement_type || 'weight_reps'
-      const sets = setsByExercise.get(ex.exercise_id) || []
-      if (!sets.length) return
-
-      lastSessionSetsCount += sets.filter(s => s.performed_session_id === lastPerformed.id).length
-
-      const best = pickBestSet(sets, type)
-      if (!best) return
-      recordsInPlay++
-      cachePersonalBest(ex.exercise_id, best)
-      if (best.performed_session_id === lastPerformed.id) prLastTime++
-    })
-
-    motivation.value = {
-      loading: false,
-      isFirstTime: false,
-      lastSession: {
-        endedAt: lastPerformed.ended_at,
-        startedAt: lastPerformed.started_at,
-        setsCount: lastSessionSetsCount,
-        prCount: prLastTime
-      },
-      recordsInPlay
-    }
-  } catch (e) {
-    motivation.value.loading = false
-  }
+  const normalizedExercises = exercises.value.map((ex) => ({
+    exercise_id: ex.exercise_id,
+    measurement_type: ex.exercise?.measurement_type
+  }))
+  const result = await loadSessionMotivation(supabase, {
+    sessionId: route.params.id,
+    exercises: normalizedExercises
+  })
+  motivation.value = { loading: false, ...result }
 }
 
 const loadSession = async () => {

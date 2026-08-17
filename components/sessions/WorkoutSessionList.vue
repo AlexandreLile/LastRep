@@ -13,44 +13,58 @@
       Aucune séance trouvée
     </div>
 
-    <div v-else class="space-y-6">
-      <div 
-        v-for="session in sortedSessions" 
-        :key="session.id" 
-        class="bg-card rounded-xl p-6 cursor-pointer relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+    <div v-else class="space-y-5">
+      <div
+        v-for="(session, index) in sortedSessions"
+        :key="session.id"
+        :style="{ animationDelay: `${index * 50}ms` }"
+        class="session-card group relative overflow-hidden rounded-xl border border-primary/15 bg-card cursor-pointer transition-all duration-300 hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10"
         @click="viewSession(session.id)"
       >
-        <!-- Effet de bordure néon -->
-        <div class="absolute inset-0 rounded-xl bg-primary/20 blur-md transition-all duration-300 group-hover:bg-primary/30 group-hover:blur-lg"></div>
-        <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/50 via-primary/30 to-primary/50 animate-[pulse_2s_ease-in-out_infinite] group-hover:from-primary/60 group-hover:via-primary/40 group-hover:to-primary/60"></div>
-        <div class="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/40 to-transparent animate-[glow_3s_ease-in-out_infinite] group-hover:from-primary/50 group-hover:to-transparent"></div>
-        <div class="absolute inset-[1px] rounded-xl bg-card"></div>
+        <div class="session-glow absolute inset-0" aria-hidden="true"></div>
 
-        <div class="relative flex flex-col h-full">
+        <div class="relative flex flex-col h-full p-6">
           <div class="flex flex-wrap gap-4 items-start mb-4">
             <div class="flex items-center space-x-3 flex-1 max-w-[300px]">
               <div class="p-2 rounded-full bg-primary/20 transition-all duration-300 group-hover:bg-primary/30 group-hover:scale-110">
                 <Dumbbell class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
               </div>
-              <div>
+              <div class="text-left min-w-0">
                 <h3 class="text-lg font-medium text-foreground transition-colors duration-300 group-hover:text-primary">{{ session.title }}</h3>
                 <p class="text-xs text-muted-foreground">Dernière modification: {{ formatDate(session.updated_at) }}</p>
+                <div v-if="sessionBadges[session.id]" class="mt-1.5 flex flex-wrap gap-1.5">
+                  <span
+                    v-if="sessionBadges[session.id].lastSessionPrCount > 0"
+                    class="inline-flex items-center gap-1 rounded-full border border-record/30 bg-record/10 px-2 py-0.5 text-[11px] font-medium text-record"
+                  >
+                    🏆 {{ sessionBadges[session.id].lastSessionPrCount }} record{{ sessionBadges[session.id].lastSessionPrCount > 1 ? 's' : '' }} battu{{ sessionBadges[session.id].lastSessionPrCount > 1 ? 's' : '' }}
+                  </span>
+                  <span
+                    v-if="sessionBadges[session.id].recordsInPlay > 0"
+                    class="inline-flex items-center gap-1 rounded-full border border-record/30 bg-record/10 px-2 py-0.5 text-[11px] font-medium text-record"
+                  >
+                    {{ sessionBadges[session.id].recordsInPlay }} record{{ sessionBadges[session.id].recordsInPlay > 1 ? 's' : '' }} en jeu
+                  </span>
+                </div>
               </div>
             </div>
             <div class="hidden sm:flex items-center gap-2">
-              <Button 
-                variant="default" 
-                size="sm" 
-                class="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground" 
-                @click.stop="navigateToSession(session.id)"
-              >
-                <Play class="h-4 w-4" />
-                <span class="text-sm font-medium">Démarrer</span>
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                class="flex items-center gap-1 text-foreground hover:text-primary hover:bg-primary/10" 
+              <div class="relative inline-block">
+                <div class="cta-glow absolute -inset-1.5 rounded-lg bg-primary" aria-hidden="true"></div>
+                <Button
+                  variant="default"
+                  size="sm"
+                  class="relative flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  @click.stop="navigateToSession(session.id)"
+                >
+                  <Play class="h-4 w-4" />
+                  <span class="text-sm font-medium">Démarrer</span>
+                </Button>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                class="flex items-center gap-1 text-foreground hover:text-primary hover:bg-primary/10"
                 @click.stop="editSession(session)"
               >
                 <Pencil class="h-4 w-4" />
@@ -58,14 +72,14 @@
               </Button>
             </div>
           </div>
-          
+
           <p class="text-muted-foreground mb-4 flex-grow line-clamp-2 transition-colors duration-300 group-hover:text-gray-700">{{ session.notes }}</p>
-          
+
           <div class="space-y-2">
             <div class="flex flex-wrap gap-2">
-              <span 
-                v-for="exercise in session.exercises" 
-                :key="exercise.id" 
+              <span
+                v-for="exercise in session.exercises"
+                :key="exercise.id"
                 class="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-primary/10 group-hover:text-primary group-hover:scale-105"
               >
                 {{ exercise.exercise.name }}
@@ -75,19 +89,22 @@
 
           <!-- Actions visibles seulement sur mobile -->
           <div class="sm:hidden flex justify-end gap-2 mt-4">
-            <Button 
-              variant="default" 
-              size="sm" 
-              class="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1 font-medium" 
-              @click.stop="navigateToSession(session.id)"
-            >
-              <Play class="h-3.5 w-3.5" />
-              <span class="text-xs">Démarrer</span>
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              class="flex items-center gap-1 text-foreground bg-muted hover:bg-primary/20 hover:text-primary px-3 py-1 font-medium" 
+            <div class="relative inline-block">
+              <div class="cta-glow absolute -inset-1.5 rounded-lg bg-primary" aria-hidden="true"></div>
+              <Button
+                variant="default"
+                size="sm"
+                class="relative flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1 font-medium"
+                @click.stop="navigateToSession(session.id)"
+              >
+                <Play class="h-3.5 w-3.5" />
+                <span class="text-xs">Démarrer</span>
+              </Button>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              class="flex items-center gap-1 text-foreground bg-muted hover:bg-primary/20 hover:text-primary px-3 py-1 font-medium"
               @click.stop="editSession(session)"
             >
               <Pencil class="h-3.5 w-3.5" />
@@ -103,18 +120,38 @@
 <script setup>
 import { Pencil, Dumbbell, Play } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, reactive } from 'vue';
+import { loadSessionMotivation } from '~/composables/useSessionMotivation';
 
 
 const router = useRouter();
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();
-const { 
-  workoutSessions, 
-  loading, 
-  error, 
+const {
+  workoutSessions,
+  loading,
+  error,
   getWorkoutSessions
 } = useWorkoutSessions(user);
+
+// Résumé motivation par séance (id -> { lastSessionPrCount, recordsInPlay }), chargé en best-effort
+const sessionBadges = reactive({});
+
+const loadSessionBadges = async () => {
+  await Promise.all(
+    workoutSessions.value.map(async (session) => {
+      const normalizedExercises = (session.exercises || []).map((ex) => ({
+        exercise_id: ex.exercise?.id,
+        measurement_type: ex.exercise?.measurement_type
+      }))
+      const result = await loadSessionMotivation(supabase, {
+        sessionId: session.id,
+        exercises: normalizedExercises
+      })
+      sessionBadges[session.id] = result
+    })
+  )
+}
 
 // Séances triées par date de modification (plus récentes en premier)
 const sortedSessions = computed(() => {
@@ -126,7 +163,7 @@ const sortedSessions = computed(() => {
 // Rafraîchir la liste au montage
 onMounted(async () => {
   await getWorkoutSessions();
-  console.log('Workout sessions:', workoutSessions.value);
+  loadSessionBadges();
 });
 
 const viewSession = (sessionId) => {
@@ -161,12 +198,47 @@ const formatDate = (dateString) => {
 </script>
 
 <style scoped>
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.3;
+.session-card {
+  animation: fadeInUp 0.4s ease both;
+}
+
+.session-glow {
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.group:hover .session-glow {
+  opacity: 1;
+}
+
+.session-glow::before {
+  content: '';
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  top: -80px;
+  right: -60px;
+  border-radius: 9999px;
+  background: var(--primary);
+  opacity: 0.15;
+  filter: blur(60px);
+}
+
+.cta-glow {
+  filter: blur(12px);
+  animation: glow 2.4s ease-in-out infinite;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
-  50% {
-    opacity: 0.7;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -176,8 +248,15 @@ const formatDate = (dateString) => {
     transform: scale(1);
   }
   50% {
-    opacity: 0.4;
-    transform: scale(1.02);
+    opacity: 0.45;
+    transform: scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-glow,
+  .session-card {
+    animation: none;
   }
 }
 </style>
