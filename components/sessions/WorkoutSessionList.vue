@@ -205,12 +205,6 @@ const formatDate = (dateString) => {
 .session-glow {
   overflow: hidden;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.group:hover .session-glow {
-  opacity: 1;
 }
 
 .session-glow::before {
