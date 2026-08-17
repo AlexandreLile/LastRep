@@ -280,6 +280,7 @@ async function main() {
       is_custom: false,
       is_legacy: false,
       category_id: categoryIdByName.get(categoryName) || null,
+      equipment: ex.equipment || null,
       hasGif: Boolean(ex.gifUrl),
       target: ex.target,
       secondaryMuscles: ex.secondaryMuscles || [],
@@ -323,6 +324,7 @@ async function main() {
     is_custom: r.is_custom,
     is_legacy: r.is_legacy,
     category_id: r.category_id,
+    equipment: r.equipment,
     image_url: r.image_url || null,
   }))
 
