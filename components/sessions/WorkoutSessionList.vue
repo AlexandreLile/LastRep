@@ -17,8 +17,11 @@
       <div
         v-for="(session, index) in sortedSessions"
         :key="session.id"
+        :ref="(el) => setCardRef(session.id, el)"
+        :data-session-id="session.id"
         :style="{ animationDelay: `${index * 50}ms` }"
-        class="session-card group relative overflow-hidden rounded-xl border border-primary/15 bg-card cursor-pointer transition-all duration-300 hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10"
+        class="session-card group relative overflow-hidden rounded-xl border bg-card cursor-pointer transition-all duration-300 hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10"
+        :class="isSpotlighted(session.id) ? 'is-spotlighted border-primary/40 -translate-y-0.5 shadow-lg shadow-primary/10' : 'border-primary/15'"
         @click="viewSession(session.id)"
       >
         <div class="session-glow absolute inset-0" aria-hidden="true"></div>
@@ -26,11 +29,20 @@
         <div class="relative flex flex-col h-full p-6">
           <div class="flex flex-wrap gap-4 items-start mb-4">
             <div class="flex items-center space-x-3 flex-1 max-w-[300px]">
-              <div class="p-2 rounded-full bg-primary/20 transition-all duration-300 group-hover:bg-primary/30 group-hover:scale-110">
-                <Dumbbell class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
+              <div
+                class="p-2 rounded-full bg-primary/20 transition-all duration-300 group-hover:bg-primary/30 group-hover:scale-110"
+                :class="{ 'bg-primary/30 scale-110': isSpotlighted(session.id) }"
+              >
+                <Dumbbell
+                  class="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12"
+                  :class="{ 'rotate-12': isSpotlighted(session.id) }"
+                />
               </div>
               <div class="text-left min-w-0">
-                <h3 class="text-lg font-medium text-foreground transition-colors duration-300 group-hover:text-primary">{{ session.title }}</h3>
+                <h3
+                  class="text-lg font-medium text-foreground transition-colors duration-300 group-hover:text-primary"
+                  :class="{ 'text-primary': isSpotlighted(session.id) }"
+                >{{ session.title }}</h3>
                 <p class="text-xs text-muted-foreground">Dernière modification: {{ formatDate(session.updated_at) }}</p>
                 <div v-if="sessionBadges[session.id]" class="mt-1.5 flex flex-wrap gap-1.5">
                   <span
@@ -81,6 +93,7 @@
                 v-for="exercise in session.exercises"
                 :key="exercise.id"
                 class="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-primary/10 group-hover:text-primary group-hover:scale-105"
+                :class="{ 'bg-primary/10 text-primary scale-105': isSpotlighted(session.id) }"
               >
                 {{ exercise.exercise.name }}
               </span>
@@ -120,7 +133,7 @@
 <script setup>
 import { Pencil, Dumbbell, Play } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
-import { computed, onMounted, reactive } from 'vue';
+import { computed, onMounted, onBeforeUnmount, reactive, nextTick } from 'vue';
 import { loadSessionMotivation } from '~/composables/useSessionMotivation';
 
 
@@ -160,10 +173,47 @@ const sortedSessions = computed(() => {
   });
 });
 
+// ============================================
+// SPOTLIGHT AU SCROLL
+// ============================================
+// Reproduit l'effet hover sur la carte qui traverse le centre de l'écran :
+// suit le scroll au lieu de dépendre de la souris (utile aussi au tactile).
+const cardEls = new Map();
+const spotlightedIds = reactive(new Set());
+let scrollObserver = null;
+
+const setCardRef = (sessionId, el) => {
+  if (el) cardEls.set(sessionId, el);
+  else cardEls.delete(sessionId);
+};
+
+const isSpotlighted = (sessionId) => spotlightedIds.has(sessionId);
+
+const setupScrollSpotlight = () => {
+  scrollObserver?.disconnect();
+  scrollObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        const sessionId = entry.target.dataset.sessionId;
+        if (entry.isIntersecting) spotlightedIds.add(sessionId);
+        else spotlightedIds.delete(sessionId);
+      });
+    },
+    { rootMargin: '-35% 0px -35% 0px', threshold: 0 }
+  );
+  cardEls.forEach((el) => scrollObserver.observe(el));
+};
+
 // Rafraîchir la liste au montage
 onMounted(async () => {
   await getWorkoutSessions();
   loadSessionBadges();
+  await nextTick();
+  setupScrollSpotlight();
+});
+
+onBeforeUnmount(() => {
+  scrollObserver?.disconnect();
 });
 
 const viewSession = (sessionId) => {
@@ -218,6 +268,12 @@ const formatDate = (dateString) => {
   background: var(--primary);
   opacity: 0.15;
   filter: blur(60px);
+  transition: opacity 0.3s ease;
+}
+
+.session-card:hover .session-glow::before,
+.session-card.is-spotlighted .session-glow::before {
+  opacity: 0.3;
 }
 
 .cta-glow {
