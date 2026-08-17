@@ -10,40 +10,75 @@
     </div>
 
     <div v-else-if="session">
-      <!-- Header amélioré -->
-      <div class="mb-8 bg-card rounded-xl p-6">
-        <div class="flex flex-col sm:flex-row gap-6">
+      <!-- Hero -->
+      <div class="mb-8 relative overflow-hidden rounded-2xl border border-primary/15 bg-card">
+        <div class="hero-glow absolute inset-0" aria-hidden="true"></div>
+
+        <div class="relative z-10 p-6 sm:p-8">
           <div class="flex items-start gap-4">
-            <div class="w-12 h-12 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center">
-              <Dumbbell class="h-6 w-6 text-primary" />
+            <div class="w-14 h-14 flex-shrink-0 bg-primary/15 rounded-full flex items-center justify-center ring-1 ring-primary/30">
+              <Dumbbell class="h-7 w-7 text-primary" />
             </div>
-            <div>
-              <h2 class="text-2xl font-bold text-foreground">{{ session.title }}</h2>
-              <div v-if="session.notes" class="mt-2 text-sm text-muted-foreground">
+            <div class="min-w-0">
+              <h2 class="text-2xl sm:text-3xl font-bold text-foreground">{{ session.title }}</h2>
+              <div v-if="session.notes" class="mt-1 text-sm text-muted-foreground">
                 {{ session.notes }}
+              </div>
+
+              <!-- Badges motivation -->
+              <div v-if="!motivation.loading" class="mt-4 flex flex-wrap gap-2">
+                <div
+                  v-if="motivation.lastSession"
+                  class="inline-flex items-center gap-1.5 rounded-full border border-record/30 bg-record/10 px-3 py-1.5 text-xs font-medium text-record"
+                >
+                  <Clock class="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>
+                    Dernière fois {{ formatRelativeDays(motivation.lastSession.endedAt) }}
+                    <span v-if="motivation.lastSession.setsCount > 0">· {{ motivation.lastSession.setsCount }} séries</span>
+                    <span v-if="motivation.lastSession.prCount > 0">· 🏆 {{ motivation.lastSession.prCount }} record{{ motivation.lastSession.prCount > 1 ? 's' : '' }} battu{{ motivation.lastSession.prCount > 1 ? 's' : '' }}</span>
+                  </span>
+                </div>
+                <div
+                  v-if="motivation.recordsInPlay > 0"
+                  class="inline-flex items-center gap-1.5 rounded-full border border-record/30 bg-record/10 px-3 py-1.5 text-xs font-medium text-record"
+                >
+                  <Trophy class="h-3.5 w-3.5 flex-shrink-0" />
+                  {{ motivation.recordsInPlay }} record{{ motivation.recordsInPlay > 1 ? 's' : '' }} personnel{{ motivation.recordsInPlay > 1 ? 's' : '' }} en jeu aujourd'hui
+                </div>
+                <div
+                  v-if="motivation.isFirstTime"
+                  class="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary"
+                >
+                  <Sparkles class="h-3.5 w-3.5 flex-shrink-0" />
+                  Première fois sur cette séance — pose ta première référence
+                </div>
               </div>
             </div>
           </div>
-          <div class="flex flex-wrap gap-4 sm:ml-auto self-end">
-            <Button 
-              @click="startSession" 
-              :disabled="exercises.length === 0"
-              class="relative overflow-hidden group"
-              :class="[
-                exercises.length === 0 
-                  ? 'bg-muted cursor-not-allowed' 
-                  : 'bg-primary hover:bg-primary/90',
-                'text-white px-6 py-3 rounded-lg transition-all duration-300'
-              ]"
-            >
-              <span class="relative z-10 flex items-center">
-                <Play class="mr-2 h-4 w-4" />
-                {{ exercises.length === 0 ? 'Ajoutez des exercices pour démarrer' : 'Démarrer la séance' }}
-              </span>
-              <div class="absolute inset-0 bg-gradient-to-r from-primary-light to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </Button>
-            <Button 
-              @click="editSession" 
+
+          <div class="mt-6 flex flex-wrap gap-3">
+            <div class="relative inline-block">
+              <div v-if="exercises.length > 0" class="cta-glow absolute -inset-2 rounded-xl bg-primary" aria-hidden="true"></div>
+              <Button
+                @click="startSession"
+                :disabled="exercises.length === 0"
+                class="relative overflow-hidden group"
+                :class="[
+                  exercises.length === 0
+                    ? 'bg-muted cursor-not-allowed'
+                    : 'bg-primary hover:bg-primary/90',
+                  'text-white px-6 py-3 rounded-lg transition-all duration-300'
+                ]"
+              >
+                <span class="relative z-10 flex items-center">
+                  <Play class="mr-2 h-4 w-4" />
+                  {{ exercises.length === 0 ? 'Ajoutez des exercices pour démarrer' : 'Démarrer la séance' }}
+                </span>
+                <div class="absolute inset-0 bg-gradient-to-r from-primary-light to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </Button>
+            </div>
+            <Button
+              @click="editSession"
               variant="outline"
               class="px-6 py-3 text-foreground hover:text-primary hover:bg-primary/10 border-border transition-colors duration-300 flex items-center font-medium"
             >
@@ -73,8 +108,8 @@
             <p class="text-base text-muted-foreground text-center">
               Aucun exercice pour cette séance
             </p>
-            <Button 
-              @click="editSession" 
+            <Button
+              @click="editSession"
               variant="outline"
               class="mt-2"
             >
@@ -84,10 +119,11 @@
 
           <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             <button
-              v-for="exercise in exercises"
+              v-for="(exercise, index) in exercises"
               :key="exercise.id"
               type="button"
-              class="group relative flex flex-col text-left rounded-xl overflow-hidden border bg-background transition-all duration-150 hover:border-primary/40 active:scale-[0.98]"
+              :style="{ animationDelay: `${index * 40}ms` }"
+              class="exercise-card group relative flex flex-col text-left rounded-xl overflow-hidden border bg-background transition-all duration-150 hover:border-primary/40 active:scale-[0.98]"
               @click="router.push(`/exercices/${exercise.exercise_id}`)"
             >
               <!-- Image / fallback -->
@@ -139,23 +175,6 @@
           </div>
           <MuscleDistributionChart :workout-session-id="route.params.id" />
         </div>
-        
-        <!-- Section de motivation -->
-        <div v-if="exercises.length > 0" class="bg-primary rounded-xl p-6 text-white hover:shadow-lg transition-all duration-300">
-          <div class="flex flex-col items-center text-center py-4">
-            <h3 class="text-xl md:text-2xl font-bold mb-2">Prêt à vous dépasser ?</h3>
-            <p class="text-white/90 max-w-2xl mx-auto mb-4">Commencez votre séance maintenant et suivez vos performances en temps réel.</p>
-            <div class="text-4xl mb-4">💪</div>
-            <Button 
-              @click="startSession" 
-              variant="outline"
-              class="bg-card text-primary hover:bg-card/90 border-white"
-            >
-              <Play class="mr-2 h-4 w-4" />
-              Démarrer la séance
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -166,10 +185,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { useWorkoutSessions } from '~/composables/useWorkoutSession'
 import { useWorkoutExercise } from '~/composables/useWorkoutExercise'
 import { usePerformedSession } from '~/composables/usePerformedSession'
-import { getOfflineUser, getCachedUser } from '~/utils/offlineTraining'
+import { getOfflineUser, getCachedUser, cachePersonalBest } from '~/utils/offlineTraining'
 import SessionWeightChart from '@/components/charts/SessionWeightChart.vue'
 import MuscleDistributionChart from '@/components/charts/MuscleDistributionChart.vue'
-import { 
+import {
   Dumbbell,
   Play,
   Pencil,
@@ -177,7 +196,10 @@ import {
   BarChart,
   PieChart,
   FolderPlus,
-  AlertTriangle
+  AlertTriangle,
+  Trophy,
+  Clock,
+  Sparkles
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -191,6 +213,13 @@ const session = ref(null)
 const loading = ref(true)
 const error = ref(null)
 
+const motivation = ref({
+  loading: true,
+  isFirstTime: false,
+  lastSession: null, // { endedAt, startedAt, setsCount, prCount }
+  recordsInPlay: 0
+})
+
 const formatDate = (date) => {
   return new Date(date).toLocaleDateString('fr-FR', {
     year: 'numeric',
@@ -199,6 +228,115 @@ const formatDate = (date) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// "il y a X jours" plutôt qu'une date brute : plus rapide à lire, plus incitatif
+const formatRelativeDays = (dateString) => {
+  const diffMs = Date.now() - new Date(dateString).getTime()
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  if (days <= 0) return "aujourd'hui"
+  if (days === 1) return 'hier'
+  if (days < 7) return `il y a ${days} jours`
+  const weeks = Math.floor(days / 7)
+  if (weeks < 5) return `il y a ${weeks} semaine${weeks > 1 ? 's' : ''}`
+  const months = Math.floor(days / 30)
+  return `il y a ${months} mois`
+}
+
+// Meilleure série d'un exercice selon son measurement_type — même logique
+// que isBetterSet() dans la page de logging, pour rester cohérent avec ce
+// qui déclenche une célébration de record.
+const pickBestSet = (sets, measurementType) => {
+  if (!sets.length) return null
+  const type = measurementType || 'weight_reps'
+
+  if (type === 'time' || type === 'time_reps') {
+    return sets.reduce((best, s) => (!best || (s.duration_seconds || 0) > (best.duration_seconds || 0)) ? s : best, null)
+  }
+  if (type === 'reps') {
+    return sets.reduce((best, s) => (!best || (s.reps || 0) > (best.reps || 0)) ? s : best, null)
+  }
+  if (type === 'distance' || type === 'time_distance') {
+    return sets.reduce((best, s) => (!best || (s.distance_meters || 0) > (best.distance_meters || 0)) ? s : best, null)
+  }
+  return sets.reduce((best, s) => {
+    if (!best) return s
+    if ((s.weight_kg || 0) > (best.weight_kg || 0)) return s
+    if ((s.weight_kg || 0) === (best.weight_kg || 0) && (s.reps || 0) > (best.reps || 0)) return s
+    return best
+  }, null)
+}
+
+// Charge les données motivationnelles (dernière fois + records en jeu).
+// Best-effort : ne bloque jamais l'affichage de la séance si ça échoue.
+const loadMotivationData = async () => {
+  try {
+    const user = await getOfflineUser(supabase)
+    const exerciseIds = exercises.value.map(e => e.exercise_id).filter(Boolean)
+    if (!user || !exerciseIds.length) {
+      motivation.value.loading = false
+      return
+    }
+
+    const { data: lastPerformed } = await supabase
+      .from('performedsession')
+      .select('id, started_at, ended_at')
+      .eq('workout_session_id', route.params.id)
+      .eq('user_id', user.id)
+      .not('ended_at', 'is', null)
+      .order('ended_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!lastPerformed) {
+      motivation.value = { loading: false, isFirstTime: true, lastSession: null, recordsInPlay: 0 }
+      return
+    }
+
+    const { data: allSets } = await supabase
+      .from('exerciseset')
+      .select('exercise_id, weight_kg, reps, duration_seconds, distance_meters, created_at, performed_session_id')
+      .eq('user_id', user.id)
+      .in('exercise_id', exerciseIds)
+
+    const setsByExercise = new Map()
+    ;(allSets || []).forEach((s) => {
+      if (!setsByExercise.has(s.exercise_id)) setsByExercise.set(s.exercise_id, [])
+      setsByExercise.get(s.exercise_id).push(s)
+    })
+
+    let recordsInPlay = 0
+    let prLastTime = 0
+    let lastSessionSetsCount = 0
+
+    exercises.value.forEach((ex) => {
+      const type = ex.exercise?.measurement_type || 'weight_reps'
+      const sets = setsByExercise.get(ex.exercise_id) || []
+      if (!sets.length) return
+
+      lastSessionSetsCount += sets.filter(s => s.performed_session_id === lastPerformed.id).length
+
+      const best = pickBestSet(sets, type)
+      if (!best) return
+      recordsInPlay++
+      cachePersonalBest(ex.exercise_id, best)
+      if (best.performed_session_id === lastPerformed.id) prLastTime++
+    })
+
+    motivation.value = {
+      loading: false,
+      isFirstTime: false,
+      lastSession: {
+        endedAt: lastPerformed.ended_at,
+        startedAt: lastPerformed.started_at,
+        setsCount: lastSessionSetsCount,
+        prCount: prLastTime
+      },
+      recordsInPlay
+    }
+  } catch (e) {
+    motivation.value.loading = false
+  }
 }
 
 const loadSession = async () => {
@@ -214,6 +352,7 @@ const loadSession = async () => {
   } finally {
     loading.value = false
   }
+  loadMotivationData()
 }
 
 const editSession = () => {
@@ -249,12 +388,54 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.3;
+.hero-glow {
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hero-glow::before,
+.hero-glow::after {
+  content: '';
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+}
+
+.hero-glow::before {
+  width: 280px;
+  height: 280px;
+  top: -110px;
+  left: -60px;
+  background: var(--primary);
+  opacity: 0.25;
+}
+
+.hero-glow::after {
+  width: 240px;
+  height: 240px;
+  bottom: -100px;
+  right: -50px;
+  background: var(--record);
+  opacity: 0.18;
+}
+
+.cta-glow {
+  filter: blur(16px);
+  animation: glow 2.4s ease-in-out infinite;
+}
+
+.exercise-card {
+  animation: fadeInUp 0.4s ease both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
-  50% {
-    opacity: 0.7;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -264,8 +445,15 @@ onMounted(() => {
     transform: scale(1);
   }
   50% {
-    opacity: 0.4;
-    transform: scale(1.02);
+    opacity: 0.45;
+    transform: scale(1.05);
   }
 }
-</style> 
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-glow,
+  .exercise-card {
+    animation: none;
+  }
+}
+</style>
